@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Card, Badge, Button } from '@ouiboo/ui';
+import { Card, Badge, Button, SafeImage } from '@ouiboo/ui';
 import { MapPin, Star, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,7 @@ import { localizeLocationSuffix } from '@/lib/localized-location';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { ratingDisplayState } from '@/lib/review-display';
 import { CancellationOneLiner } from './CancellationOneLiner';
+import { todayLocalISO } from '@/lib/hero-search';
 import type { CancellationSummary } from '@ouiboo/types';
 
 export interface TripCardTrip {
@@ -81,6 +82,11 @@ interface TripCardProps {
    * card renders wider than the standard grid cell (the Selected
    * rail's featured-card break), so a wide card never upscales. */
   imageSizes?: string;
+  /** Search council punch item 9 (#886): inside result grids the
+   * card renders a single static photo — a per-card carousel would
+   * put an arrow/dot tab stop per card into the grid's tab order.
+   * The home rail keeps the settled SnapRail behaviour (#882). */
+  staticPhoto?: boolean;
 }
 
 /** #673: a licence expiry only supports the dated statement while it is
@@ -92,7 +98,7 @@ function futureLicenceExpiry(value?: string | null): Date | null {
   return Number.isNaN(date.getTime()) || date.getTime() <= new Date().getTime() ? null : date;
 }
 
-export function TripCard({ trip, imageSizes }: TripCardProps) {
+export function TripCard({ trip, imageSizes, staticPhoto = false }: TripCardProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   // #745 (remainder): the API resolves a translated startLocation
@@ -112,9 +118,24 @@ export function TripCard({ trip, imageSizes }: TripCardProps) {
   const openSessions = sessions.filter(
     (session) => session.status === SessionStatus.Open && session.availableSeats > 0
   );
-  const nextSession = [...openSessions].sort((a, b) => {
-    return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-  })[0];
+  // Search council D6 / punch item 15 (#886): the spots badge states
+  // its basis — the seats left on the NEXT upcoming session, with
+  // that session's date (Pattern S1). The figure is the API's live
+  // next-session `availableSeats`, transactionally maintained. A
+  // session whose day has already passed is stale data, not a
+  // promise: it never feeds the badge — with no upcoming session the
+  // card falls back to the sold-out state, which claims nothing.
+  const todayISO = todayLocalISO();
+  const nextSession = [...openSessions]
+    .filter((session) => String(session.startDate).slice(0, 10) >= todayISO)
+    .sort((a, b) => {
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+    })[0];
+  const nextSessionDateLabel = nextSession
+    ? new Intl.DateTimeFormat(i18n.language || 'en', { day: 'numeric', month: 'short' }).format(
+        new Date(nextSession.startDate),
+      )
+    : null;
   const minPrice = sessions.length
     ? Math.min(...sessions.map((session) => Number(session.price || 0)))
     : null;
@@ -216,6 +237,19 @@ export function TripCard({ trip, imageSizes }: TripCardProps) {
             the rail's genuine-click callback (router.push), and the
             card body below stays a real link. */}
         <div className="absolute inset-0 block">
+          {staticPhoto ? (
+            <div className="h-full w-full cursor-pointer" onClick={() => router.push(`/trip/${trip.id}`)}>
+              <SafeImage
+                src={images[0]}
+                alt={trip.imageAlts?.[0] ?? (displayLocation ? `${trip.title} · ${displayLocation}` : trip.title)}
+                fill
+                sizes={imageSizes ?? "(min-width: 1024px) 33vw, 100vw"}
+                className="object-cover"
+                blurDataURL={trip.imageBlurDataURLs?.[0] ?? undefined}
+                style={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
+              />
+            </div>
+          ) : (
           <SnapRail
             images={images}
             imageAlts={trip.imageAlts}
@@ -232,6 +266,7 @@ export function TripCard({ trip, imageSizes }: TripCardProps) {
               isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
             }
           />
+          )}
         </div>
 
         <div className="absolute top-3 start-3 flex flex-col items-start gap-2">
@@ -239,11 +274,15 @@ export function TripCard({ trip, imageSizes }: TripCardProps) {
             {categoryLabel}
           </Badge>
           {/* #878: test/example supply is badged on every card, so a
-              demo trip can never be mistaken for a checked listing. */}
+              demo trip can never be mistaken for a checked listing.
+              Search council punch item 9 (#886): the pill takes the
+              navy-text treatment — #0A192F on #FF6B35 measures
+              6.21:1 (white on amber-600 did not clear AA on photo
+              backgrounds). */}
           {trip.agency?.isTestData && (
             <Badge
               data-testid="trip-card-example-badge"
-              className="bg-amber-600 text-white text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none"
+              className="bg-sunset-orange text-deep-blue text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none"
             >
               {t('example.badge')}
             </Badge>
@@ -260,7 +299,7 @@ export function TripCard({ trip, imageSizes }: TripCardProps) {
             data-testid="trip-card-spots-badge"
             data-state={nextSession ? (nextSession.availableSeats < 5 ? 'low' : 'available') : 'sold-out'}
             className={cn(
-              "text-xs font-bold rounded-lg uppercase px-3 py-1.5 shadow-md tracking-wide border-none flex items-center gap-1 text-white",
+              "text-xs font-bold rounded-lg px-3 py-1.5 shadow-md border-none flex items-center gap-1 text-white",
               nextSession
                 ? nextSession.availableSeats < 5
                   ? "bg-amber-600"
@@ -268,7 +307,9 @@ export function TripCard({ trip, imageSizes }: TripCardProps) {
                 : "bg-rose-800"
             )}>
             <Zap className="h-3.5 w-3.5" />
-            {nextSession ? t('tripCard.spots', { count: nextSession.availableSeats }) : t('tripCard.soldOut')}
+            {nextSession
+              ? t('tripCard.spotsLeftSession', { count: nextSession.availableSeats, date: nextSessionDateLabel ?? '' })
+              : t('tripCard.soldOut')}
           </Badge>
         </div>
 
