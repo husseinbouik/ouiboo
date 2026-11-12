@@ -88,9 +88,6 @@
     "whatsappMessage": "Bonjour Ouiboo — j'organise des voyages au Maroc et je souhaite en savoir plus.",
     "ctaSignup": "Publiez vos voyages"
   },
-  "example": {
-    "badge": "Exemple"
-  },
   "featured": {
     "title": "Voyages sélectionnés",
     "subtitle": "Une courte liste, actualisée au fil des publications des agences — un voyage par agence.",
@@ -1197,8 +1194,6 @@
   },
   "verificationRecord": {
     "title": "Fiche de vérification",
-    "exampleTitle": "Annonce d'exemple",
-    "exampleNotice": "Annonce d'exemple — données de démonstration. Cette licence et cette assurance n'ont pas été vérifiées par Ouiboo.",
     "legalName": "Raison sociale",
     "licence": "Licence d’agent de voyages",
     "authority": "Autorité de délivrance",

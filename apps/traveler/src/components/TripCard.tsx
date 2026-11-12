@@ -60,8 +60,10 @@ export interface TripCardTrip {
     /** Carried by every public trip payload; used by the featured
      * curation (#879/#885) to enforce one trip per agency. */
     id?: string;
-    /** #878: test/example supply — the card shows the Example badge
-     * and suppresses every verification claim. */
+    /** #878, as superseded by the founder decision of 2026-11-12:
+     * test/example supply — an internal data-layer flag only. It
+     * suppresses every verification claim on the card; it no longer
+     * renders any badge or label. */
     isTestData?: boolean;
     companyName?: string;
     verificationStatus?: VerificationStatusType;
@@ -273,20 +275,12 @@ export function TripCard({ trip, imageSizes, staticPhoto = false }: TripCardProp
           <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none">
             {categoryLabel}
           </Badge>
-          {/* #878: test/example supply is badged on every card, so a
-              demo trip can never be mistaken for a checked listing.
-              Search council punch item 9 (#886): the pill takes the
-              navy-text treatment — #0A192F on #FF6B35 measures
-              6.21:1 (white on amber-600 did not clear AA on photo
-              backgrounds). */}
-          {trip.agency?.isTestData && (
-            <Badge
-              data-testid="trip-card-example-badge"
-              className="bg-sunset-orange text-deep-blue text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none"
-            >
-              {t('example.badge')}
-            </Badge>
-          )}
+          {/* Founder decision 2026-11-12 (superseding #878): the
+              "Example" badge that test supply carried here is
+              REMOVED — no user-facing Example label renders anywhere
+              in the traveller UI. The isTestData flag stays in the
+              data layer (internal only) and still suppresses every
+              verification claim below; it has no UI surface. */}
         </div>
 
         <div className="absolute top-3 end-16 flex flex-col items-end gap-2">

@@ -88,9 +88,6 @@
     "whatsappMessage": "Hello Ouiboo — I run trips in Morocco and I'd like to know more.",
     "ctaSignup": "List your trips"
   },
-  "example": {
-    "badge": "Example"
-  },
   "featured": {
     "title": "Selected trips",
     "subtitle": "A short list, refreshed as agencies publish — one trip per agency.",
@@ -1197,8 +1194,6 @@
   },
   "verificationRecord": {
     "title": "Verification record",
-    "exampleTitle": "Example listing",
-    "exampleNotice": "Example listing — demonstration data. This licence and insurance have not been checked by Ouiboo.",
     "legalName": "Legal name",
     "licence": "Travel-agent licence",
     "authority": "Issuing authority",
