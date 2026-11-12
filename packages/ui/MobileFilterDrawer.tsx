@@ -66,6 +66,26 @@ export function MobileFilterDrawer({
   // whether the finger is currently down (no snap transition while held).
   const [dragDistance, setDragDistance] = React.useState(0)
   const [isDragging, setIsDragging] = React.useState(false)
+  // #975: entry motion — the panel mounts off-canvas toward its own
+  // edge and slides in on the next frames (backdrop fading with it),
+  // instead of popping in fully formed. The drag transform below
+  // overrides the entry transform while a swipe is in progress, and
+  // the existing snap-back transition carries the release.
+  const [entered, setEntered] = React.useState(false)
+  React.useEffect(() => {
+    if (!open) {
+      setEntered(false)
+      return
+    }
+    let inner = 0
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setEntered(true))
+    })
+    return () => {
+      cancelAnimationFrame(outer)
+      cancelAnimationFrame(inner)
+    }
+  }, [open ])
   const responsiveClass = hideAt === 'lg' ? 'lg:hidden' : 'md:hidden'
 
   const setOpen = React.useCallback(
@@ -205,7 +225,10 @@ export function MobileFilterDrawer({
           <button
             type="button"
             className="absolute inset-0 bg-black/70"
-            style={{ opacity: 1 - dragProgress * 0.6 }}
+            style={{
+              opacity: Math.max(0, (entered ? 1 : 0) - dragProgress * 0.6),
+              transition: isDragging ? 'none' : 'opacity 200ms ease-out',
+            }}
             aria-label={closeLabel}
             onClick={() => setOpen(false)}
           />
@@ -224,10 +247,12 @@ export function MobileFilterDrawer({
               transform:
                 dragDistance > 0
                   ? `translateX(${dragDistance * dragSign}px)`
-                  : undefined,
+                  : entered
+                    ? 'translateX(0)'
+                    : `translateX(${side === 'right' ? 100 : -100}%)`,
               transition: isDragging
                 ? 'none'
-                : 'transform 200ms ease-out',
+                : 'transform 250ms ease-out',
             }}
             className={cn(
               'absolute inset-y-0 flex w-[min(90vw,24rem)] flex-col bg-background shadow-2xl touch-pan-y motion-reduce:transition-none',

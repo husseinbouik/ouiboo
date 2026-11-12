@@ -137,7 +137,7 @@ describe('TripCard verification statement (#413, Council B10)', () => {
         ).not.toBeNull();
     });
 
-    it('never prints the checked line for test supply, even with a VERIFIED test licence (#878 suppression)', () => {
+    it('prints the checked line for test supply with a VERIFIED licence, while the dated statements stay suppressed (#975: founder removed the Example labels 2026-11-12 — the item-11 line shows as designed; #878 dated gates untouched)', () => {
         render(
             <TripCard
                 trip={makeTrip({
@@ -150,8 +150,35 @@ describe('TripCard verification statement (#413, Council B10)', () => {
             />,
         );
 
-        expect(screen.queryByText(/checkedBeforeListing/)).toBeNull();
+        expect(
+            screen.getByText('Atlas Adventures SARL · tripCard.checkedBeforeListing'),
+        ).not.toBeNull();
         expect(screen.queryByText(/Licence checked/)).toBeNull();
+    });
+
+    it('search variant: "From <amount> <currency> per person", no View Details button, no option pills (#975)', () => {
+        const trip = {
+            ...makeTrip({ companyName: 'Atlas Adventures SARL' }),
+            privateTourEnabled: true,
+            payOnArrivalEnabled: true,
+            sessions: [
+                {
+                    id: 's1',
+                    price: 1450,
+                    currency: 'MAD',
+                    status: 'OPEN',
+                    availableSeats: 9,
+                    startDate: '2099-01-01',
+                } as any,
+            ],
+        };
+        render(<TripCard trip={trip} variant="search" />);
+
+        expect(screen.getByText(/1,450 MAD/)).not.toBeNull();
+        expect(screen.getByText(/tripCard\.perPerson/)).not.toBeNull();
+        expect(screen.queryByText('tripCard.viewDetails')).toBeNull();
+        expect(screen.queryByText('batchF.privateBadge')).toBeNull();
+        expect(screen.queryByText('batchF.payOnArrivalBadge')).toBeNull();
     });
 
     it('renders no verification line without dated checks (#673: the hedge is retired)', () => {

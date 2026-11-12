@@ -85,11 +85,12 @@ const initialFilters: SearchInitialFilters = {
 
 function lastQueryParams() {
   // Three useTripsQuery consumers exist now: the main search query
-  // (limit 20), the #877 zero-state featured query (limit 3), and the
-  // council item-2 catalogue counts query (limit 50). The main query
-  // is the limit-20 one.
+  // (limit 9 — the fidelity pass's 9-per-page grid), the #877
+  // zero-state featured query (limit 3), and the council item-2
+  // catalogue counts query (limit 50). The main query is the
+  // limit-9 one.
   const calls = mockUseTripsQuery.mock.calls.filter(
-    (call) => (call[0] as { limit?: number })?.limit === 20,
+    (call) => (call[0] as { limit?: number })?.limit === 9,
   );
   return calls[calls.length - 1][0];
 }
@@ -123,7 +124,7 @@ beforeEach(() => {
       };
     }
     return {
-      data: { data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 0 } },
+      data: { data: [], pagination: { total: 0, page: 1, limit: 9, totalPages: 0 } },
       isLoading: false,
       error: null,
       isError: false,

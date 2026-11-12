@@ -56,6 +56,7 @@ function parseFilters(sp: Record<string, string | string[] | undefined>): Search
     // now — the SSR seed must parse them too, or the first paint (and
     // the client's initial-query seed check) would disagree with the URL.
     availabilityOnly: get('available') === 'true',
+    flexibleDates: get('flexible') === 'true',
     freeCancellationOnly: get('freeCancellation') === 'true',
     ratingMin: (() => {
       const n = Number(get('ratingMin'));
@@ -73,7 +74,7 @@ async function fetchInitialTrips(filters: SearchInitialFilters, sort: SearchSort
     sortBy,
     sortOrder,
     page: '1',
-    limit: '20',
+    limit: '9',
     // #546: trip text in the visitor's language (client refetches keep
     // passing the active UI language via SearchClient).
     locale: await getInitialLanguage(),
