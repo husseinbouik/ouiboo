@@ -409,7 +409,7 @@ export default function SearchClient({
   // part-(c) counts line carrying the state instead.
   const stateLine = useMemo<string | null>(() => {
     const fragment = (key: string, options?: Record<string, unknown>): string | null => {
-      const value = t(key, options as never);
+      const value = t(key, options as never) as unknown as string;
       return value === key ? null : value;
     };
     const formatDate = (iso: string) =>
