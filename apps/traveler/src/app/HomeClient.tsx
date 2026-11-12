@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import {
-  MapPin, Calendar, Compass, Banknote, ShieldCheck, CalendarCheck, AlertTriangle, Plus, X, Check, MessageCircle, ArrowRight
+  MapPin, Compass, Banknote, ShieldCheck, CalendarCheck, AlertTriangle, Check, MessageCircle, ArrowRight
 } from 'lucide-react';
 import Image from 'next/image';
 import { Button, EmptyState, SafeImage } from '@ouiboo/ui';
@@ -13,19 +13,16 @@ import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BETA_DESTINATIONS } from '@ouiboo/types';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
-import { buildHeroSearchParams, isInvalidDateRange, isPastDate } from '@/lib/hero-search';
 import {
-  CLUSTER_DESTINATION_SLUGS,
   countTripsByCategory,
-  countTripsByDestination,
   curateFeaturedTrips,
-  showcaseDestinations,
-  tripsCoverPlace,
   type ShowcaseDestination,
 } from '@/lib/curation';
+import { buildHeroSuggestions } from '@/lib/hero-suggestions';
+import { HeroSearch } from '@/components/HeroSearch';
 import { useDisplayPrice } from '@/lib/display-currency';
 import { AGENCY_URL } from '@/lib/site';
-import { CATEGORY_IMAGES, COVERAGE_IMAGES, DESTINATION_IMAGES, HERO_IMAGE, NON_PLACE_PHOTO_IDS, STATIC_HOME_PHOTO_IDS } from '@/lib/static-imagery';
+import { CATEGORY_IMAGES, HERO_IMAGE } from '@/lib/static-imagery';
 
 const TripCard = dynamic(() => import('@/components/TripCard').then((m) => m.TripCard));
 
@@ -56,10 +53,11 @@ interface HomeClientProps {
    * error state, never the genuine-empty state, for an outage. */
   featuredTripsFetchFailed?: boolean;
   /** #877: slugs of beta destinations with at least one active trip,
-   * computed from the live catalogue by the server page. The hero
-   * suggestion list offers exactly these — suggesting a destination
-   * with zero trips was the tested dead end this fixes. Empty when
-   * the catalogue fetch failed (free text still works). */
+   * computed from the live catalogue by the server page. Retained
+   * for caller compatibility — since the search-council adoption
+   * (#938) the hero suggestion model derives everything from the
+   * catalogue itself (lib/hero-suggestions.ts), so this prop no
+   * longer feeds the UI. */
   catalogDestinations?: string[];
 }
 
@@ -70,7 +68,7 @@ interface HomeClientProps {
  * truthful photo (photo-truth audit, #898) gets the graded navy
  * header instead — never a photograph of somewhere else.
  */
-function CoverageTile({ destination }: { destination: ShowcaseDestination }) {
+function CoverageTile({ destination, href }: { destination: ShowcaseDestination; href?: string }) {
   const { t, i18n } = useTranslation();
   const displayPrice = useDisplayPrice(destination.minPrice, destination.priceCurrency, i18n.language);
   // B draws a short descriptor on its graded coverage headers
@@ -79,7 +77,7 @@ function CoverageTile({ destination }: { destination: ShowcaseDestination }) {
   const descriptor = t(`featured.coverage.descriptor.${destination.name.toLowerCase().replace(/\s+/g, '')}`, { defaultValue: '' });
   return (
     <Link
-      href={`/search?q=${encodeURIComponent(destination.name)}`}
+      href={href ?? `/search?q=${encodeURIComponent(destination.name)}`}
       className="group block overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-shadow hover:shadow-xl"
     >
       {destination.photo ? (
@@ -114,41 +112,40 @@ function CoverageTile({ destination }: { destination: ShowcaseDestination }) {
   );
 }
 
-/** A DON'T-HAVE tile — a well-known place with no trips yet, shown
- * honestly empty as B's dashed flat card, mixed into the same index
- * grid as the covered destinations. Not a link: there is nothing
- * to see yet, and an empty result page is a dead end (#877). */
-function AbsentCoverageTile({ slug }: { slug: string }) {
+/**
+ * Search council punch item 12 (#942): the first-screen tile row's
+ * honest zero — a configured place with no trips yet (Tétouan).
+ * NOT a link: there is nothing to see yet, and an empty result
+ * page is a dead end (#877). Its accessible name carries the state
+ * in words — "Tétouan, no trips yet" — never desaturation alone;
+ * the verified place photograph (#898) renders at full strength
+ * with the label in the body, on solid ground.
+ */
+function ZeroPlaceTile({ name, photo }: { name: string; photo: string | null }) {
   const { t } = useTranslation();
-  const name = t(`featured.coverage.names.${slug}`);
+  const noTripsYet = t('featured.betaRegion.noTripsYet');
   return (
-    <div className="flex flex-col rounded-2xl border border-dashed border-border bg-sand/35 p-3.5">
-      <span className="mb-7 flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card text-deep-blue">
-        <MapPin className="h-[18px] w-[18px]" aria-hidden="true" />
-      </span>
-      <span className="font-display text-[15px] font-bold text-foreground/80">{name}</span>
-      <span className="mt-0.5 text-xs font-semibold leading-relaxed text-muted-foreground">
-        {t('featured.betaRegion.noTripsYet')}
-        <br />
-        {t('featured.betaRegion.tripsComing')}
+    <div
+      role="group"
+      aria-label={`${name}, ${noTripsYet}`}
+      className="block overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+    >
+      {photo ? (
+        <span className="relative block h-[104px] overflow-hidden">
+          <SafeImage src={photo} alt="" fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover" />
+        </span>
+      ) : (
+        <span className="flex h-[104px] items-end bg-deep-blue p-3">
+          <MapPin className="h-5 w-5 text-white/70" aria-hidden="true" />
+        </span>
+      )}
+      <span className="block p-3 sm:p-3.5">
+        <span className="block font-display text-[15px] font-bold text-foreground">{name}</span>
+        <span className="mt-0.5 block text-xs font-semibold text-muted-foreground">{noTripsYet}</span>
       </span>
     </div>
   );
 }
-
-/**
- * Well-known Moroccan destinations the showcase holds up as NOT
- * covered — filtered against the live catalogue on every render
- * (lib/curation tripsCoverPlace), so a tile disappears the moment
- * a trip exists there. Aliases cover the EN/FR/AR spellings a
- * startLocation may carry.
- */
-const ABSENT_COVERAGE_CANDIDATES = [
-  { slug: 'agadir', aliases: ['agadir', 'أكادير'] },
-  { slug: 'dakhla', aliases: ['dakhla', 'الداخلة'] },
-  { slug: 'ifrane', aliases: ['ifrane', 'إفران'] },
-  { slug: 'alhoceima', aliases: ['al hoceima', 'alhoceima', 'hoceima', 'الحسيمة'] },
-] as const;
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -168,92 +165,36 @@ const staggerContainer: Variants = {
   }
 };
 
-export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsProp, featuredTripsFetchFailed = false, catalogDestinations = [] }: HomeClientProps) {
+export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsProp, featuredTripsFetchFailed = false, catalogDestinations: _catalogDestinations = [] }: HomeClientProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchDateFrom, setSearchDateFrom] = useState('');
-  const [searchDateTo, setSearchDateTo] = useState('');
-  const [dateError, setDateError] = useState('');
-  // #877: dates are optional refinement, not a co-equal field — they
-  // stay behind "Add dates" until the traveller asks for them.
-  const [datesOpen, setDatesOpen] = useState(false);
-  const dateFromInputRef = useRef<HTMLInputElement>(null);
-  const dateToInputRef = useRef<HTMLInputElement>(null);
-
-  // #723: the hero search is a semantic form — destination text that
-  // names a configured beta destination (#675 taxonomy) submits as the
-  // `destination` facet the search page consumes; anything else submits
-  // as its free-text `q`. Dates submit as `dateFrom`/`dateTo`, the
-  // canonical names SearchClient parses. An inverted range stays on
-  // the page with an accessible validation message instead of sending
-  // a query the results page would silently mis-handle.
-  const handleSearch = (event?: React.FormEvent) => {
-    event?.preventDefault();
-    // Read dates from refs as fallback in case state hasn't synced (#120)
-    const dateFrom = searchDateFrom || dateFromInputRef.current?.value || '';
-    const dateTo = searchDateTo || dateToInputRef.current?.value || '';
-    // #877: past dates can only dead-end (every matching session is
-    // gone) — reject them here, inline, like the reversed range.
-    if (isPastDate(dateFrom) || isPastDate(dateTo)) {
-      setDateError(t('hero.pastDateError'));
-      return;
-    }
-    if (isInvalidDateRange(dateFrom, dateTo)) {
-      setDateError(t('hero.dateRangeError'));
-      return;
-    }
-    setDateError('');
-    // Localised destination names for the active language, so a value
-    // picked from the suggestions resolves in FR/AR/EN alike (the
-    // configured aliases already cover the other spellings).
-    const localizedNames: Record<string, string> = {};
-    for (const destination of BETA_DESTINATIONS) {
-      localizedNames[destination.slug] = t(`search.destinationNames.${destination.slug}`);
-    }
-    const params = buildHeroSearchParams(
-      { query: searchQuery, dateFrom, dateTo },
-      localizedNames,
-    );
-    const queryString = params.toString();
-    router.push(`/search${queryString ? `?${queryString}` : ''}`);
-  };
 
   // #885: home composition from the catalogue. The featured rail is
-  // curated under the published rule (lib/curation.ts); the chip rail,
-  // destination section and "All trips" read the same catalogue.
+  // curated under the published rule (lib/curation.ts).
   // Legacy callers passing only `featuredTrips` render that list as
   // the rail verbatim (the pre-#885 contract the tests lock).
   const allTrips = catalogTrips ?? featuredTripsProp ?? [];
   const featuredTrips = catalogTrips ? curateFeaturedTrips(catalogTrips) : allTrips;
-  const destinationTripCounts = countTripsByDestination(allTrips);
   const categoryTripCounts = countTripsByCategory(allTrips);
-  const styleChips = [
-    { key: 'ADVENTURE', label: t('categories.adventure') },
-    { key: 'CULTURAL', label: t('categories.cultural') },
-    { key: 'NATURE', label: t('categories.nature') },
-    { key: 'LUXURY', label: t('categories.luxury') },
-    { key: 'BUDGET', label: t('categories.budget') },
-  ].filter((chip) => (categoryTripCounts[chip.key] ?? 0) >= 2);
   const hasCatalogSections = Boolean(catalogTrips) && !featuredTripsFetchFailed;
-  // Round 2: the coverage showcase (lib/curation) — destinations
-  // beyond the cluster with live counts, plus the honestly-empty
-  // well-known places, filtered against the live catalogue.
-  // Photo-truth (#898, council P0-1): the pick skips the static
-  // assets (no photo twice on the page) AND the audited non-place
-  // photos, so a destination with no truthful photo in its trips'
-  // media renders the graded tile rather than somewhere else —
-  // unless it has a curated static of its own (COVERAGE_IMAGES:
-  // the verified follow-up curation), which always wins.
-  const coverageDestinations = showcaseDestinations(allTrips, [...STATIC_HOME_PHOTO_IDS, ...NON_PLACE_PHOTO_IDS]).map(
-    (destination) => {
-      const curated = COVERAGE_IMAGES[destination.name.toLowerCase().replace(/\s+/g, '')];
-      return curated ? { ...destination, photo: curated } : destination;
-    },
-  );
-  const absentCoverage = ABSENT_COVERAGE_CANDIDATES.filter(
-    (candidate) => !tripsCoverPlace(allTrips, [...candidate.aliases]),
-  );
+  // Search council (#938, punch item 12 / #942): the first-screen
+  // destination tile row's rule-based set — every destination with
+  // live trips (Casablanca included), cluster-first, plus the
+  // configured zero-trip places — from the same local suggestion
+  // model the hero pill's dropdown renders (lib/hero-suggestions),
+  // so the row and the panel can never disagree. The row REPLACES
+  // the below-fold destination + coverage tile sections (relocated,
+  // not duplicated — that is what keeps it at +0 KB / +0 requests,
+  // #894). The honestly-empty well-known places the old coverage
+  // showcase carried (Agadir, Dakhla, Ifrane, Al Hoceima) are not
+  // part of the rule-based set and leave the home with the section;
+  // the honest-zero function is carried by Tétouan's tile here,
+  // the dropdown's headed zero zone, and the search empty state.
+  const heroLocalizedNames: Record<string, string> = {};
+  for (const destination of BETA_DESTINATIONS) {
+    heroLocalizedNames[destination.slug] = t(`search.destinationNames.${destination.slug}`);
+  }
+  const heroTiles = buildHeroSuggestions(allTrips, '', heroLocalizedNames);
   // #898: the category photo tiles — a category renders only when
   // the live catalogue gives it at least two trips (the published
   // suppression rule; Luxury and Budget sit out, #903).
@@ -264,20 +205,6 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
   ]
     .map((tile) => ({ ...tile, count: categoryTripCounts[tile.key] ?? 0 }))
     .filter((tile): tile is typeof tile & { photo: string } => Boolean(tile.photo) && tile.count >= 2);
-  // Pure B (#929): the "Popular:" quick chips under the search
-  // card — places with trips only (#877: a suggestion with zero
-  // trips is a dead end). Coverage destinations lead (the places
-  // travellers ask for), cluster destinations follow.
-  const popularChips = [
-    ...coverageDestinations.slice(0, 3).map((destination) => ({
-      label: destination.name,
-      href: `/search?q=${encodeURIComponent(destination.name)}`,
-    })),
-    ...CLUSTER_DESTINATION_SLUGS.filter((slug) => (destinationTripCounts[slug] ?? 0) > 0).map((slug) => ({
-      label: t(`search.destinationNames.${slug}`),
-      href: `/search?destination=${slug}`,
-    })),
-  ].slice(0, 5);
 
   return (
     <div className="bg-background min-h-screen font-sans text-foreground overflow-hidden">
@@ -342,131 +269,34 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
       </div>
 
       {/* The search zone overlaps the hero fold (B's defining
-          geometry), followed by the Popular chips and the USP
-          strip — the three verified claims as titled one-liners
-          (#887, in B's paper-card form). */}
+          geometry). Search council (#938): the zone now carries
+          the "One Line" pill (components/HeroSearch — its own
+          component, no framer-motion on this path, #894 item 7)
+          and, immediately below it and before the USP strip, the
+          first-screen destination tile row (#942) — the rule-based
+          set from lib/hero-suggestions, RELOCATING the below-fold
+          destination + coverage tile sections, which are removed
+          below: same tiles, same renditions, shown once. The
+          Popular chips are subsumed by the tiles. */}
       <div className="relative z-10 mx-auto -mt-16 max-w-7xl px-6 lg:px-8">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-          className="mx-auto max-w-4xl"
-        >
-          <motion.div variants={fadeInUp}>
-            {/* Clean Search Bar — #723: a semantic form, so the button
-                AND Enter in any field submit the same search. The
-                destination suggestions are the #675 beta destinations
-                (localised names); picking or typing one submits the
-                `destination` facet, other text submits as `q`. */}
-            <form onSubmit={handleSearch} noValidate>
-              <div className="bg-card p-2 rounded-2xl shadow-xl border border-border flex flex-col lg:flex-row gap-2">
-                <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
-                  <MapPin className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
-                  <input
-                    type="text"
-                    aria-label={t('hero.where')}
-                    placeholder={t('hero.where')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    list="hero-destination-suggestions"
-                    autoComplete="off"
-                    className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
-                  />
-                  <datalist id="hero-destination-suggestions">
-                    {/* #877: suggestions are generated from the live
-                        catalogue — only destinations with at least
-                        one active trip are offered. */}
-                    {BETA_DESTINATIONS.filter((destination) => catalogDestinations.includes(destination.slug)).map((destination) => (
-                      <option
-                        key={destination.slug}
-                        value={t(`search.destinationNames.${destination.slug}`)}
-                      />
-                    ))}
-                  </datalist>
-                </div>
-                {/* #877: dates demoted behind an explicit toggle —
-                    collapsed by default. Open, the two fields carry
-                    visible Start/End labels (they previously had
-                    aria-labels only, indistinguishable unlabelled
-                    boxes on the first screen). */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (datesOpen) {
-                      setSearchDateFrom('');
-                      setSearchDateTo('');
-                      setDateError('');
-                    }
-                    setDatesOpen(!datesOpen);
-                  }}
-                  aria-expanded={datesOpen}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border text-muted-foreground font-medium hover:text-foreground hover:border-sunset-orange/50 transition-all"
-                >
-                  {datesOpen ? <X className="h-4 w-4 shrink-0" /> : <Plus className="h-4 w-4 shrink-0" />}
-                  {datesOpen ? t('hero.removeDates') : t('hero.addDates')}
-                </button>
-                {datesOpen && (
-                  <>
-                    <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
-                      <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
-                      <label className="flex w-full flex-col gap-0.5 text-start">
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('search.startDate')}</span>
-                        <input
-                          type="date"
-                          ref={dateFromInputRef}
-                          aria-label={t('search.startDate')}
-                          value={searchDateFrom}
-                          onChange={(e) => { setSearchDateFrom(e.target.value); setDateError(''); }}
-                          aria-invalid={dateError ? true : undefined}
-                          aria-describedby={dateError ? 'hero-date-error' : undefined}
-                          className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
-                        />
-                      </label>
-                    </div>
-                    <div className="flex-1 flex items-center px-4 py-3 bg-muted/55 rounded-xl border border-transparent focus-within:bg-background focus-within:border-border transition-all">
-                      <Calendar className="h-5 w-5 text-sunset-orange me-3 shrink-0" />
-                      <label className="flex w-full flex-col gap-0.5 text-start">
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t('search.endDate')}</span>
-                        <input
-                          type="date"
-                          ref={dateToInputRef}
-                          aria-label={t('search.endDate')}
-                          value={searchDateTo}
-                          onChange={(e) => { setSearchDateTo(e.target.value); setDateError(''); }}
-                          aria-invalid={dateError ? true : undefined}
-                          aria-describedby={dateError ? 'hero-date-error' : undefined}
-                          className="bg-transparent border-none focus:outline-none text-foreground w-full placeholder:text-muted-foreground font-medium"
-                        />
-                      </label>
-                    </div>
-                  </>
-                )}
-                <Button
-                  type="submit"
-                  className="h-14 lg:h-auto px-8 rounded-xl bg-sunset-orange hover:bg-sunset-orange-dark text-deep-blue hover:text-white font-semibold text-lg shadow-md transition-all">
-                  {t('hero.search', 'Search')}
-                </Button>
-              </div>
-              {dateError && (
-                <p id="hero-date-error" role="alert" className="mt-3 text-sm font-medium text-danger">
-                  {dateError}
-                </p>
-              )}
-            </form>
-          </motion.div>
-        </motion.div>
+        <div className="mx-auto max-w-4xl">
+          <HeroSearch trips={allTrips} />
+        </div>
 
-        {hasCatalogSections && popularChips.length > 0 && (
-          <div className="mx-auto mt-3.5 flex max-w-4xl flex-wrap items-center gap-2" data-testid="home-popular-chips">
-            <span className="text-xs font-bold text-muted-foreground">{t('hero.popular')}</span>
-            {popularChips.map((chip) => (
-              <Link
-                key={chip.href}
-                href={chip.href}
-                className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-bold text-foreground transition-shadow hover:shadow-md"
-              >
-                {chip.label}
-              </Link>
+        {hasCatalogSections && (heroTiles.destinations.length > 0 || heroTiles.zeroPlaces.length > 0) && (
+          <div
+            className="mx-auto mt-4 grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            data-testid="home-destination-tiles"
+          >
+            {heroTiles.destinations.map((destination) => (
+              <CoverageTile
+                key={destination.slug ?? destination.name}
+                destination={destination}
+                href={destination.href}
+              />
+            ))}
+            {heroTiles.zeroPlaces.map((place) => (
+              <ZeroPlaceTile key={place.slug} name={place.name} photo={place.photo} />
             ))}
           </div>
         )}
@@ -556,110 +386,6 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
           </motion.div>
         </div>
       </section>
-
-      {/* #885, in B's form (#929): the destination section — the
-          three cluster cities only, as compact tiles with the
-          count in the bottom bar and B's filter-chip row above.
-          A city with no trips renders honestly empty (never
-          backfilled with out-of-cluster supply). Tile photographs
-          are FIXED curated assets (lib/static-imagery.ts, founder
-          amendment to #898, 2026-11-11) — never borrowed from trip
-          inventory; a city without a curated photo keeps the
-          brand-graded tile. Photo-truth audit (council P0-1,
-          2026-11-11): only Chefchaouen carries a photo — the
-          round-2 Tangier/Tétouan picks depicted other places and
-          were reverted to graded tiles (see static-imagery.ts);
-          the B mockups' own Tangier/Tétouan images are those
-          vetoed picks and are not followed. */}
-      {hasCatalogSections && (
-        <section className="py-10 sm:py-12 bg-background">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-5 gap-4">
-              <div className="max-w-2xl">
-                <h2 className="oui-balance text-[26px] font-bold tracking-tight text-foreground sm:text-3xl mb-2">{t('featured.betaRegion.title')}</h2>
-                <p className="text-[15px] text-muted-foreground">{t('featured.betaRegion.subtitle')}</p>
-              </div>
-              <Link href="/search" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-extrabold text-foreground transition-colors hover:text-sunset-orange-dark">
-                {t('featured.allDestinations')} <ArrowRight className={`h-4 w-4 ${i18n.language === 'ar' ? 'rotate-180' : ''}`} aria-hidden="true" />
-              </Link>
-            </div>
-            <div className="mb-5 flex flex-wrap gap-2">
-              <Link href="/search" className="rounded-full bg-deep-blue px-3.5 py-2 text-[13px] font-bold text-white">
-                {t('featured.allChip')}
-              </Link>
-              {styleChips.map((chip) => (
-                <Link
-                  key={chip.key}
-                  href={`/search?category=${chip.key}`}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] font-bold text-foreground transition-shadow hover:shadow-md"
-                >
-                  {chip.label}
-                  <span className="text-sunset-orange-dark">· {categoryTripCounts[chip.key]}</span>
-                </Link>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {CLUSTER_DESTINATION_SLUGS.map((slug) => {
-                const count = destinationTripCounts[slug] ?? 0;
-                const photo = DESTINATION_IMAGES[slug];
-                return (
-                  <Link
-                    key={slug}
-                    href={`/search?destination=${slug}`}
-                    className="group relative block h-44 overflow-hidden rounded-3xl bg-deep-blue text-white shadow-sm transition-shadow hover:shadow-xl sm:h-[190px]"
-                  >
-                    {photo ? (
-                      <SafeImage src={photo} alt="" fill sizes="(min-width: 768px) 33vw, 100vw" className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105" />
-                    ) : null}
-                    <span className="absolute inset-0 bg-gradient-to-t from-deep-blue/90 via-deep-blue/40 to-transparent" aria-hidden="true" />
-                    <span className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-5">
-                      <span>
-                        <span className="block font-display text-xl font-extrabold">{t(`search.destinationNames.${slug}`)}</span>
-                        <span className="mt-0.5 block text-xs font-medium text-white/85">
-                          {count > 0 ? t(`featured.betaRegion.blurb.${slug}`) : t('featured.betaRegion.tripsComing')}
-                        </span>
-                      </span>
-                      <span className="shrink-0 rounded-full bg-card px-2.5 py-1 text-[11px] font-extrabold text-foreground shadow">
-                        {count > 0 ? t('featured.betaRegion.tripsCount', { count }) : t('featured.betaRegion.noTripsYet')}
-                      </span>
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Coverage (#924), restyled to B's compact index (#929):
-          destinations beyond the cluster as small index cards
-          (photo header or graded header, count + from-price), and
-          the honestly-empty well-known places as dashed flat cards
-          MIXED into the same grid — B's treatment; the Hybrid's
-          "Still growing" segregation is removed. The live filter
-          still removes an empty tile the moment a trip exists
-          there; individual trips stay reachable through search. */}
-      {hasCatalogSections && (coverageDestinations.length > 0 || absentCoverage.length > 0) && (
-        <section className="py-10 sm:py-12 bg-background">
-          <div className="mx-auto max-w-7xl px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-6 gap-4">
-              <div className="max-w-2xl">
-                <h2 className="oui-balance text-[26px] font-bold tracking-tight text-foreground sm:text-3xl mb-2">{t('featured.coverage.title')}</h2>
-                <p className="text-[15px] text-muted-foreground">{t('featured.coverage.subtitle')}</p>
-              </div>
-              <span className="shrink-0 text-xs font-bold text-muted-foreground">{t('featured.coverage.countsNote')}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4 sm:gap-5 lg:grid-cols-4">
-              {coverageDestinations.map((destination) => (
-                <CoverageTile key={destination.name} destination={destination} />
-              ))}
-              {absentCoverage.map((candidate) => (
-                <AbsentCoverageTile key={candidate.slug} slug={candidate.slug} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* #898, in B's proportions (#929): "Travel your way" —
           category PHOTO tiles (Adventure wide, then Nature,

@@ -67,7 +67,19 @@
     "kickerChecked": "Vérifiées avant publication",
     "metaPrices": "Prix en MAD",
     "metaPayDirect": "Vous payez l'agence directement",
-    "popular": "Populaire :"
+    "popular": "Populaire :",
+    "flexible": "Dates flexibles",
+    "placesNoTripsYet": "Lieux sans voyages pour le moment",
+    "tripSuggestions": "Voyages",
+    "noSuggestions": "Aucun lieu ni voyage ne correspond — voir tous les voyages ci-dessous.",
+    "clearDates": "Effacer les dates",
+    "datesDone": "Terminé",
+    "seeAllTrips_zero": "Voir tous les voyages",
+    "seeAllTrips_one": "Voir le {{count}} voyage",
+    "seeAllTrips_two": "Voir les {{count}} voyages",
+    "seeAllTrips_few": "Voir les {{count}} voyages",
+    "seeAllTrips_many": "Voir les {{count}} voyages",
+    "seeAllTrips_other": "Voir les {{count}} voyages"
   },
   "agencyBand": {
     "title": "Vous organisez des voyages au Maroc ?",

@@ -41,8 +41,10 @@ export interface CurationTrip {
   sessions?: CurationSession[] | null;
 }
 
-/** Localised text may arrive as a plain string or a language map. */
-function locationText(value: unknown): string {
+/** Localised text may arrive as a plain string or a language map.
+ * Exported for the hero suggestion builder (lib/hero-suggestions.ts),
+ * which matches and displays the same catalogue text. */
+export function locationText(value: unknown): string {
   if (typeof value === 'string') return value;
   if (value && typeof value === 'object') {
     const map = value as Record<string, unknown>;
@@ -215,7 +217,7 @@ export function photoIdOf(url: string): string {
 }
 
 /** "Merzouga, Morocco" and "Merzouga" are one destination. */
-function stripCountrySuffix(name: string): string {
+export function stripCountrySuffix(name: string): string {
   return name.replace(/,?\s*(morocco|maroc|المغرب)\s*$/i, '').trim();
 }
 
