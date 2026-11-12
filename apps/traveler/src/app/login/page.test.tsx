@@ -41,10 +41,11 @@ jest.mock('@/components/AuthContext', () => ({
     }),
 }));
 
+// Keep the real module (src/lib/api-client builds the app client from it
+// at import time) and stub only the BFF-establish seam the bounce uses.
 jest.mock('@ouiboo/api-client', () => ({
-    setBrowserAccessToken: jest.fn(async () => undefined),
+    ...jest.requireActual('@ouiboo/api-client'),
     ensureBrowserAppSession: () => mockEnsureSession(),
-    getAuthErrorMessage: () => ({ redirect: false, fallback: 'error' }),
 }));
 
 describe('TravelerLoginPage', () => {

@@ -2,10 +2,14 @@
  * @jest-environment node
  *
  * Traveller proxy gate + sliding BFF-session renewal (#982, #208).
- * The proxy runs on the server, so these tests exercise it with real
- * NextRequest/NextResponse objects and real signed session cookies.
+ * Exercises the proxy with real signed session cookies and real
+ * NextResponse objects. The request is a minimal duck-typed stand-in
+ * for NextRequest: constructing a real NextRequest is impossible in
+ * this app's jest setup (the '.* /lib/i18n' moduleNameMapper hijacks
+ * next's internal locale-detection module), and the proxy only reads
+ * url / nextUrl / cookies / headers from its request.
  */
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { signSession, SESSION_MAX_AGE_SECONDS } from '@ouiboo/session';
 import { proxy } from './proxy';
 
@@ -23,9 +27,28 @@ async function sessionCookie(expOffsetSeconds: number): Promise<string> {
 }
 
 function request(path: string, cookie?: string): NextRequest {
-  return new NextRequest(new URL(BASE + path), {
-    headers: cookie ? { cookie } : {},
-  });
+  const url = new URL(BASE + path);
+  const jar = new Map<string, string>();
+  if (cookie) {
+    const eq = cookie.indexOf('=');
+    jar.set(cookie.slice(0, eq), cookie.slice(eq + 1));
+  }
+  const fake = {
+    url: url.toString(),
+    headers: new Headers(),
+    cookies: {
+      get: (name: string) => {
+        const value = jar.get(name);
+        return value === undefined ? undefined : { name, value };
+      },
+    },
+    nextUrl: {
+      pathname: url.pathname,
+      searchParams: url.searchParams,
+      clone: () => new URL(url.toString()),
+    },
+  };
+  return fake as unknown as NextRequest;
 }
 
 function renewedExp(response: { cookies: { get: (n: string) => { value: string } | undefined } }): number | null {
