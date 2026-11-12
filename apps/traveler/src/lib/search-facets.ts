@@ -32,3 +32,36 @@ export function isDurationBucketKey(key: string): boolean {
 export function isDestinationSlugValue(value: string): boolean {
   return BETA_DESTINATIONS.some((destination) => destination.slug === value);
 }
+
+/**
+ * Search-page council punch item 5 (#440 additive amendment): sort is
+ * part of the URL contract, as ONE direction-named key — the control
+ * names its direction ('Price, low to high'), so the old split
+ * asc/desc toggle and the rail's sort radios are gone. Rating and
+ * Popularity are NOT sort keys here: their data is null today, and a
+ * label over null data is a claim the page cannot honour (Trust T8);
+ * the API keys themselves stay in the #440 filter set.
+ */
+export const SEARCH_SORT_KEYS = ["newest", "price-asc", "price-desc"] as const;
+
+export type SearchSortKey = (typeof SEARCH_SORT_KEYS)[number];
+
+export function parseSortKey(value: string | null | undefined): SearchSortKey {
+  return (SEARCH_SORT_KEYS as readonly string[]).includes(value ?? "")
+    ? (value as SearchSortKey)
+    : "newest";
+}
+
+export function sortKeyToApi(key: SearchSortKey): {
+  sortBy: "createdAt" | "price";
+  sortOrder: "asc" | "desc";
+} {
+  switch (key) {
+    case "price-asc":
+      return { sortBy: "price", sortOrder: "asc" };
+    case "price-desc":
+      return { sortBy: "price", sortOrder: "desc" };
+    default:
+      return { sortBy: "createdAt", sortOrder: "desc" };
+  }
+}

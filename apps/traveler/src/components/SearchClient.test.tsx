@@ -44,7 +44,12 @@ jest.mock('@ouiboo/ui', () => ({
   ),
   Input: (props: any) => <input {...props} />,
   Badge: ({ children }: any) => <span>{children}</span>,
-  MobileFilterDrawer: ({ children }: any) => <div>{children}</div>,
+  MobileFilterDrawer: ({ children, footer }: any) => (
+    <div>
+      {children}
+      {footer}
+    </div>
+  ),
   TripCardSkeletonGrid: () => null,
 }));
 
@@ -79,11 +84,12 @@ const initialFilters: SearchInitialFilters = {
 };
 
 function lastQueryParams() {
-  // #877: the zero-state featured query is a second useTripsQuery
-  // consumer; the main search query is the one WITHOUT the featured
-  // flag — pick the last of those.
+  // Three useTripsQuery consumers exist now: the main search query
+  // (limit 20), the #877 zero-state featured query (limit 3), and the
+  // council item-2 catalogue counts query (limit 50). The main query
+  // is the limit-20 one.
   const calls = mockUseTripsQuery.mock.calls.filter(
-    (call) => !(call[0] as { featured?: unknown })?.featured,
+    (call) => (call[0] as { limit?: number })?.limit === 20,
   );
   return calls[calls.length - 1][0];
 }
@@ -98,11 +104,30 @@ beforeEach(() => {
   currentParams = new URLSearchParams(
     'q=atlas&category=adventure&priceMin=100&priceMax=900&dateFrom=2026-11-01&dateTo=2026-11-20&available=true&ratingMin=4',
   );
-  mockUseTripsQuery.mockReturnValue({
-    data: { data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 0 } },
-    isLoading: false,
-    error: null,
-    isError: false,
+  mockUseTripsQuery.mockImplementation((params: { limit?: number }) => {
+    // Council item 2: the catalogue counts query (limit 50) sees a
+    // small catalogue — Tangier ×2, Chefchaouen ×1, Tétouan zero.
+    if (params?.limit === 50) {
+      return {
+        data: {
+          data: [
+            { id: 'c1', destinationSlug: 'tangier' },
+            { id: 'c2', destinationSlug: 'tangier' },
+            { id: 'c3', destinationSlug: 'chefchaouen' },
+          ],
+          pagination: { total: 3, page: 1, limit: 50, totalPages: 1 },
+        },
+        isLoading: false,
+        error: null,
+        isError: false,
+      };
+    }
+    return {
+      data: { data: [], pagination: { total: 0, page: 1, limit: 20, totalPages: 0 } },
+      isLoading: false,
+      error: null,
+      isError: false,
+    };
   });
 });
 
@@ -230,5 +255,86 @@ describe('SearchClient URL-as-source-of-truth (#440)', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('serializes the direction-named sort select into the URL, keeping every filter (council item 5)', () => {
+    render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+    fireEvent.change(screen.getByLabelText('search.sort'), {
+      target: { value: 'price-asc' },
+    });
+    const params = new URLSearchParams(lastReplaceUrl().split('?')[1]);
+    expect(params.get('sort')).toBe('price-asc');
+    expect(params.get('q')).toBe('atlas');
+    expect(params.get('category')).toBe('ADVENTURE');
+    expect(params.get('ratingMin')).toBe('4');
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('restores sort from the URL into the API query (shared-link parity)', () => {
+    currentParams = new URLSearchParams('sort=price-desc');
+    render(<SearchClient initialFilters={initialFilters} initialResponse={null} initialSort="price-desc" />);
+    const params = lastQueryParams();
+    expect(params.sortBy).toBe('price');
+    expect(params.sortOrder).toBe('desc');
+  });
+
+  it('keeps the sort key when a filter changes (one URL contract)', () => {
+    currentParams = new URLSearchParams('sort=price-asc');
+    render(<SearchClient initialFilters={initialFilters} initialResponse={null} initialSort="price-asc" />);
+    fireEvent.click(screen.getAllByText('search.availabilityOnly')[0]);
+    const params = new URLSearchParams(lastReplaceUrl().split('?')[1]);
+    expect(params.get('sort')).toBe('price-asc');
+    expect(params.get('available')).toBe('true');
+  });
+
+  it('discloses Tétouan as plain text under its own heading — never a control (K6c)', () => {
+    render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+    expect(screen.getAllByText('search.noTripsYetPlaces').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('search.destinationNoTripsYet').length).toBeGreaterThan(0);
+    // The Tétouan NAME only ever appears inside the disclosed line —
+    // never as a radio/button label.
+    expect(screen.queryByText('search.destinationNames.tetouan')).toBeNull();
+    // Places with trips stay selectable radios with counts.
+    expect(screen.getAllByText('search.destinationNames.tangier').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('search.facetCount').length).toBeGreaterThan(0);
+  });
+
+  it('renders the results-head state line as the single role=status region (item 4)', () => {
+    render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+    const status = screen.getByRole('status');
+    expect(status.textContent).toContain('search.stateTrips');
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+  });
+
+  it('labels the cancellation filter neutrally — bare "Free cancellation" never ships (item 9)', () => {
+    render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+    expect(screen.getAllByText('search.cancellationTerms').length).toBeGreaterThan(0);
+    expect(screen.queryByText('search.freeCancellation')).toBeNull();
+  });
+
+  it('commits price inputs on a 300ms debounce, not per keystroke (item 7)', () => {
+    jest.useFakeTimers();
+    try {
+      render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+      mockReplace.mockClear();
+      fireEvent.change(screen.getAllByLabelText('search.minPrice')[0], {
+        target: { value: '250' },
+      });
+      expect(mockReplace).not.toHaveBeenCalled();
+      act(() => {
+        jest.advanceTimersByTime(300);
+      });
+      const params = new URLSearchParams(lastReplaceUrl().split('?')[1]);
+      expect(params.get('priceMin')).toBe('250');
+      expect(params.get('priceMax')).toBe('900');
+      expect(mockPush).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('the mobile drawer footer reports the applied total (item 3)', () => {
+    render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+    expect(screen.getByText('search.drawerDone')).toBeTruthy();
   });
 });

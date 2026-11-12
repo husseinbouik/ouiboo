@@ -4,6 +4,9 @@ import {
   durationBucketRange,
   isDestinationSlugValue,
   isDurationBucketKey,
+  parseSortKey,
+  sortKeyToApi,
+  type SearchSortKey,
 } from '@/lib/search-facets';
 import { TripCategory, TripStatus } from '@ouiboo/types';
 import { getInitialLanguage } from '@ouiboo/i18n/server';
@@ -61,11 +64,14 @@ function parseFilters(sp: Record<string, string | string[] | undefined>): Search
   };
 }
 
-async function fetchInitialTrips(filters: SearchInitialFilters) {
+async function fetchInitialTrips(filters: SearchInitialFilters, sort: SearchSortKey = 'newest') {
+  // Search-page council item 5: the SSR fetch honours the URL's sort
+  // key, so the seeded response matches the client's first query.
+  const { sortBy, sortOrder } = sortKeyToApi(sort);
   const params = new URLSearchParams({
     status: TripStatus.Active,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
+    sortBy,
+    sortOrder,
     page: '1',
     limit: '20',
     // #546: trip text in the visitor's language (client refetches keep
@@ -103,6 +109,14 @@ export default async function SearchPage({
 }) {
   const sp = await searchParams;
   const initialFilters = parseFilters(sp);
-  const initialResponse = await fetchInitialTrips(initialFilters);
-  return <SearchClient initialFilters={initialFilters} initialResponse={initialResponse} />;
+  const rawSort = Array.isArray(sp.sort) ? sp.sort[0] : sp.sort;
+  const initialSort = parseSortKey(rawSort);
+  const initialResponse = await fetchInitialTrips(initialFilters, initialSort);
+  return (
+    <SearchClient
+      initialFilters={initialFilters}
+      initialResponse={initialResponse}
+      initialSort={initialSort}
+    />
+  );
 }
