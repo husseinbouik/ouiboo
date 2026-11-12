@@ -570,7 +570,10 @@ export default function SearchClient({
                 <AnimatePresence>
                   {trips.map((trip, idx) => (
                     <motion.div key={trip.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}>
-                      <TripCard trip={trip} />
+                      {/* Search council punch item 9 (#886): result
+                          cards render a single static photo — no
+                          per-card carousel tab stops inside grids. */}
+                      <TripCard trip={trip} staticPhoto />
                     </motion.div>
                   ))}
                 </AnimatePresence>

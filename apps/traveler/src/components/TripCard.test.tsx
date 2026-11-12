@@ -15,6 +15,7 @@ jest.mock('react-i18next', () => ({
             if (key === 'reviews.noReviewsYet') return 'No reviews yet';
             if (key === 'tripCard.days') return `${options?.count} Days`;
             if (key === 'tripCard.spots') return `${options?.count} spots`;
+            if (key === 'tripCard.spotsLeftSession') return `${options?.count} spots left · ${options?.date} session`;
             return key;
         },
         i18n: { language: 'en', dir: () => 'ltr' },
@@ -226,6 +227,34 @@ describe('TripCard spots badge + carousel controls (#571/#490 rework)', () => {
         const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
         expect(badge?.getAttribute('data-state')).toBe('sold-out');
         expect(badge?.className).toContain('bg-rose-800');
+    });
+
+    it('states the badge basis: seats left WITH the next session date (council D6, Pattern S1)', () => {
+        const { container } = render(<TripCard trip={tripWithSeats(20)} />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        const expectedDate = new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short' }).format(new Date(future));
+        expect(badge?.textContent).toContain(`20 spots left · ${expectedDate} session`);
+    });
+
+    it('never promises seats on a session whose day has passed (stale data is suppressed)', () => {
+        const past = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
+        const trip: TripCardTrip = {
+            ...tripWithSeats(null),
+            sessions: [{ id: 's-past', status: 'OPEN' as any, availableSeats: 9, price: 900, startDate: past }],
+        };
+        const { container } = render(<TripCard trip={trip} />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        expect(badge?.getAttribute('data-state')).toBe('sold-out');
+        expect(badge?.textContent).not.toContain('spots left');
+    });
+
+    it('staticPhoto renders one static photo and no carousel controls (council item 9, #886)', () => {
+        const { container } = render(<TripCard trip={tripWithSeats(20)} staticPhoto />);
+        expect(screen.queryByLabelText('tripCard.previousImage')).toBeNull();
+        expect(screen.queryByLabelText('tripCard.nextImage')).toBeNull();
+        const imgs = container.querySelectorAll('img');
+        expect(imgs.length).toBe(1);
+        expect(imgs[0].getAttribute('src')).toContain('a.jpg');
     });
 
     it('keeps carousel arrows at a genuine 44px and always visible', () => {

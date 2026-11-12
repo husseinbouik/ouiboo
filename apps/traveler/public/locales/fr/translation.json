@@ -462,7 +462,13 @@
     "spots_zero": "{{count}} places",
     "spots_two": "{{count}} places",
     "spots_few": "{{count}} places",
-    "spots_many": "{{count}} places"
+    "spots_many": "{{count}} places",
+    "spotsLeftSession_zero": "{{count}} places restantes · départ du {{date}}",
+    "spotsLeftSession_one": "{{count}} place restante · départ du {{date}}",
+    "spotsLeftSession_two": "{{count}} places restantes · départ du {{date}}",
+    "spotsLeftSession_few": "{{count}} places restantes · départ du {{date}}",
+    "spotsLeftSession_many": "{{count}} places restantes · départ du {{date}}",
+    "spotsLeftSession_other": "{{count}} places restantes · départ du {{date}}"
   },
   "authModal": {
     "title": "Connectez-vous pour continuer",

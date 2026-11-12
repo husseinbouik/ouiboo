@@ -462,7 +462,13 @@
     "spots_zero": "لا مقاعد",
     "spots_two": "مقعدان",
     "spots_few": "{{count}} مقاعد",
-    "spots_many": "{{count}} مقعدًا"
+    "spots_many": "{{count}} مقعدًا",
+    "spotsLeftSession_zero": "لا مقاعد متبقية · جلسة {{date}}",
+    "spotsLeftSession_one": "مقعد واحد متبقٍ · جلسة {{date}}",
+    "spotsLeftSession_two": "مقعدان متبقيان · جلسة {{date}}",
+    "spotsLeftSession_few": "{{count}} مقاعد متبقية · جلسة {{date}}",
+    "spotsLeftSession_many": "{{count}} مقعدًا متبقيًا · جلسة {{date}}",
+    "spotsLeftSession_other": "{{count}} مقاعد متبقية · جلسة {{date}}"
   },
   "authModal": {
     "title": "سجّل الدخول للمتابعة",
