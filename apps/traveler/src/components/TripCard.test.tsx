@@ -120,6 +120,40 @@ describe('TripCard verification statement (#413, Council B10)', () => {
         expect(screen.queryByText(/RC insurance evidenced/)).toBeNull();
     });
 
+    it('leads the verification paragraph with "<Agency> · Checked before listing" for a licence-verified agency (search-page council item 11, #886)', () => {
+        render(
+            <TripCard
+                trip={makeTrip({
+                    companyName: 'Atlas Adventures SARL',
+                    verificationStatus: 'VERIFIED' as any,
+                    travelLicenceStatus: 'VERIFIED',
+                    licenceVerifiedAt: LICENCE_DATE,
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByText(`Atlas Adventures SARL · tripCard.checkedBeforeListing · Licence checked ${fmt(LICENCE_DATE)}`),
+        ).not.toBeNull();
+    });
+
+    it('never prints the checked line for test supply, even with a VERIFIED test licence (#878 suppression)', () => {
+        render(
+            <TripCard
+                trip={makeTrip({
+                    companyName: 'Atlas Adventures SARL',
+                    isTestData: true,
+                    verificationStatus: 'VERIFIED' as any,
+                    travelLicenceStatus: 'VERIFIED',
+                    licenceVerifiedAt: LICENCE_DATE,
+                })}
+            />,
+        );
+
+        expect(screen.queryByText(/checkedBeforeListing/)).toBeNull();
+        expect(screen.queryByText(/Licence checked/)).toBeNull();
+    });
+
     it('renders no verification line without dated checks (#673: the hedge is retired)', () => {
         render(<TripCard trip={makeTrip({ verificationStatus: 'VERIFIED' as any })} />);
 
@@ -204,22 +238,29 @@ describe('TripCard spots badge + carousel controls (#571/#490 rework)', () => {
         };
     }
 
-    it('renders a solid deep-green badge at 12px when plenty of spots remain', () => {
+    it('renders the K6a-spec badge at 12px when plenty of spots remain (#15803D, white text, 5.02:1)', () => {
         const { container } = render(<TripCard trip={tripWithSeats(20)} />);
         const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
         expect(badge).not.toBeNull();
         expect(badge?.getAttribute('data-state')).toBe('available');
-        expect(badge?.className).toContain('bg-emerald-700');
+        expect(badge?.className).toContain('bg-[#15803D]');
         expect(badge?.className).toContain('text-white');
         expect(badge?.className).toContain('text-xs');
         expect(badge?.className).not.toContain('text-[10px]');
     });
 
-    it('switches to a solid amber badge when fewer than 5 seats remain', () => {
+    it('switches to the frozen warn pair (#B45309 on #FEF3C7) at 5 or fewer seats (K6a threshold)', () => {
         const { container } = render(<TripCard trip={tripWithSeats(3)} />);
         const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
         expect(badge?.getAttribute('data-state')).toBe('low');
-        expect(badge?.className).toContain('bg-amber-600');
+        expect(badge?.className).toContain('bg-[#FEF3C7]');
+        expect(badge?.className).toContain('text-[#B45309]');
+    });
+
+    it('treats exactly 5 seats as the low state (≤5, search-page council K6)', () => {
+        const { container } = render(<TripCard trip={tripWithSeats(5)} />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        expect(badge?.getAttribute('data-state')).toBe('low');
     });
 
     it('renders a visually distinct sold-out badge when no open session remains', () => {

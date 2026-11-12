@@ -91,6 +91,18 @@ interface TripCardProps {
   staticPhoto?: boolean;
 }
 
+/** Search-page council K6b: the badge's date is part of the locked
+ * template, per locale — EN `17 Nov`, FR `17 nov.` with the 1st as
+ * `1er` (Intl yields a bare "1"), AR the full month name (Arabic has
+ * no month abbreviation; Intl's short form already gives it). */
+function formatBadgeDate(date: Date, language: string): string {
+  const base = new Intl.DateTimeFormat(language || 'en', { day: 'numeric', month: 'short' }).format(date);
+  if ((language || '').startsWith('fr') && date.getDate() === 1) {
+    return base.replace(/^1(?=[\s.])/, '1er');
+  }
+  return base;
+}
+
 /** #673: a licence expiry only supports the dated statement while it is
  * still in the future. Kept outside the component (same pattern as
  * SellerIdentity's isLicenceVerifiedForDisplay) so render stays pure. */
@@ -134,9 +146,7 @@ export function TripCard({ trip, imageSizes, staticPhoto = false }: TripCardProp
       return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
     })[0];
   const nextSessionDateLabel = nextSession
-    ? new Intl.DateTimeFormat(i18n.language || 'en', { day: 'numeric', month: 'short' }).format(
-        new Date(nextSession.startDate),
-      )
+    ? formatBadgeDate(new Date(nextSession.startDate), i18n.language || 'en')
     : null;
   const minPrice = sessions.length
     ? Math.min(...sessions.map((session) => Number(session.price || 0)))
@@ -187,6 +197,21 @@ export function TripCard({ trip, imageSizes, staticPhoto = false }: TripCardProp
       : null,
     insuranceEvidencedDate ? t('tripCard.insuranceEvidenced', { date: insuranceEvidencedDate }) : null,
   ].filter((part): part is string => Boolean(part));
+
+  // Search-page council punch item 11 (#886 — Trust's K2 concession
+  // condition, lapsing if cut): "<Agency> · Checked before listing"
+  // as a legible line at caption weight, riding this card's existing
+  // verification paragraph (no new row, no badge). Gated exactly like
+  // every verification claim — licence VERIFIED, not expired, and
+  // never for test supply (#878 suppression): a test agency's name
+  // carries no checked claim anywhere in the traveller UI.
+  const agencyCheckedLine =
+    !trip.agency?.isTestData &&
+    trip.agency?.travelLicenceStatus === 'VERIFIED' &&
+    (!trip.agency?.licenceExpiry || licenceExpiryDate) &&
+    trip.agency?.companyName
+      ? `${trip.agency.companyName} · ${t('tripCard.checkedBeforeListing')}`
+      : null;
 
   // #333: warm the trip-detail query on hover/focus/press so tapping a card
   // paints instantly instead of starting a cold request chain. Uses the exact
@@ -284,21 +309,25 @@ export function TripCard({ trip, imageSizes, staticPhoto = false }: TripCardProp
         </div>
 
         <div className="absolute top-3 end-16 flex flex-col items-end gap-2">
-          {/* #571 rework: solid, legible spots badge — white bold text at
-              12px on a solid deep-green fill; solid amber when fewer
-              than 5 seats remain; solid dark red when sold out. The old
-              10px dark-green text on a 15%-tint pill was unreadable on
-              photographic backgrounds. */}
+          {/* #571 rework + search-page council K6a (punch item 10,
+              #886): the badge colours are a measured spec, not a
+              palette pick — available = #15803D with white text
+              (5.02:1); the low state (≤5 seats, the council's
+              threshold) = the frozen warn pair #B45309 on #FEF3C7
+              (4.51:1); sold out keeps its dark red. Prohibited pairs
+              (#16A34A, white-on-orange) never ship; the fix is always
+              colour, never shorter text (K6b wording is locked in
+              the locale templates). */}
           <Badge
             data-testid="trip-card-spots-badge"
-            data-state={nextSession ? (nextSession.availableSeats < 5 ? 'low' : 'available') : 'sold-out'}
+            data-state={nextSession ? (nextSession.availableSeats <= 5 ? 'low' : 'available') : 'sold-out'}
             className={cn(
-              "text-xs font-bold rounded-lg px-3 py-1.5 shadow-md border-none flex items-center gap-1 text-white",
+              "text-xs font-bold rounded-lg px-3 py-1.5 shadow-md border-none flex items-center gap-1",
               nextSession
-                ? nextSession.availableSeats < 5
-                  ? "bg-amber-600"
-                  : "bg-emerald-700"
-                : "bg-rose-800"
+                ? nextSession.availableSeats <= 5
+                  ? "bg-[#FEF3C7] text-[#B45309]"
+                  : "bg-[#15803D] text-white"
+                : "bg-rose-800 text-white"
             )}>
             <Zap className="h-3.5 w-3.5" />
             {nextSession
@@ -340,9 +369,9 @@ export function TripCard({ trip, imageSizes, staticPhoto = false }: TripCardProp
               what+when statement when the checks are on record; without a
               dated check on record there is no verification line at all
               (the old hedge copy is retired). */}
-          {verificationChecks.length > 0 ? (
+          {agencyCheckedLine || verificationChecks.length > 0 ? (
             <p className="text-[11px] font-medium text-muted-foreground">
-              {verificationChecks.join(' · ')}
+              {[agencyCheckedLine, ...verificationChecks].filter(Boolean).join(' · ')}
             </p>
           ) : null}
           
