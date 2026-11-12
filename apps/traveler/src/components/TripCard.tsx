@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Card, Badge, Button, SafeImage } from '@ouiboo/ui';
-import { MapPin, Star, Zap } from 'lucide-react';
+import { Clock, MapPin, Star, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,7 @@ import { cn } from '@ouiboo/ui/utils';
 import { SessionStatus, type SessionStatusType, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
 import { SnapRail } from './SnapRail';
-import { useDisplayPrice } from '@/lib/display-currency';
+import { useDisplayAmountConverter, useDisplayPrice } from '@/lib/display-currency';
 import { localizeLocationSuffix } from '@/lib/localized-location';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { ratingDisplayState } from '@/lib/review-display';
@@ -89,6 +89,13 @@ interface TripCardProps {
    * put an arrow/dot tab stop per card into the grid's tab order.
    * The home rail keeps the settled SnapRail behaviour (#882). */
   staticPhoto?: boolean;
+  /** #975 fidelity: the /search results card follows the adopted
+   * Classic Rail drawing — compact photo, white category pill, spots
+   * badge at the photo's top-right corner, heart in a white circle at
+   * the photo's bottom-right, no option pills, no "View Details"
+   * button, price as "From 1 450 MAD per person". Every other surface
+   * keeps the default chrome. */
+  variant?: 'default' | 'search';
   /** Search-page council item 19 (#965): the wishlist page needs to
    * observe a removal so it can leave a persistent in-place tombstone
    * with Undo (the button's toast alone never satisfies the page
@@ -117,7 +124,7 @@ function futureLicenceExpiry(value?: string | null): Date | null {
   return Number.isNaN(date.getTime()) || date.getTime() <= new Date().getTime() ? null : date;
 }
 
-export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistToggle }: TripCardProps) {
+export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'default', onWishlistToggle }: TripCardProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   // #745 (remainder): the API resolves a translated startLocation
@@ -169,6 +176,16 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
   // rate exists the hook falls back to this authoritative currency.
   // Display only — checkout still charges priceCurrency.
   const displayPrice = useDisplayPrice(minPrice, priceCurrency, i18n.language);
+  const isSearch = variant === 'search';
+  // #975: the search card's price is a grouped whole amount + currency
+  // ("From 1 450 MAD per person") — the display-currency converter
+  // supplies the number, Intl supplies the locale grouping, and no
+  // decimals are ever shown.
+  const convertAmount = useDisplayAmountConverter(priceCurrency);
+  const searchPrice = isSearch ? convertAmount(minPrice) : null;
+  const searchPriceLabel = searchPrice
+    ? `${new Intl.NumberFormat(i18n.language || 'en', { maximumFractionDigits: 0 }).format(searchPrice.amount)} ${searchPrice.currency}`
+    : null;
   // #413 (Council B10) + #673 (Council S6): the dated what+when
   // verification statement. Each part is present only when that check
   // actually passed and carries its real date (and, for the licence,
@@ -206,12 +223,13 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
   // Search-page council punch item 11 (#886 — Trust's K2 concession
   // condition, lapsing if cut): "<Agency> · Checked before listing"
   // as a legible line at caption weight, riding this card's existing
-  // verification paragraph (no new row, no badge). Gated exactly like
-  // every verification claim — licence VERIFIED, not expired, and
-  // never for test supply (#878 suppression): a test agency's name
-  // carries no checked claim anywhere in the traveller UI.
+  // verification paragraph (no new row, no badge). #975 (founder
+  // decision 2026-11-12): the "Example" labels were removed from the
+  // traveller UI, so this line now shows as designed for any agency
+  // with a VERIFIED, unexpired licence — test supply included. The
+  // DATED statements above keep their #878 test-supply gates: a date
+  // is a stronger claim than the checked line.
   const agencyCheckedLine =
-    !trip.agency?.isTestData &&
     trip.agency?.travelLicenceStatus === 'VERIFIED' &&
     (!trip.agency?.licenceExpiry || licenceExpiryDate) &&
     trip.agency?.companyName
@@ -242,7 +260,7 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
 
   return (
     <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden bg-card h-full flex flex-col">
-      <div className="relative h-64 overflow-hidden">
+      <div className={cn("relative overflow-hidden", isSearch ? "h-52" : "h-64")}>
         {/* #490 round 2: the card renders the SAME Snap Rail component
             as the trip-page gallery — native scroll-snap glide (touch
             swipe and mouse drag both advance it), counter + caption
@@ -302,7 +320,12 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
         </div>
 
         <div className="absolute top-3 start-3 flex flex-col items-start gap-2">
-          <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none">
+          <Badge className={cn(
+            "shadow-md border-none",
+            isSearch
+              ? "bg-white/95 text-deep-blue text-[11px] font-semibold rounded-full normal-case px-3 py-1 tracking-normal"
+              : "bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 tracking-wider",
+          )}>
             {categoryLabel}
           </Badge>
           {/* Founder decision 2026-11-12 (superseding #878): the
@@ -313,7 +336,7 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
               verification claim below; it has no UI surface. */}
         </div>
 
-        <div className="absolute top-3 end-16 flex flex-col items-end gap-2">
+        <div className={cn("absolute top-3 flex flex-col items-end gap-2", isSearch ? "end-3" : "end-16")}>
           {/* #571 rework + search-page council K6a (punch item 10,
               #886): the badge colours are a measured spec, not a
               palette pick — available = #15803D with white text
@@ -343,12 +366,13 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
 
           <WishlistButton
             tripId={trip.id}
-            className="absolute top-3 end-3"
+            variant={isSearch ? 'light' : 'dark'}
+            className={isSearch ? "absolute bottom-3 end-3" : "absolute top-3 end-3"}
             onToggled={onWishlistToggle ? (next) => onWishlistToggle(trip.id, next) : undefined}
           />
       </div>
 
-      <Link href={`/trip/${trip.id}`} className="flex-1 flex flex-col p-6">
+      <Link href={`/trip/${trip.id}`} className={cn("flex-1 flex flex-col", isSearch ? "p-4" : "p-6")}>
         <div className="space-y-3 flex-1">
           <div className="flex justify-between items-start gap-3">
             {/* Hybrid P0-7 (#926/#745): titles are never clamped —
@@ -360,6 +384,11 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
                 at/above MIN_REVIEWS_FOR_RATING reviews. Below that the
                 count is still published (even when small); at zero the
                 card says "No reviews yet" instead of a bare 0.0. */}
+            {isSearch && ratingDisplayState(trip.reviewCount) === 'empty' ? (
+              <span className="shrink-0 rounded-full bg-sand px-2.5 py-1 text-xs font-medium text-deep-blue dark:bg-muted dark:text-foreground">
+                {t('reviews.noReviewsYet')}
+              </span>
+            ) : (
             <div className="flex items-center gap-1 shrink-0 bg-warning/10 px-2 py-0.5 rounded-md">
               <Star className={cn("h-3.5 w-3.5 text-warning", ratingDisplayState(trip.reviewCount) === 'rated' ? "fill-warning" : "fill-none")} />
               <span className="text-xs font-bold text-warning-dark">
@@ -370,6 +399,7 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
                     : t('reviews.noReviewsYet')}
               </span>
             </div>
+            )}
           </div>
 
           {/* #317: public cards never display an internal approval state.
@@ -387,13 +417,13 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
           <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {displayLocation}</span>
             <span>•</span>
-            <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> {trip.durationDays ? t('tripCard.days', { count: trip.durationDays }) : ''}</span>
+            <span className="flex items-center gap-1">{isSearch ? <Clock className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />} {trip.durationDays ? t('tripCard.days', { count: trip.durationDays }) : ''}</span>
           </div>
 
           {/* #687: the one-line cancellation summary on the card,
               naming the agency as refund obligor. */}
           <CancellationOneLiner summary={trip.cancellationSummary} agencyName={trip.agency?.companyName} />
-          {(trip.payOnArrivalEnabled || trip.privateTourEnabled) ? (
+          {!isSearch && (trip.payOnArrivalEnabled || trip.privateTourEnabled) ? (
             <div className="flex flex-wrap gap-1.5">
               {trip.payOnArrivalEnabled ? (
                 <Badge className="bg-sky-700 text-white text-[10px] font-bold rounded-lg px-2 py-0.5 border-none">{t('batchF.payOnArrivalBadge')}</Badge>
@@ -405,6 +435,13 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
           ) : null}
         </div>
 
+        {isSearch ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            {t('tripCard.from')}{' '}
+            <span className="oui-numeric text-base font-bold text-foreground">{searchPriceLabel ?? '---'}</span>{' '}
+            {t('tripCard.perPerson')}
+          </p>
+        ) : (
         <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t('tripCard.from')}</span>
@@ -418,6 +455,7 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, onWishlistTogg
             {t('tripCard.viewDetails')}
           </span>
         </div>
+        )}
       </Link>
 
     </Card>

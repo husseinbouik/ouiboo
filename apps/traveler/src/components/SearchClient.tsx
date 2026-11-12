@@ -923,7 +923,8 @@ export default function SearchClient({
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
       <div className="pt-24 sm:pt-28 pb-6 sm:pb-8 px-4 sm:px-6">
-        <div className="relative mx-auto w-full max-w-3xl">
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="relative">
           {/* #975 fidelity: the adopted drawing's head — a slim
               segmented bar (destination | dates | Search) directly
               under the header, replacing the marketing H1 + single
@@ -1001,7 +1002,9 @@ export default function SearchClient({
                         className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-sand/60 dark:hover:bg-muted"
                       >
                         <span className="font-medium text-foreground">{localizedDestinationNames[slug]}</span>
-                        <span className="text-xs text-muted-foreground">{t('search.facetCount', { count: destinationCounts?.[slug] ?? 0 })}</span>
+                        {destinationCounts && (
+                          <span className="text-xs text-muted-foreground">{t('search.facetCount', { count: destinationCounts[slug] ?? 0 })}</span>
+                        )}
                       </a>
                     </li>
                   ))}
@@ -1074,6 +1077,7 @@ export default function SearchClient({
               </div>
             </div>
           )}
+          </div>
           <p className="mt-3 text-center text-xs text-muted-foreground">
             {provenanceParts[0]}
             {provenanceParts.length > 1 && (

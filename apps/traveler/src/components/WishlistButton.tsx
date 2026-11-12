@@ -14,6 +14,10 @@ import { optimisticHandlers } from '@/lib/optimistic';
 interface WishlistButtonProps {
   tripId: string;
   className?: string;
+  /** #975: on /search cards the heart sits in a white circle at the
+   * photo's bottom-right (adopted drawing); every other surface keeps
+   * the #571 dark scrim that stays legible on any photo. */
+  variant?: 'dark' | 'light';
   /** #965: observers (the wishlist page) are notified of a settled
    * toggle so they can render their own persistent affordances. */
   onToggled?: (next: boolean) => void;
@@ -33,7 +37,7 @@ interface WishlistStatus {
  * the real inverse mutation (re-add), so it stays truthful if the
  * server state changed in between.
  */
-export function WishlistButton({ tripId, className, onToggled }: WishlistButtonProps) {
+export function WishlistButton({ tripId, className, variant = 'dark', onToggled }: WishlistButtonProps) {
   const { t } = useTranslation();
   const { user, setShowLoginModal } = useAuth();
   const queryClient = useQueryClient();
@@ -120,9 +124,11 @@ export function WishlistButton({ tripId, className, onToggled }: WishlistButtonP
         'inline-flex items-center justify-center p-3 rounded-full backdrop-blur-md transition-all duration-300 shadow-md',
         // #571: white/20 over a bright photo made the heart nearly
         // invisible. A dark scrim keeps it legible on any photo while
-        // staying recognisably an overlay control.
-        'bg-black/40 hover:bg-black/55',
-        'border border-white/40',
+        // staying recognisably an overlay control. The light variant
+        // (#975, /search cards) is the drawing's white circle instead.
+        variant === 'light'
+          ? 'bg-white hover:bg-sand/70 border border-black/5'
+          : 'bg-black/40 hover:bg-black/55 border border-white/40',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         className
       )}
@@ -136,7 +142,9 @@ export function WishlistButton({ tripId, className, onToggled }: WishlistButtonP
             'w-5 h-5 transition-all duration-300',
             isWishlisted
               ? 'fill-danger text-danger'
-              : 'text-white'
+              : variant === 'light'
+                ? 'text-deep-blue'
+                : 'text-white'
           )}
         />
       </motion.div>
