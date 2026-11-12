@@ -83,7 +83,7 @@ test.describe('traveler launch flow', () => {
     ));
     // #975: /search opens on the slim segmented search bar, not the
     // retired marketing heading ("Find your next Adventure").
-    await expect(page.getByRole('combobox')).toBeVisible();
+    await expect(page.getByRole('combobox', { name: /destination, activity or keyword/i })).toBeVisible();
   });
 
   test('traveler homepage hero search submits with Enter and stays unfiltered when empty', async ({ page }) => {
@@ -98,12 +98,12 @@ test.describe('traveler launch flow', () => {
       && !url.searchParams.get('destination')
       && !url.searchParams.get('q')
     ));
-    await expect(page.getByRole('combobox')).toBeVisible();
+    await expect(page.getByRole('combobox', { name: /destination, activity or keyword/i })).toBeVisible();
   });
 
   test('traveler search uses the corrected discovery contract', async ({ page }) => {
     await page.goto('/search', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('combobox')).toBeVisible();
+    await expect(page.getByRole('combobox', { name: /destination, activity or keyword/i })).toBeVisible();
 
     await page.getByPlaceholder(/destination, activity or keyword/i).fill('atlas');
     await page.getByRole('button', { name: /^search$/i }).click();
