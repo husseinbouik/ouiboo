@@ -187,11 +187,11 @@ export default function SellerIdentity({
                 <span>
                     {t('seller.organisedAndSoldBy', { name, defaultValue: `Organised and sold by ${name}` })}
                 </span>
-                {agency.isTestData && (
-                    <span className="inline-flex items-center rounded-md bg-amber-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-                        {t('example.badge', { defaultValue: 'Example' })}
-                    </span>
-                )}
+                {/* Founder decision 2026-11-12 (superseding #878):
+                    the "Example" badge beside the seller name is
+                    REMOVED. isTestData still suppresses the licence /
+                    insurance claims in this component — it simply has
+                    no visible label anymore. */}
                 {licenceVerified && licenceNumber && (
                     <span className="inline-flex items-center gap-1 font-medium text-foreground">
                         <BadgeCheck className="h-4 w-4 text-emerald-600" aria-hidden="true" />

@@ -124,24 +124,14 @@ export default function VerificationRecord({
     // #878 (Council S12 P0): test/example supply never renders a
     // verification record — licence numbers, insurer names and check
     // dates for team-created demo agencies would read as real checks.
-    // The Example state replaces the record wherever it would appear.
+    // Founder decision 2026-11-12 (superseding #878's labelling
+    // requirement): the "Example listing" panel that used to replace
+    // the record is REMOVED with every other Example label — test
+    // supply now renders no record at all, so its TEST licence and
+    // insurance data remains absent, exactly as it was when the
+    // panel stood in its place.
     if (agency.isTestData) {
-        const exampleName = agency.legalName ?? agency.companyName ?? '';
-        if (!exampleName) return null;
-        return (
-            <section
-                id="verification-record"
-                data-testid="verification-record-example"
-                className={`rounded-2xl border border-amber-600/40 bg-amber-50 p-5 text-sm dark:bg-amber-950/20 ${className}`}
-            >
-                <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">
-                    <ShieldAlert className="h-4 w-4" aria-hidden="true" />
-                    {t('verificationRecord.exampleTitle')}
-                </p>
-                <p className="mt-3 font-semibold text-foreground">{exampleName}</p>
-                <p className="mt-2 text-muted-foreground">{t('verificationRecord.exampleNotice')}</p>
-            </section>
-        );
+        return null;
     }
     const record = deriveVerificationRecord(agency);
     if (!record.legalName) return null;
