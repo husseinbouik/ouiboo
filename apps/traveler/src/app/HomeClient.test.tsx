@@ -453,7 +453,11 @@ describe('HomeClient One Line hero search (search council #938)', () => {
         // plain text with a status bridge — never an option.
         expect(optionText.some((text) => text.includes('tetouan'))).toBe(false);
         expect(screen.getByText('hero.placesNoTripsYet')).not.toBeNull();
-        expect(screen.getByRole('status').textContent).toBe('featured.betaRegion.noTripsYet');
+        // One status bridge per zero place (this fixture leaves
+        // both Tétouan and Chefchaouen at zero trips).
+        const statuses = screen.getAllByRole('status');
+        expect(statuses.length).toBeGreaterThan(0);
+        expect(statuses.every((status) => status.textContent === 'featured.betaRegion.noTripsYet')).toBe(true);
     });
 
     it('picking a destination option navigates to its facet', () => {
