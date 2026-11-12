@@ -118,7 +118,10 @@ test.describe('traveler launch flow', () => {
     await page.getByRole('button', { name: 'Adventure' }).click();
     if (isMobileViewport) {
       // Close the drawer via its footer CTA so the result is uncovered.
-      await page.getByRole('button', { name: /view .* trips/i }).click();
+      // Search-page council item 3 (#877): the drawer applies
+      // instantly, so the footer is a truthful Done carrying the
+      // APPLIED total — 'Done · <N> trips match' (was 'View N trips').
+      await page.getByRole('button', { name: /done · .* trips? match/i }).click();
     }
     await expect(page.getByRole('heading', { name: 'Atlas Weekend Escape' })).toBeVisible();
   });

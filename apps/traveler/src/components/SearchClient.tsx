@@ -9,10 +9,9 @@ import { useRouter, useSearchParams } from "next/navigation";import {
   X,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
 } from "lucide-react";
 import { Button, Input, Badge, MobileFilterDrawer, TripCardSkeletonGrid } from "@ouiboo/ui";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@ouiboo/ui/utils";
 import { TripCard } from "@/components/TripCard";
 import { BETA_DESTINATIONS, TripCategory, TripStatus } from "@ouiboo/types";
@@ -23,7 +22,11 @@ import {
   durationBucketRange,
   isDestinationSlugValue,
   isDurationBucketKey,
+  parseSortKey,
+  sortKeyToApi,
+  type SearchSortKey,
 } from "@/lib/search-facets";
+import { countTripsByDestination, type CurationTrip } from "@/lib/curation";
 
 type SearchFilters = {
   category: string;
@@ -45,8 +48,6 @@ type SearchFilters = {
 };
 
 type FilterKey = keyof SearchFilters;
-type SortBy = "price" | "rating" | "popularity" | "createdAt";
-type SortOrder = "asc" | "desc";
 
 export type SearchInitialFilters = SearchFilters;
 
@@ -104,9 +105,13 @@ export function buildSearchParams(filters: SearchFilters): URLSearchParams {
 export default function SearchClient({
   initialFilters,
   initialResponse,
+  initialSort = "newest",
 }: {
   initialFilters: SearchInitialFilters;
   initialResponse: unknown;
+  /** Search-page council item 5: the SSR page parses `sort` too, so
+   * the first paint already honours a shared link's sort. */
+  initialSort?: SearchSortKey;
 }) {
   const { t, ready, i18n } = useTranslation();
   const TRIP_CATEGORIES = [
@@ -120,8 +125,6 @@ export default function SearchClient({
   const searchParams = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQueryInput, setSearchQueryInput] = useState(initialFilters.searchQuery);
-  const [sortBy, setSortBy] = useState<SortBy>("createdAt");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   // #440 (Council P1-15) rework: the URL is the single source of truth
@@ -133,9 +136,10 @@ export default function SearchClient({
   // dates/availability/rating from the query string, and the query
   // kept serving the stale filter set until a full reload.
   const filters = useMemo<SearchFilters>(() => parseFiltersFromSearchParams(searchParams), [searchParams]);
-  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
-  const hasAdvancedFilters = Boolean(filters.dateFrom || filters.dateTo || filters.priceMin || filters.priceMax || filters.availabilityOnly);
-  const advancedVisible = advancedFiltersOpen || hasAdvancedFilters;
+  // Search-page council item 5: sort rides the same URL truth (it was
+  // component state — a shared link silently lost it).
+  const sortKey = useMemo<SearchSortKey>(() => parseSortKey(searchParams.get("sort")), [searchParams]);
+  const { sortBy, sortOrder } = sortKeyToApi(sortKey);
 
   // The text input keeps a local echo for responsive typing; the URL
   // (and therefore the filters) is updated through the 300ms debounce
@@ -161,17 +165,28 @@ export default function SearchClient({
   // replace (not push) per keystroke/slider move keeps history clean,
   // and serializing the complete next filter set means no param can be
   // silently dropped by a partial updater (the original #440 defect).
+  // The sort key rides along (omitted at the default so plain filter
+  // URLs stay clean); updateSort does the symmetric operation.
   const updateFilters = useCallback((patch: Partial<SearchFilters>) => {
     const nextFilters = { ...filters, ...patch };
     const params = buildSearchParams(nextFilters);
+    if (sortKey !== "newest") params.set("sort", sortKey);
     const query = params.toString();
     router.replace(query ? `/search?${query}` : "/search");
     setCurrentPage(1);
-  }, [filters, router, setCurrentPage]);
+  }, [filters, router, sortKey, setCurrentPage]);
 
   const updateFilter = useCallback((key: FilterKey, value: SearchFilters[FilterKey]) => {
     updateFilters({ [key]: value } as Partial<SearchFilters>);
   }, [updateFilters]);
+
+  const updateSort = useCallback((nextSort: SearchSortKey) => {
+    const params = buildSearchParams(filters);
+    if (nextSort !== "newest") params.set("sort", nextSort);
+    const query = params.toString();
+    router.replace(query ? `/search?${query}` : "/search");
+    setCurrentPage(1);
+  }, [filters, router, setCurrentPage]);
 
   // Debounce local input -> write `q` to the URL (which re-derives the
   // filters). Skips the write when the echo already matches the URL.
@@ -182,6 +197,29 @@ export default function SearchClient({
     }, 300);
     return () => clearTimeout(id);
   }, [searchQueryInput, filters.searchQuery, updateFilter]);
+
+  // Search-page council item 7 (Performance): the price inputs keep a
+  // local echo and commit on blur or after a 300ms debounce — the old
+  // write-per-keystroke refetched the result set for every digit.
+  const [priceMinInput, setPriceMinInput] = useState(filters.priceMin);
+  const [priceMaxInput, setPriceMaxInput] = useState(filters.priceMax);
+  useEffect(() => {
+    setPriceMinInput(filters.priceMin);
+  }, [filters.priceMin]);
+  useEffect(() => {
+    setPriceMaxInput(filters.priceMax);
+  }, [filters.priceMax]);
+  useEffect(() => {
+    if (priceMinInput === filters.priceMin && priceMaxInput === filters.priceMax) return;
+    const id = setTimeout(() => {
+      updateFilters({ priceMin: priceMinInput, priceMax: priceMaxInput });
+    }, 300);
+    return () => clearTimeout(id);
+  }, [priceMinInput, priceMaxInput, filters.priceMin, filters.priceMax, updateFilters]);
+  const commitPriceInputs = useCallback(() => {
+    if (priceMinInput === filters.priceMin && priceMaxInput === filters.priceMax) return;
+    updateFilters({ priceMin: priceMinInput, priceMax: priceMaxInput });
+  }, [priceMinInput, priceMaxInput, filters.priceMin, filters.priceMax, updateFilters]);
 
   const queryParams = useMemo<TripsQueryParams>(() => {
     const params: TripsQueryParams = {
@@ -214,14 +252,13 @@ export default function SearchClient({
   }, [filters, sortBy, sortOrder, currentPage, i18n.language]);
 
   // #440 (Council P1-15): the SSR response may only seed the query it was
-  // fetched for (page 1, default sort, the initial filters). Seeding every
+  // fetched for (page 1, the URL's sort, the initial filters). Seeding every
   // query key with it made in-page searches render the initial result set
   // as if it were the response for the new filters — stale results until a
   // full reload. Any deviation from the initial query must fetch fresh.
   const isInitialQuery =
     currentPage === 1 &&
-    sortBy === "createdAt" &&
-    sortOrder === "desc" &&
+    sortKey === initialSort &&
     filters.searchQuery === initialFilters.searchQuery &&
     filters.category === initialFilters.category &&
     filters.destination === initialFilters.destination &&
@@ -244,6 +281,28 @@ export default function SearchClient({
   const trips = response?.data || [];
   const pagination = response?.pagination || { total: 0, page: 1, limit: 20, totalPages: 0 };
 
+  // Search-page council item 2 (K1 counts sourcing): ONE catalogue
+  // fetch sits behind the destination group and supplies its counts.
+  // The API clamps list responses to 50 rows, so the hard stop is
+  // structural: when the catalogue total exceeds the fetched rows the
+  // counts SUPPRESS (never truncate silently) and the facet falls back
+  // to uncounted rows. Counts are computed with the same slug
+  // derivation the API facet uses (lib/curation), from one snapshot.
+  const { data: catalogueResponse } = useTripsQuery({
+    status: TripStatus.Active,
+    limit: 50,
+    page: 1,
+    locale: i18n.language,
+  });
+  const catalogueTrips = useMemo(() => catalogueResponse?.data ?? [], [catalogueResponse]);
+  const countsKnown = Boolean(
+    catalogueResponse && (catalogueResponse.pagination?.total ?? 0) <= catalogueTrips.length,
+  );
+  const destinationCounts = useMemo(
+    () => (countsKnown ? countTripsByDestination(catalogueTrips as unknown as CurationTrip[]) : null),
+    [countsKnown, catalogueTrips],
+  );
+
   // #877: the zero-results state carries its own recovery — featured
   // trips to fall back on (same featured set the home rail draws from).
   const { data: featuredResponse } = useTripsQuery(
@@ -258,28 +317,61 @@ export default function SearchClient({
   // strip fires once per dated search (a traveller who deliberately
   // re-picks the same empty dates gets the honest zero state, and the
   // banner never loops).
-  const [datesStrippedKey, setDatesStrippedKey] = useState<string | null>(null);
+  // Search-page council item 8: the record also keeps the stripped
+  // dates themselves — the banner NAMES them and offers one-action
+  // restore (restoring lands on the honest dated zero, because the
+  // key guard below refuses to strip the same set twice).
+  const [strippedDates, setStrippedDates] = useState<{
+    key: string;
+    from: string;
+    to: string;
+    destination: string;
+    query: string;
+  } | null>(null);
   const datedFilterKey = `${filters.destination}|${filters.searchQuery}|${filters.dateFrom}|${filters.dateTo}`;
   useEffect(() => {
     if (isLoading || isError) return;
     if (trips.length > 0 || pagination.total > 0) return;
     if (!filters.dateFrom && !filters.dateTo) return;
-    if (datesStrippedKey === datedFilterKey) return;
-    setDatesStrippedKey(datedFilterKey);
+    if (strippedDates?.key === datedFilterKey) return;
+    setStrippedDates({
+      key: datedFilterKey,
+      from: filters.dateFrom,
+      to: filters.dateTo,
+      destination: filters.destination,
+      query: filters.searchQuery,
+    });
     updateFilters({ dateFrom: "", dateTo: "" });
-  }, [isLoading, isError, trips.length, pagination.total, filters.dateFrom, filters.dateTo, datesStrippedKey, datedFilterKey, updateFilters]);
-  const showDatesRemovedBanner = datesStrippedKey !== null && !filters.dateFrom && !filters.dateTo && !isError;
+  }, [isLoading, isError, trips.length, pagination.total, filters.dateFrom, filters.dateTo, strippedDates, datedFilterKey, updateFilters]);
+  const showDatesRemovedBanner =
+    strippedDates !== null &&
+    !filters.dateFrom &&
+    !filters.dateTo &&
+    filters.destination === strippedDates.destination &&
+    filters.searchQuery === strippedDates.query &&
+    !isError;
 
   const clearAllFilters = () => {
     setSearchQueryInput("");
     setCurrentPage(1);
-    setSortBy("createdAt");
-    setSortOrder("desc");
     router.replace("/search");
   };
 
   const activeFilterChips = useMemo(() => {
     const chips: { label: React.ReactNode; accessibleLabel?: string; onRemove: () => void }[] = [];
+    // Item 1 (one destination expression in the URL at a time): the
+    // text query carries its own chip — its × clears `q` alone, and
+    // the pill re-derives from the URL in the same render.
+    if (filters.searchQuery) {
+      chips.push({
+        label: `“${filters.searchQuery}”`,
+        accessibleLabel: filters.searchQuery,
+        onRemove: () => {
+          setSearchQueryInput("");
+          updateFilter("searchQuery", "");
+        },
+      });
+    }
     if (filters.destination) {
       chips.push({ label: t(`search.destinationNames.${filters.destination}`), onRemove: () => updateFilter("destination", "") });
     }
@@ -302,10 +394,74 @@ export default function SearchClient({
       chips.push({ label: `Dates: ${from} - ${to}`, onRemove: () => updateFilters({ dateFrom: "", dateTo: "" }) });
     }
     if (filters.availabilityOnly) chips.push({ label: "Available Only", onRemove: () => updateFilter("availabilityOnly", false) });
-    if (filters.freeCancellationOnly) chips.push({ label: t('search.freeCancellation'), onRemove: () => updateFilter("freeCancellationOnly", false) });
+    if (filters.freeCancellationOnly) chips.push({ label: t('search.cancellationTerms'), onRemove: () => updateFilter("freeCancellationOnly", false) });
     if (filters.ratingMin > 0) chips.push({ label: `Rating: ${filters.ratingMin}+`, onRemove: () => updateFilter("ratingMin", 0) });
     return chips;
   }, [filters, updateFilter, updateFilters, t]);
+
+  // Search-page council item 4 (#960): the results-head state line —
+  // the page's single role="status" live region. Built ONLY from
+  // Content's hand-authored per-slot fragments (debate/content-l10n.md),
+  // joined by ' · ', slot order identical in every locale. If any slot
+  // lacks a safe fragment for the current combination (an unknown
+  // category is the named risk), the line is NOT shown in part — the
+  // caller falls back to the counts fragment alone, which is Content's
+  // part-(c) counts line carrying the state instead.
+  const stateLine = useMemo<string | null>(() => {
+    const fragment = (key: string, options?: Record<string, unknown>): string | null => {
+      const value = t(key, options as never) as unknown as string;
+      return value === key ? null : value;
+    };
+    const formatDate = (iso: string) =>
+      new Intl.DateTimeFormat(i18n.language || "en", { day: "numeric", month: "short" }).format(
+        new Date(`${iso}T00:00:00`),
+      );
+    const formatPrice = (raw: string) =>
+      new Intl.NumberFormat(i18n.language || "en").format(Number(raw));
+
+    let place: string | null;
+    if (filters.destination) {
+      place = fragment(`search.statePlaceFrom.${filters.destination}`);
+    } else if (filters.searchQuery) {
+      // K1 head rule: a text place is 'Results for X', never 'from X'.
+      place = fragment("search.stateResultsFor", { query: filters.searchQuery });
+    } else {
+      place = fragment("search.statePlaceAnywhere");
+    }
+
+    let dates: string | null;
+    if (filters.dateFrom && filters.dateTo) {
+      dates = fragment("search.stateDatesRange", { from: formatDate(filters.dateFrom), to: formatDate(filters.dateTo) });
+    } else if (filters.dateFrom) {
+      dates = fragment("search.stateDatesFrom", { from: formatDate(filters.dateFrom) });
+    } else if (filters.dateTo) {
+      dates = fragment("search.stateDatesTo", { to: formatDate(filters.dateTo) });
+    } else {
+      dates = fragment("search.stateDatesAny");
+    }
+
+    const style = filters.category
+      ? fragment(`search.stateStyle.${filters.category.toLowerCase()}`)
+      : fragment("search.stateStyleAny");
+
+    const duration = filters.duration
+      ? t(`search.durationBuckets.${filters.duration}`)
+      : fragment("search.stateDurationAny");
+
+    let price: string | null;
+    if (filters.priceMin && filters.priceMax) {
+      price = fragment("search.statePriceRange", { min: formatPrice(filters.priceMin), max: formatPrice(filters.priceMax) });
+    } else if (filters.priceMax) {
+      price = fragment("search.statePriceUpTo", { price: formatPrice(filters.priceMax) });
+    } else if (filters.priceMin) {
+      price = fragment("search.statePriceFrom", { price: formatPrice(filters.priceMin) });
+    } else {
+      price = fragment("search.statePriceAny");
+    }
+
+    if (!place || !dates || !style || !duration || !price) return null;
+    return [t('search.stateTrips', { count: pagination.total }), place, dates, style, duration, price].join(" · ");
+  }, [filters, pagination.total, t, i18n.language]);
 
   const renderCategoryGroup = () => (
       <div className="space-y-3">
@@ -329,29 +485,78 @@ export default function SearchClient({
       </div>
   );
 
-  // #675: destination facet — exactly the configured beta-cluster
-  // destinations; labels are localised names (proper nouns per locale).
-  const renderDestinationGroup = () => (
+  // Search-page council item 1 (K1 + K6c): the destination facet is
+  // the beta cluster ONLY. Places with live trips are radio rows with
+  // sourced counts (item 2); a place with ZERO trips is never a
+  // control — it is disclosed in a separated zone under its own
+  // heading as plain text (Tétouan: 'disclosed, never offered'). When
+  // the counts are unknown (fetch pending/failed, or the catalogue
+  // outgrew the fetched rows and counts suppressed), every cluster
+  // slug renders as an uncounted row: the page never asserts a zero
+  // it has not measured.
+  const renderDestinationGroup = () => {
+    const clusterSlugs = BETA_DESTINATIONS.map((destination) => destination.slug as string);
+    const selectableSlugs = destinationCounts
+      ? clusterSlugs.filter((slug) => (destinationCounts[slug] ?? 0) > 0)
+      : clusterSlugs;
+    const zeroSlugs = destinationCounts
+      ? clusterSlugs.filter((slug) => (destinationCounts[slug] ?? 0) === 0)
+      : [];
+    return (
       <div className="space-y-3">
         <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.destination')}</p>
-        <div className="grid gap-2">
-          {BETA_DESTINATIONS.map((destination) => (
+        <div className="grid gap-2" role="radiogroup" aria-label={t('search.destination')}>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={filters.destination === ""}
+            onClick={() => updateFilter("destination", "")}
+            className={cn(
+              "px-3 py-2 rounded-lg text-sm text-left",
+              filters.destination === "" ? "bg-sunset-orange/10 text-sunset-orange-dark" : "bg-muted",
+            )}
+          >
+            {t('search.destinationAnywhere')}
+          </button>
+          {selectableSlugs.map((slug) => (
             <button
-              key={destination.slug}
+              key={slug}
               type="button"
-              onClick={() => updateFilter("destination", filters.destination === destination.slug ? "" : destination.slug)}
-              aria-pressed={filters.destination === destination.slug}
+              role="radio"
+              aria-checked={filters.destination === slug}
+              onClick={() => updateFilter("destination", slug)}
               className={cn(
-                "px-3 py-2 rounded-lg text-sm text-left",
-                filters.destination === destination.slug ? "bg-sunset-orange/10 text-sunset-orange-dark" : "bg-muted",
+                "px-3 py-2 rounded-lg text-sm text-left flex items-baseline justify-between gap-2",
+                filters.destination === slug ? "bg-sunset-orange/10 text-sunset-orange-dark" : "bg-muted",
               )}
             >
-              {t(`search.destinationNames.${destination.slug}`)}
+              <span>{t(`search.destinationNames.${slug}`)}</span>
+              {destinationCounts ? (
+                <span className="text-xs text-muted-foreground">{t('search.facetCount', { count: destinationCounts[slug] ?? 0 })}</span>
+              ) : null}
             </button>
           ))}
         </div>
+        {zeroSlugs.length > 0 && (
+          <div className="space-y-1 border-t border-border pt-3">
+            <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.noTripsYetPlaces')}</p>
+            {zeroSlugs.map((slug) => (
+              <p key={slug} className="text-sm text-foreground">
+                {t('search.destinationNoTripsYet', { place: t(`search.destinationNames.${slug}`) })}
+              </p>
+            ))}
+          </div>
+        )}
+        {/* K1 disclosure: two mechanisms, two meanings — the note sits
+            in the group itself, at full contrast (never in the greyed
+            styling of the zero zone). */}
+        <p className="text-xs leading-relaxed text-foreground/80">{t('search.destinationNote')}</p>
+        {destinationCounts ? (
+          <p className="text-xs text-muted-foreground">{t('search.countsProvenance')}</p>
+        ) : null}
       </div>
-  );
+    );
+  };
 
   // #675: duration facet — day-count buckets resolved to API ranges.
   const renderDurationGroup = () => (
@@ -390,8 +595,8 @@ export default function SearchClient({
       <div className="space-y-3">
         <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.price')}</p>
         <div className="grid grid-cols-2 gap-2">
-          <Input type="number" min="0" aria-label={t('search.minPrice')} placeholder={t('search.min')} value={filters.priceMin} onChange={(event) => updateFilter("priceMin", event.target.value)} />
-          <Input type="number" min="0" aria-label={t('search.maxPrice')} placeholder={t('search.max')} value={filters.priceMax} onChange={(event) => updateFilter("priceMax", event.target.value)} />
+          <Input type="number" min="0" aria-label={t('search.minPrice')} placeholder={t('search.min')} value={priceMinInput} onChange={(event) => setPriceMinInput(event.target.value)} onBlur={commitPriceInputs} />
+          <Input type="number" min="0" aria-label={t('search.maxPrice')} placeholder={t('search.max')} value={priceMaxInput} onChange={(event) => setPriceMaxInput(event.target.value)} onBlur={commitPriceInputs} />
         </div>
       </div>
   );
@@ -400,27 +605,18 @@ export default function SearchClient({
       <div className="space-y-3">
         <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.availability')}</p>
         <button type="button" onClick={() => updateFilter("availabilityOnly", !filters.availabilityOnly)} aria-pressed={filters.availabilityOnly} className={cn("px-3 py-2 rounded-lg w-full", filters.availabilityOnly ? "bg-success/10 text-success" : "bg-muted")}>{t('search.availabilityOnly')}</button>
-        <button type="button" onClick={() => updateFilter("freeCancellationOnly", !filters.freeCancellationOnly)} aria-pressed={filters.freeCancellationOnly} className={cn("px-3 py-2 rounded-lg w-full mt-2", filters.freeCancellationOnly ? "bg-success/10 text-success" : "bg-muted")} data-testid="filter-free-cancellation">{t('search.freeCancellation')}</button>
+        {/* Item 9 / Trust T2: the filter's label is the neutral
+            'Cancellation terms' — bare 'Free cancellation' is a
+            promise this control cannot date (Veto 1). */}
+        <button type="button" onClick={() => updateFilter("freeCancellationOnly", !filters.freeCancellationOnly)} aria-pressed={filters.freeCancellationOnly} className={cn("px-3 py-2 rounded-lg w-full mt-2", filters.freeCancellationOnly ? "bg-success/10 text-success" : "bg-muted")} data-testid="filter-free-cancellation">{t('search.cancellationTerms')}</button>
       </div>
   );
 
-  const renderSortGroup = () => (
-      <div className="space-y-3">
-        <p className="text-xs font-bold text-muted-foreground uppercase">{t('search.sort')}</p>
-        <div className="grid gap-2">
-          {[
-            { value: "createdAt", label: t('search.newest') },
-            { value: "price", label: t('search.sortPrice') },
-            { value: "rating", label: t('search.rating') },
-            { value: "popularity", label: t('search.popularity') },
-          ].map((option) => (
-            <button key={option.value} type="button" onClick={() => setSortBy(option.value as SortBy)} aria-pressed={sortBy === option.value} className={cn("px-3 py-2 rounded-lg", sortBy === option.value ? "bg-sunset-orange/10" : "bg-muted")}>{option.label}</button>
-          ))}
-        </div>
-      </div>
-    
-  );
-
+  // 'Classic Rail, completed': EVERY group is unburied in the rail —
+  // the old 'More filters' collapse (which hid Dates/Price/
+  // Availability behind a toggle) is gone on desktop, and the mobile
+  // drawer carries the identical set. Sort is NOT here: item 5 moved
+  // it to one direction-named select at the results head.
   const renderFilterControls = () => (
     <div className="space-y-6">
       {renderCategoryGroup()}
@@ -429,38 +625,6 @@ export default function SearchClient({
       {renderDatesGroup()}
       {renderPriceGroup()}
       {renderAvailabilityGroup()}
-      {renderSortGroup()}
-    </div>
-  );
-
-  // Desktop sidebar (#330 choice overload): travel styles + sort stay visible;
-  // dates/price/availability collapse behind one toggle (auto-open when any
-  // of them is active). The mobile drawer keeps the full set — it is already
-  // behind a deliberate tap.
-  const renderSidebarFilterControls = () => (
-    <div className="space-y-6">
-      {renderCategoryGroup()}
-      {renderDestinationGroup()}
-      {renderDurationGroup()}
-      {renderSortGroup()}
-      <div>
-        <button
-          type="button"
-          onClick={() => setAdvancedFiltersOpen((value) => !value)}
-          aria-expanded={advancedVisible}
-          className="flex w-full items-center justify-between rounded-lg bg-muted px-3 py-2 text-sm font-semibold"
-        >
-          {advancedVisible ? t('search.fewerFilters') : t('search.moreFilters')}
-          <ChevronDown className={cn("h-4 w-4 transition-transform", advancedVisible && "rotate-180")} />
-        </button>
-        {advancedVisible && (
-          <div className="mt-6 space-y-6">
-            {renderDatesGroup()}
-            {renderPriceGroup()}
-            {renderAvailabilityGroup()}
-          </div>
-        )}
-      </div>
     </div>
   );
 
@@ -505,13 +669,16 @@ export default function SearchClient({
             footer={(
               <div className="grid grid-cols-2 gap-3">
                 <Button type="button" variant="outline" onClick={clearAllFilters} disabled={activeFiltersCount === 0}>{t('search.clearAll')}</Button>
-                <Button type="button" onClick={() => setFilterDrawerOpen(false)}>View {pagination.total} trips</Button>
+                {/* Item 3: the drawer applies instantly like the rail —
+                    nothing is staged, so the footer is a truthful
+                    Done with the APPLIED total, not a commit. */}
+                <Button type="button" onClick={() => setFilterDrawerOpen(false)}>{t('search.drawerDone', { count: pagination.total })}</Button>
               </div>
             )}
           >
             {renderFilterControls()}
           </MobileFilterDrawer>
-          <span className="text-sm text-muted-foreground">{pagination.total} trips</span>
+          <span className="text-sm text-muted-foreground">{t('search.stateTrips', { count: pagination.total })}</span>
         </div>
         <div className="flex flex-col lg:flex-row gap-8">
           <aside className="hidden lg:block w-72 shrink-0">
@@ -521,7 +688,7 @@ export default function SearchClient({
                 {activeFiltersCount > 0 && <button onClick={clearAllFilters} aria-label={t('search.clearAll')} className="text-sm text-muted-foreground">{t('search.clear')}</button>}
               </div>
 
-              {renderSidebarFilterControls()}
+              {renderFilterControls()}
             </div>
           </aside>
 
@@ -529,18 +696,32 @@ export default function SearchClient({
             {activeFilterChips.length > 0 && (
               <div className="mb-4 flex flex-wrap gap-2">
                 {activeFilterChips.map((c, i) => (
-                  <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <Badge className="px-3 py-1 flex items-center gap-2">{c.label} <button onClick={c.onRemove} aria-label={`Remove filter ${c.accessibleLabel ?? (typeof c.label === 'string' ? c.label : '')}`}><X className="h-3 w-3" /></button></Badge>
-                  </motion.div>
+                  <Badge key={i} className="px-3 py-1 flex items-center gap-2">{c.label} <button onClick={c.onRemove} aria-label={`Remove filter ${c.accessibleLabel ?? (typeof c.label === 'string' ? c.label : '')}`}><X className="h-3 w-3" /></button></Badge>
                 ))}
               </div>
             )}
 
-            <div className="mb-4 flex items-center justify-between bg-muted/50 p-3 rounded-lg border border-border">
-              <div className="text-sm text-muted-foreground">{t('search.resultCount', { count: Number((pagination.page - 1) * pagination.limit + trips.length) || 0, total: Number(pagination.total) || 0 })}</div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setSortOrder((state) => state === 'asc' ? 'desc' : 'asc')} aria-label={t('search.toggleSortOrder', 'Toggle sort order')} className="px-3 py-1 rounded-lg bg-muted">{sortOrder === 'asc' ? t('search.ascending', 'Asc') : t('search.descending', 'Desc')}</button>
+            {/* Item 4 + item 5: the results head is the state line
+                (the page's single live region) and the one
+                direction-named sort select. The old bar's inert
+                count text and the asc/desc toggle are deleted. */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div role="status" aria-live="polite" aria-atomic="true" className="text-sm text-muted-foreground">
+                {stateLine ?? t('search.stateTrips', { count: pagination.total })}
               </div>
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">{t('search.sort')}</span>
+                <select
+                  aria-label={t('search.sort')}
+                  value={sortKey}
+                  onChange={(event) => updateSort(event.target.value as SearchSortKey)}
+                  className="rounded-lg bg-muted px-3 py-1.5 text-sm font-medium text-foreground"
+                >
+                  <option value="newest">{t('search.newest')}</option>
+                  <option value="price-asc">{t('search.sortPriceAsc')}</option>
+                  <option value="price-desc">{t('search.sortPriceDesc')}</option>
+                </select>
+              </label>
             </div>
 
             {isError && (
@@ -551,15 +732,29 @@ export default function SearchClient({
               </div>
             )}
 
-            {/* #877: after the dated auto-strip, say plainly that the
-                results below are NOT date-filtered. */}
-            {!isLoading && trips.length > 0 && showDatesRemovedBanner && (
-              <div role="status" className="mb-4 rounded-lg border border-sunset-orange/40 bg-sunset-orange/10 p-3 text-sm text-foreground">
-                {t('search.datesRemovedBanner', {
-                  place: filters.destination
-                    ? t(`search.destinationNames.${filters.destination}`)
-                    : t('search.everywhere'),
-                })}
+            {/* #877 + item 8: after the dated auto-strip, the banner
+                NAMES the stripped dates and offers one-action
+                restore; the results below are NOT date-filtered. */}
+            {!isLoading && trips.length > 0 && showDatesRemovedBanner && strippedDates && (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sunset-orange/40 bg-sunset-orange/10 p-3 text-sm text-foreground">
+                <span>
+                  {t('search.datesRemovedBanner', {
+                    place: strippedDates.destination
+                      ? t(`search.destinationNames.${strippedDates.destination}`)
+                      : t('search.everywhere'),
+                    dates: [strippedDates.from, strippedDates.to]
+                      .filter(Boolean)
+                      .map((iso) => new Intl.DateTimeFormat(i18n.language || "en", { day: "numeric", month: "short" }).format(new Date(`${iso}T00:00:00`)))
+                      .join(" – "),
+                  })}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => updateFilters({ dateFrom: strippedDates.from, dateTo: strippedDates.to })}
+                >
+                  {t('search.restoreDates')}
+                </Button>
               </div>
             )}
 
@@ -567,16 +762,16 @@ export default function SearchClient({
               {isLoading ? (
                 <TripCardSkeletonGrid count={4} className="md:col-span-2 sm:grid-cols-2 lg:grid-cols-2 gap-8" />
               ) : trips.length > 0 ? (
-                <AnimatePresence>
-                  {trips.map((trip, idx) => (
-                    <motion.div key={trip.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}>
-                      {/* Search council punch item 9 (#886): result
-                          cards render a single static photo — no
-                          per-card carousel tab stops inside grids. */}
-                      <TripCard trip={trip} staticPhoto />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
+                trips.map((trip) => (
+                  <div key={trip.id}>
+                    {/* Search council punch item 9 (#886): result
+                        cards render a single static photo — no
+                        per-card carousel tab stops inside grids.
+                        Item 7 (animation diet): no entrance
+                        re-animation on filter updates. */}
+                    <TripCard trip={trip} staticPhoto />
+                  </div>
+                ))
               ) : (
                 <div className="col-span-full py-16 text-center">
                   <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4"><Compass className="h-6 w-6" /></div>
@@ -617,4 +812,3 @@ export default function SearchClient({
     </div>
   );
 }
-
