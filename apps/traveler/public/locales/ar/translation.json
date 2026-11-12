@@ -67,7 +67,19 @@
     "kickerChecked": "تم التحقق منها قبل النشر",
     "metaPrices": "الأسعار بالدرهم",
     "metaPayDirect": "تدفع للوكالة مباشرة",
-    "popular": "شائع:"
+    "popular": "شائع:",
+    "flexible": "تواريخ مرنة",
+    "placesNoTripsYet": "أماكن لا رحلات فيها بعد",
+    "tripSuggestions": "رحلات",
+    "noSuggestions": "لا أماكن ولا رحلات مطابقة — عرض كل الرحلات أدناه.",
+    "clearDates": "مسح التواريخ",
+    "datesDone": "تم",
+    "seeAllTrips_zero": "عرض كل الرحلات",
+    "seeAllTrips_one": "عرض الرحلة الواحدة",
+    "seeAllTrips_two": "عرض الرحلتين",
+    "seeAllTrips_few": "عرض كل الرحلات الـ{{count}}",
+    "seeAllTrips_many": "عرض كل الرحلات الـ{{count}}",
+    "seeAllTrips_other": "عرض كل الرحلات الـ{{count}}"
   },
   "agencyBand": {
     "title": "تنظم رحلات في المغرب؟",

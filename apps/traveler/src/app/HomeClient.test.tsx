@@ -159,7 +159,7 @@ describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11
             sessions: [],
             agency: { id: 'agency-1' },
         };
-        // The coverage tiles this catalogue renders use react-query
+        // The tiles this catalogue renders use react-query
         // (display-currency) — provide a client like the app does.
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         render(
@@ -167,9 +167,11 @@ describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11
                 <HomeClient catalogTrips={[trip]} />
             </QueryClientProvider>,
         );
-        const section = screen.getByText('featured.betaRegion.title').closest('section');
-        expect(section).not.toBeNull();
-        const tileSrcs = [...(section?.querySelectorAll('img') ?? [])].map((img) => img.getAttribute('src') ?? '');
+        // Search council (#942): the tiles now live in the
+        // first-screen row under the hero pill (relocated from the
+        // below-fold sections, which are gone).
+        const row = screen.getByTestId('home-destination-tiles');
+        const tileSrcs = [...row.querySelectorAll('img')].map((img) => img.getAttribute('src') ?? '');
         expect(tileSrcs.some((src) => src.includes('chefchaouen'))).toBe(true);
         expect(tileSrcs.some((src) => src.includes('trip-photo'))).toBe(false);
         // Photo-truth audit (council P0-1, #898) + verified
@@ -177,7 +179,9 @@ describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11
         // carry curated photographs that were visually verified
         // against their labels (the Kasbah Mosque's octagonal
         // minaret; a white-medina sabat alley), so their tiles
-        // render those frozen assets — never trip media.
+        // render those frozen assets — never trip media. (Tangier
+        // has no trip in this fixture, so it renders as a zero
+        // place; Tétouan likewise.)
         expect(tileSrcs.some((src) => src.includes('tangier'))).toBe(true);
         expect(tileSrcs.some((src) => src.includes('tetouan'))).toBe(true);
     });
@@ -199,37 +203,43 @@ describe('HomeClient coverage showcase + category tiles (round 2, founder 2026-1
         } as any;
     }
 
-    it('replaces the All-trips listing with the have / don\'t-have coverage showcase', () => {
+    it('the first-screen tile row carries the rule-based destination set (#942, relocating the showcase)', () => {
         const trips = [
             catalogTrip({ id: 'merz-1', title: 'Merzouga Camel Trek', startLocation: 'Merzouga', destinationSlug: null, images: ['https://images.unsplash.com/photo-aaaa1111?q=80&w=1200'] }),
             catalogTrip({ id: 'merz-2', title: 'Dunes Night', startLocation: 'Merzouga, Morocco', destinationSlug: null, images: ['https://images.unsplash.com/photo-bbbb2222?q=80&w=1200'] }),
             catalogTrip({ id: 'tang-1', title: 'Tangier Day', startLocation: 'Tanger', destinationSlug: 'tangier' }),
         ];
-        const { container } = render(wrap(<HomeClient catalogTrips={trips} />));
-        expect(screen.getByText('featured.coverage.title')).not.toBeNull();
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        // The below-fold sections the row relocates are gone.
+        expect(screen.queryByText('featured.coverage.title')).toBeNull();
+        expect(screen.queryByText('featured.betaRegion.title')).toBeNull();
         expect(screen.queryByText('featured.allTrips.title')).toBeNull();
+        const row = screen.getByTestId('home-destination-tiles');
         // The two Merzouga spellings group into a single tile that
-        // links into search for the place. (Scoped to the section:
-        // Option B's Popular chips repeat the same place link above
-        // it, #929.)
-        const section = screen.getByText('featured.coverage.title').closest('section');
-        const tile = within(section as HTMLElement).getByRole('link', { name: /Merzouga/ });
+        // links into search for the place.
+        const tile = within(row).getByRole('link', { name: /Merzouga/ });
         expect(tile.getAttribute('href')).toBe('/search?q=Merzouga');
-        // Honestly-empty well-known places render as tiles too.
-        expect(screen.getByText('featured.coverage.names.agadir')).not.toBeNull();
-        expect(screen.getByText('featured.coverage.names.dakhla')).not.toBeNull();
-        // The cluster destination is NOT repeated in the showcase
-        // (Start in the North covers it, one section up).
-        expect(container.querySelector('a[href="/search?q=Tanger"]')).toBeNull();
+        // Cluster destinations lead and carry the facet href.
+        const tangier = within(row).getByRole('link', { name: /destinationNames\.tangier/ });
+        expect(tangier.getAttribute('href')).toBe('/search?destination=tangier');
+        // Tétouan is present as the honest zero — labelled, and NOT
+        // a link (a 0-trip destination is a #877 dead end).
+        expect(within(row).queryByRole('link', { name: /destinationNames\.tetouan/ })).toBeNull();
+        expect(row.textContent).toContain('featured.betaRegion.noTripsYet');
+        // The old showcase's honestly-empty well-known places are
+        // not part of the rule-based set and leave with the section.
+        expect(screen.queryByText('featured.coverage.names.agadir')).toBeNull();
+        expect(screen.queryByText('featured.coverage.names.dakhla')).toBeNull();
     });
 
-    it('an "absent" place disappears from the showcase the moment a trip exists there', () => {
+    it('a place joins the row the moment a trip exists there', () => {
         const trips = [
             catalogTrip({ id: 'aga-1', title: 'Agadir Beach Break', startLocation: 'Agadir', destinationSlug: null }),
         ];
         render(wrap(<HomeClient catalogTrips={trips} />));
-        expect(screen.queryByText('featured.coverage.names.agadir')).toBeNull();
-        expect(screen.getByText('featured.coverage.names.dakhla')).not.toBeNull();
+        const row = screen.getByTestId('home-destination-tiles');
+        const tile = within(row).getByRole('link', { name: /Agadir/ });
+        expect(tile.getAttribute('href')).toBe('/search?q=Agadir');
     });
 
     it('coverage tiles: curated statics render; unverified media photos stay withheld (photo-truth, #898)', () => {
@@ -272,16 +282,16 @@ describe('HomeClient coverage showcase + category tiles (round 2, founder 2026-1
             }),
         ];
         render(wrap(<HomeClient catalogTrips={trips} />));
-        // Scoped to the coverage section — the Popular chips carry
-        // the same hrefs earlier in the page (#929).
-        const section = screen.getByText('featured.coverage.title').closest('section');
-        const casaTile = section?.querySelector('a[href="/search?q=Casablanca"]');
+        // Scoped to the first-screen tile row (#942) — the same
+        // photo discipline the coverage showcase carried.
+        const row = screen.getByTestId('home-destination-tiles');
+        const casaTile = row.querySelector('a[href="/search?q=Casablanca"]');
         expect(casaTile).not.toBeNull();
         expect(casaTile?.querySelector('img')?.getAttribute('src') ?? '').toContain('casablanca');
-        const ouarzTile = section?.querySelector('a[href="/search?q=Ouarzazate"]');
+        const ouarzTile = row.querySelector('a[href="/search?q=Ouarzazate"]');
         expect(ouarzTile).not.toBeNull();
         expect(ouarzTile?.querySelector('img')).toBeNull();
-        const merzTile = section?.querySelector('a[href="/search?q=Merzouga"]');
+        const merzTile = row.querySelector('a[href="/search?q=Merzouga"]');
         expect(merzTile?.querySelector('img')).not.toBeNull();
     });
 
@@ -363,15 +373,17 @@ describe('HomeClient pure Option B (#929)', () => {
         expect(container.querySelectorAll('.md\\:col-span-2').length).toBe(0);
     });
 
-    it('mixes the honest empties into the coverage index — no "Still growing" segregation', () => {
+    it('carries the honest zero in the first-screen tile row — no coverage section, no "Still growing" segregation', () => {
         const trips = [
             catalogTrip({ id: 'm1', title: 'Merzouga Trek', startLocation: 'Merzouga', destinationSlug: null }),
         ];
         render(wrap(<HomeClient catalogTrips={trips} />));
         expect(screen.queryByText('featured.coverage.stillGrowing')).toBeNull();
-        const section = screen.getByText('featured.coverage.title').closest('section');
-        expect(section?.textContent).toContain('featured.coverage.names.agadir');
-        expect(section?.textContent).toContain('featured.coverage.names.dakhla');
+        expect(screen.queryByText('featured.coverage.title')).toBeNull();
+        const row = screen.getByTestId('home-destination-tiles');
+        expect(row.textContent).toContain('search.destinationNames.tetouan');
+        expect(row.textContent).toContain('featured.betaRegion.noTripsYet');
+        expect(screen.queryByText('featured.coverage.names.agadir')).toBeNull();
     });
 
     it('carries no story strip (a Hybrid/C device, removed)', () => {
@@ -400,5 +412,90 @@ describe('HomeClient pure Option B (#929)', () => {
         expect(screen.getByText('howItWorks.step1Title')).not.toBeNull();
         expect(screen.getByText('howItWorks.step3Title')).not.toBeNull();
         expect(screen.getByText('howItWorks.refundNote')).not.toBeNull();
+    });
+});
+
+describe('HomeClient One Line hero search (search council #938)', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    function wrap(ui: React.ReactNode) {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        return <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>;
+    }
+
+    function catalogTrip(partial: Record<string, unknown>) {
+        return {
+            title: 'Trip',
+            images: [],
+            sessions: [],
+            agency: { id: 'agency-1' },
+            ...partial,
+        } as any;
+    }
+
+    const trips = [
+        catalogTrip({ id: 'tng-1', title: 'Tangier Kasbah Walk', destinationSlug: 'tangier', startLocation: 'Tangier', durationDays: 1, sessions: [{ price: 400, currency: 'MAD' }], agency: { id: 'ag-1' } }),
+        catalogTrip({ id: 'tng-2', title: 'Tangier Food Tour', destinationSlug: 'tangier', startLocation: 'Tangier', durationDays: 1, sessions: [{ price: 600, currency: 'MAD' }], agency: { id: 'ag-1' } }),
+        catalogTrip({ id: 'merz-1', title: 'Merzouga Camel Trek', destinationSlug: null, startLocation: 'Merzouga', durationDays: 2, sessions: [{ price: 1200, currency: 'MAD' }], agency: { id: 'ag-2' } }),
+    ];
+
+    it('offers the complete destination list; the zero-trip place stays OUT of the listbox (D3)', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        fireEvent.focus(screen.getByLabelText('hero.where'));
+        expect(screen.getByRole('listbox')).not.toBeNull();
+        const options = screen.getAllByRole('option');
+        const optionText = options.map((option) => option.textContent ?? '');
+        expect(optionText.some((text) => text.includes('search.destinationNames.tangier'))).toBe(true);
+        expect(optionText.some((text) => text.includes('Merzouga'))).toBe(true);
+        // Tétouan (0 trips) is disclosed in the headed zero zone —
+        // plain text with a status bridge — never an option.
+        expect(optionText.some((text) => text.includes('tetouan'))).toBe(false);
+        expect(screen.getByText('hero.placesNoTripsYet')).not.toBeNull();
+        // One status bridge per zero place (this fixture leaves
+        // both Tétouan and Chefchaouen at zero trips).
+        const statuses = screen.getAllByRole('status');
+        expect(statuses.length).toBeGreaterThan(0);
+        expect(statuses.every((status) => status.textContent === 'featured.betaRegion.noTripsYet')).toBe(true);
+    });
+
+    it('picking a destination option navigates to its facet', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        fireEvent.focus(screen.getByLabelText('hero.where'));
+        fireEvent.mouseDown(screen.getByRole('option', { name: /destinationNames\.tangier/ }));
+        expect(mockPush).toHaveBeenCalledWith('/search?destination=tangier');
+    });
+
+    it('caps trip suggestions at one per agency', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        fireEvent.change(screen.getByLabelText('hero.where'), { target: { value: 'Tangier' } });
+        expect(screen.getByText('Tangier Kasbah Walk')).not.toBeNull();
+        expect(screen.queryByText('Tangier Food Tour')).toBeNull();
+    });
+
+    it('the footer escape hatch goes to the unfiltered search page', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        fireEvent.focus(screen.getByLabelText('hero.where'));
+        fireEvent.click(screen.getByRole('button', { name: /seeAllTrips/ }));
+        expect(mockPush).toHaveBeenCalledWith('/search');
+    });
+
+    it('Escape closes the panel', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        const input = screen.getByLabelText('hero.where');
+        fireEvent.focus(input);
+        expect(screen.getByRole('listbox')).not.toBeNull();
+        fireEvent.keyDown(input, { key: 'Escape' });
+        expect(screen.queryByRole('listbox')).toBeNull();
+    });
+
+    it('the dates segment shows the flexible label and opens a labelled dialog (#941)', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        expect(screen.getByText('hero.flexible')).not.toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'hero.addDates' }));
+        expect(screen.getByRole('dialog', { name: 'search.dates' })).not.toBeNull();
+        expect(screen.getByLabelText('search.startDate')).not.toBeNull();
+        expect(screen.getByLabelText('search.endDate')).not.toBeNull();
     });
 });

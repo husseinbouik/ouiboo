@@ -67,7 +67,19 @@
     "kickerChecked": "Checked before listing",
     "metaPrices": "Prices in MAD",
     "metaPayDirect": "Pay the agency directly",
-    "popular": "Popular:"
+    "popular": "Popular:",
+    "flexible": "I'm flexible",
+    "placesNoTripsYet": "Places with no trips yet",
+    "tripSuggestions": "Trips",
+    "noSuggestions": "No matching places or trips — see all trips below.",
+    "clearDates": "Clear dates",
+    "datesDone": "Done",
+    "seeAllTrips_zero": "See all trips",
+    "seeAllTrips_one": "See the {{count}} trip",
+    "seeAllTrips_two": "See all {{count}} trips",
+    "seeAllTrips_few": "See all {{count}} trips",
+    "seeAllTrips_many": "See all {{count}} trips",
+    "seeAllTrips_other": "See all {{count}} trips"
   },
   "agencyBand": {
     "title": "Run trips in Morocco?",
