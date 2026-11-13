@@ -261,7 +261,7 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'def
   };
 
   return (
-    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className={cn("group border-border shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden bg-card h-full flex flex-col", isSearch ? "rounded-2xl" : "rounded-3xl")}>
+    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className={cn("group border-border shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden bg-card h-full flex flex-col", isSearch ? "rounded-2xl!" : "rounded-3xl")}>
       <div className={cn("relative overflow-hidden", isSearch ? "aspect-[16/10]" : "h-64")}>
         {/* #490 round 2: the card renders the SAME Snap Rail component
             as the trip-page gallery — native scroll-snap glide (touch
