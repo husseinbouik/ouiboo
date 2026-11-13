@@ -156,7 +156,7 @@ describe('TripCard verification statement (#413, Council B10)', () => {
         expect(screen.queryByText(/Licence checked/)).toBeNull();
     });
 
-    it('search variant: "From <amount> <currency> per person", no View Details button, no option pills (#975)', () => {
+    it('search variant (Card A, 2026-11-13): "<amount> <currency> / per person" + next date, no From block, no View Details button, no option pills', () => {
         const trip = {
             ...makeTrip({ companyName: 'Atlas Adventures SARL' }),
             privateTourEnabled: true,
@@ -176,9 +176,28 @@ describe('TripCard verification statement (#413, Council B10)', () => {
 
         expect(screen.getByText(/1,450 MAD/)).not.toBeNull();
         expect(screen.getByText(/tripCard\.perPerson/)).not.toBeNull();
+        expect(screen.queryByText('tripCard.from')).toBeNull();
         expect(screen.queryByText('tripCard.viewDetails')).toBeNull();
         expect(screen.queryByText('batchF.privateBadge')).toBeNull();
         expect(screen.queryByText('batchF.payOnArrivalBadge')).toBeNull();
+    });
+
+    it('search variant (Card A): spots badge sits bottom-left on the photo — its own corner, clear of the category pill (top-left) and the heart (top-right)', () => {
+        const future = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+        const trip: TripCardTrip = {
+            id: 'trip-carda',
+            title: 'Atlas Day Trek',
+            startLocation: 'Imlil',
+            durationDays: 1,
+            images: ['https://cdn.example.com/a.jpg'],
+            sessions: [{ id: 's1', status: 'OPEN' as any, availableSeats: 8, price: 450, startDate: future }],
+            agency: null,
+        };
+        const { container } = render(<TripCard trip={trip} variant="search" />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        expect(badge?.parentElement?.className).toContain('bottom-3');
+        expect(badge?.parentElement?.className).toContain('start-3');
+        expect(badge?.parentElement?.className).not.toContain('top-3');
     });
 
     it('renders no verification line without dated checks (#673: the hedge is retired)', () => {

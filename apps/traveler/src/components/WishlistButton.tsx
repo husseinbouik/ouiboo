@@ -14,9 +14,10 @@ import { optimisticHandlers } from '@/lib/optimistic';
 interface WishlistButtonProps {
   tripId: string;
   className?: string;
-  /** #975: on /search cards the heart sits in a white circle at the
-   * photo's bottom-right (adopted drawing); every other surface keeps
-   * the #571 dark scrim that stays legible on any photo. */
+  /** Card A (2026-11-13, superseding #975): on /search cards the
+   * heart sits in a white circle at the photo's top-right; every
+   * other surface keeps the #571 dark scrim that stays legible on
+   * any photo. */
   variant?: 'dark' | 'light';
   /** #965: observers (the wishlist page) are notified of a settled
    * toggle so they can render their own persistent affordances. */
