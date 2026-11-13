@@ -89,12 +89,14 @@ interface TripCardProps {
    * put an arrow/dot tab stop per card into the grid's tab order.
    * The home rail keeps the settled SnapRail behaviour (#882). */
   staticPhoto?: boolean;
-  /** #975 fidelity: the /search results card follows the adopted
-   * Classic Rail drawing — compact photo, white category pill, spots
-   * badge at the photo's top-right corner, heart in a white circle at
-   * the photo's bottom-right, no option pills, no "View Details"
-   * button, price as "From 1 450 MAD per person". Every other surface
-   * keeps the default chrome. */
+  /** Card A 'Clean Marketplace' (founder choice 2026-11-13,
+   * superseding the #975 Classic Rail card chrome): 16:10 photo,
+   * wishlist heart top-right ON the photo, spots badge on the photo
+   * at bottom-left (separate corner — never clashing with the
+   * heart), white category pill top-left, no option pills, no
+   * "View Details" button, no "From" price block — the bottom row
+   * is "<amount> MAD / person" plus the next session date when one
+   * exists. Every other surface keeps the default chrome. */
   variant?: 'default' | 'search';
   /** Search-page council item 19 (#965): the wishlist page needs to
    * observe a removal so it can leave a persistent in-place tombstone
@@ -259,8 +261,8 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'def
   };
 
   return (
-    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden bg-card h-full flex flex-col">
-      <div className={cn("relative overflow-hidden", isSearch ? "h-52" : "h-64")}>
+    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className={cn("group border-border shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden bg-card h-full flex flex-col", isSearch ? "rounded-2xl" : "rounded-3xl")}>
+      <div className={cn("relative overflow-hidden", isSearch ? "aspect-[16/10]" : "h-64")}>
         {/* #490 round 2: the card renders the SAME Snap Rail component
             as the trip-page gallery — native scroll-snap glide (touch
             swipe and mouse drag both advance it), counter + caption
@@ -336,14 +338,16 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'def
               verification claim below; it has no UI surface. */}
         </div>
 
-        {/* #978: on the search variant the badge's container starts at
-            start-28, confining the badge's box to the photo's right zone.
-            The K6 wording is long enough (210px on a 289px photo) that an
-            unconstrained right-anchored badge reached back into the
-            top-left cluster and covered the category pill's right end;
-            capped by this zone (badge max-w-full below) it wraps inside
-            the top-right instead. Other variants keep their geometry. */}
-        <div className={cn("absolute top-3 flex flex-col items-end gap-2", isSearch ? "end-3 start-28" : "end-16")}>
+        {/* Card A (2026-11-13): on the search variant the spots badge
+            sits on the photo at bottom-left — its own corner, clear
+            of the category pill (top-left) and the wishlist heart
+            (top-right). This supersedes the #978 top-right zone, whose
+            long K6 wording reached back over the category pill. Other
+            variants keep their geometry. */}
+        <div className={cn(
+          "absolute flex flex-col gap-2",
+          isSearch ? "bottom-3 start-3 max-w-[calc(100%-1.5rem)] items-start" : "top-3 end-16 items-end",
+        )}>
           {/* #571 rework + search-page council K6a (punch item 10,
               #886): the badge colours are a measured spec, not a
               palette pick — available = #15803D with white text
@@ -374,7 +378,7 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'def
           <WishlistButton
             tripId={trip.id}
             variant={isSearch ? 'light' : 'dark'}
-            className={isSearch ? "absolute bottom-3 end-3" : "absolute top-3 end-3"}
+            className="absolute top-3 end-3"
             onToggled={onWishlistToggle ? (next) => onWishlistToggle(trip.id, next) : undefined}
           />
       </div>
@@ -382,11 +386,13 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'def
       <Link href={`/trip/${trip.id}`} className={cn("flex-1 flex flex-col", isSearch ? "p-4" : "p-6")}>
         <div className="space-y-3 flex-1">
           <div className="flex justify-between items-start gap-3">
-            {/* Hybrid P0-7 (#926/#745): titles are never clamped —
-                FR/AR titles were cut at two lines; the reserved
-                two-line min-height keeps card geometry (and CLS)
-                exactly where the clamp held it. */}
-            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-tight min-h-[2.85rem]">{trip.title}</h3>
+            {/* Hybrid P0-7 (#926/#745): titles are never clamped on
+                the default chrome — FR/AR titles were cut at two
+                lines; the reserved two-line min-height keeps card
+                geometry (and CLS) exactly where the clamp held it.
+                Card A exception (founder choice 2026-11-13): the
+                /search variant clamps at two lines by design. */}
+            <h3 className={cn("text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-tight min-h-[2.85rem]", isSearch && "line-clamp-2")}>{trip.title}</h3>
             {/* #681 (Council S6): an average is a claim — it renders only
                 at/above MIN_REVIEWS_FOR_RATING reviews. Below that the
                 count is still published (even when small); at zero the
@@ -443,10 +449,15 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'def
         </div>
 
         {isSearch ? (
-          <p className="mt-4 text-sm text-muted-foreground">
-            {t('tripCard.from')}{' '}
-            <span className="oui-numeric text-base font-bold text-foreground">{searchPriceLabel ?? '---'}</span>{' '}
-            {t('tripCard.perPerson')}
+          <p className="mt-4 flex items-baseline justify-between gap-3 border-t border-border pt-3 text-sm text-muted-foreground">
+            <span>
+              <span className="oui-numeric text-base font-bold text-foreground">{searchPriceLabel ?? '---'}</span>
+              {' / '}
+              {t('tripCard.perPerson')}
+            </span>
+            {nextSession && nextSessionDateLabel ? (
+              <span className="shrink-0 text-xs font-medium">{t('tripCard.nextSession', { date: nextSessionDateLabel })}</span>
+            ) : null}
           </p>
         ) : (
         <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">

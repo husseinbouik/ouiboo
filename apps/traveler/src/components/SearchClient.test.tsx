@@ -338,4 +338,27 @@ describe('SearchClient URL-as-source-of-truth (#440)', () => {
     render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
     expect(screen.getByText('search.drawerDone')).toBeTruthy();
   });
+
+  it('hide filters collapses the desktop rail and expands the grid to 4 columns; show filters restores both (Card A, 2026-11-13)', () => {
+    const { container } = render(<SearchClient initialFilters={initialFilters} initialResponse={null} />);
+    const rail = container.querySelector('aside');
+    expect(rail).not.toBeNull();
+    // The rail card scrolls independently: sticky, viewport-capped, overflow-y auto.
+    const railCard = rail?.firstElementChild as HTMLElement | null;
+    expect(railCard?.className).toContain('overflow-y-auto');
+    expect(railCard?.className).toContain('max-h-[calc(100vh-8rem)]');
+    const resultsGrid = () =>
+      Array.from(container.querySelectorAll('section .grid')).find((el) =>
+        el.className.includes('sm:grid-cols-2'),
+      );
+    expect(resultsGrid()?.className).toContain('lg:grid-cols-3');
+
+    fireEvent.click(screen.getByText('search.hideFilters'));
+    expect(container.querySelector('aside')).toBeNull();
+    expect(resultsGrid()?.className).toContain('lg:grid-cols-4');
+
+    fireEvent.click(screen.getByText('search.showFilters'));
+    expect(container.querySelector('aside')).not.toBeNull();
+    expect(resultsGrid()?.className).toContain('lg:grid-cols-3');
+  });
 });

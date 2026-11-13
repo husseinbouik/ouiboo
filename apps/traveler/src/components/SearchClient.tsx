@@ -134,6 +134,10 @@ export default function SearchClient({
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQueryInput, setSearchQueryInput] = useState(initialFilters.searchQuery);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  // Card A follow-up (founder choice 2026-11-13): the desktop rail
+  // can be hidden entirely so the results grid takes its space; the
+  // choice is component state only (no storage, no URL param).
+  const [filtersHidden, setFiltersHidden] = useState(false);
 
   // #440 (Council P1-15) rework: the URL is the single source of truth
   // for filters. They are re-parsed from useSearchParams() on EVERY
@@ -1092,16 +1096,25 @@ export default function SearchClient({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
         <div className="flex flex-col lg:flex-row gap-8">
+          {!filtersHidden && (
           <aside className="hidden lg:block w-72 shrink-0">
-            <div className="bg-card p-5 rounded-2xl border border-border space-y-6 sticky top-28">
-              <div className="flex items-center justify-between">
+            {/* Card A follow-up (2026-11-13): the rail scrolls
+                independently of the page — sticky under the header,
+                capped at the viewport height below it, overflow-y
+                auto. The page keeps its own scroll. */}
+            <div className="bg-card p-5 rounded-2xl border border-border space-y-6 sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto">
+              <div className="flex items-center justify-between gap-3">
                 <h3 className="font-semibold flex items-center gap-2"><Filter className="h-4 w-4" /> {t('search.filters')}</h3>
-                {activeFiltersCount > 0 && <button onClick={clearAllFilters} aria-label={t('search.clearAll')} className="text-sm font-medium text-sunset-orange-dark">{t('search.clear')}</button>}
+                <span className="flex items-center gap-3">
+                  {activeFiltersCount > 0 && <button onClick={clearAllFilters} aria-label={t('search.clearAll')} className="text-sm font-medium text-sunset-orange-dark">{t('search.clear')}</button>}
+                  <button type="button" onClick={() => setFiltersHidden(true)} className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">{t('search.hideFilters')}</button>
+                </span>
               </div>
 
               {renderFilterControls()}
             </div>
           </aside>
+          )}
 
           <section className="flex-1" aria-label="Search results">
             {activeFilterChips.length > 0 && (
@@ -1161,6 +1174,16 @@ export default function SearchClient({
               >
                 {renderFilterControls()}
               </MobileFilterDrawer>
+              {filtersHidden && (
+                <button
+                  type="button"
+                  onClick={() => setFiltersHidden(false)}
+                  className="order-1 hidden items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-sand/60 lg:inline-flex dark:hover:bg-muted"
+                >
+                  <Filter className="h-4 w-4" aria-hidden="true" />
+                  {t('search.showFilters')}
+                </button>
+              )}
               <div role="status" aria-live="polite" aria-atomic="true" className="order-3 w-full text-sm text-muted-foreground lg:order-2 lg:w-auto lg:flex-1">
                 {stateLine ?? t('search.stateTrips', { count: pagination.total })}
               </div>
@@ -1216,9 +1239,9 @@ export default function SearchClient({
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-5", filtersHidden ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
               {isLoading ? (
-                <TripCardSkeletonGrid count={6} className="col-span-full sm:grid-cols-2 lg:grid-cols-3 gap-5" />
+                <TripCardSkeletonGrid count={6} className={cn("col-span-full sm:grid-cols-2 gap-5", filtersHidden ? "lg:grid-cols-4" : "lg:grid-cols-3")} />
               ) : trips.length > 0 ? (
                 trips.map((trip) => (
                   <div key={trip.id}>
