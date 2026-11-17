@@ -146,6 +146,9 @@ export class AdminInterventionsService {
             });
             return outcome;
         });
+        await this.stagedPaymentsService
+            .notifyBalanceDueForSession(sessionId)
+            .catch(() => undefined);
         return {
             sessionId,
             groupStatus: SessionGroupStatus.CONFIRMED,

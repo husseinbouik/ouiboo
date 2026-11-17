@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
 import { ExternalPaymentsModule } from '../external-payments/external-payments.module';
 import { RefundsModule } from '../refunds/refunds.module';
+import { EmailModule } from '../email/email.module';
 import { StagedPaymentsService } from './staged-payments.service';
 
 @Module({
-    imports: [DatabaseModule, ExternalPaymentsModule, RefundsModule],
+    imports: [DatabaseModule, ExternalPaymentsModule, RefundsModule, EmailModule],
     providers: [StagedPaymentsService],
     exports: [StagedPaymentsService],
 })

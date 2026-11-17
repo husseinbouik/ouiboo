@@ -1105,6 +1105,13 @@ model ExternalPayment {
   bankReference     String?
   bankConfirmedAt   DateTime?
   bankConfirmedBy   String?
+  // The proof attached to this immutable payment stage. PaymentProof is
+  // the current review slot; these fields retain the deposit evidence when
+  // that slot is reused for the later balance proof.
+  proofImageUrl      String?
+  proofUploadedAt    DateTime?
+  proofStatus        VerificationStatus?
+  proofRejectionReason String?
   // #369: FULL = the booking's single payment (pre-staged behaviour);
   // staged bookings hold one DEPOSIT and one BALANCE record instead.
   stage             ExternalPaymentStage  @default(FULL)
@@ -1139,6 +1146,9 @@ model BookingPaymentPlan {
   confirmationDeadline  DateTime
   balanceDueAt          DateTime?
   groupConfirmedAt      DateTime?
+  // Idempotency claim for the post-confirmation balance-due notification.
+  // The in-app record is created once even when confirmation is retried.
+  balanceNotifiedAt     DateTime?
   status                BookingPaymentPlanStatus @default(DEPOSIT_DUE)
   paymentPolicyVersion  String
   refundPolicyVersion   String

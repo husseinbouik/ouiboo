@@ -62,6 +62,7 @@ function makeFake(booking: any) {
 function makeStaged() {
     return {
         forceConfirmGroupInTransaction: jest.fn(async () => ({ participants: 2, minBookings: 4 })),
+        notifyBalanceDueForSession: jest.fn(async () => 1),
         closeGroupInTransaction: jest.fn(async () => ({ depositPaidBookings: 1, unpaidBookings: 2 })),
         extendConfirmationDeadlineInTransaction: jest.fn(async () => ({
             previousDeadline: new Date('2027-03-01T09:00:00.000Z'),
@@ -95,6 +96,7 @@ describe('AdminInterventionsService (#423)', () => {
 
         expect(result.groupStatus).toBe('CONFIRMED');
         expect(staged.forceConfirmGroupInTransaction).toHaveBeenCalledTimes(1);
+        expect(staged.notifyBalanceDueForSession).toHaveBeenCalledWith('session-1');
         expect(auditLog.create).toHaveBeenCalledTimes(1);
         const audits = auditsOf(auditLog, 'ADMIN_GROUP_FORCE_CONFIRMED');
         expect(audits).toHaveLength(1);

@@ -372,7 +372,7 @@ export default function MyBookingsPage() {
                                                     <Link href={`/booking/${booking.id}`} className="min-w-0">
                                                         <h3 className="text-2xl font-black text-foreground group-hover:text-sunset-orange transition-colors line-clamp-2 leading-tight font-display tracking-tight">{booking.session.template.title}</h3>
                                                     </Link>
-                                                    {shouldShowUploadAction(booking.status, hasPaymentProof) && (
+                                                    {shouldShowUploadAction(booking.status, hasPaymentProof, booking.paymentPlan?.status) && (
                                                         <div className="shrink-0 flex items-center gap-2 px-3 py-1 bg-amber-500/10 text-amber-500 rounded-lg text-[10px] font-black uppercase tracking-tighter animate-pulse">
                                                             <Clock className="h-3 w-3" /> {t('bookings.actionRequired')}
                                                         </div>
@@ -556,7 +556,7 @@ export default function MyBookingsPage() {
                                                 </div>
 
                                                 <div className="flex items-center gap-3">
-                                                    {shouldShowUploadAction(booking.status, hasPaymentProof) && (
+                                                    {shouldShowUploadAction(booking.status, hasPaymentProof, booking.paymentPlan?.status) && (
                                                         <label className="cursor-pointer">
                                                             <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, booking.id)} disabled={!!uploadingId} />
                                                             <Button disabled={!!uploadingId} className="h-12 px-8 bg-sunset-orange hover:bg-orange-600 border-none rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-orange-900/10 active:scale-95 transition-all">

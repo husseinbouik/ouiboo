@@ -9,7 +9,7 @@ Use this on the final launch decision call.
 - [ ] payment rollout decisions signed off
 - [ ] admin proof-review SOP approved
 - [ ] refund SOP approved
-- [ ] payout SOP approved
+- [ ] manual-payment reconciliation and refund SOP approved
 - [ ] support macros ready
 - [ ] support coverage owners assigned
 - [ ] staging dress rehearsal completed successfully
@@ -31,7 +31,7 @@ Do not launch if any of these is true:
 - email verification is failing
 - wallet or payout balances drift from expected outcomes
 - the bank transfer instructions shown to travelers are unverified
-- support does not know who owns proof review, refunds, or payout exceptions
+- support does not know who owns proof review, refunds, or payment exceptions
 
 ## Launch-Day Monitoring
 
@@ -42,7 +42,7 @@ Track at least these metrics manually if no dashboard exists:
 - average proof review time
 - failed uploads
 - refund requests
-- payout requests
+- payment exceptions and duplicate-credit reports
 
 ## Named Owners
 

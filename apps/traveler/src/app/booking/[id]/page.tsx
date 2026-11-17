@@ -277,7 +277,11 @@ export default function BookingDetailsPage() {
               : t('bookingDetail.paymentStatus.unpaid');
   const formatDate = (value: string) =>
     new Intl.DateTimeFormat(i18n.language || 'en', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value));
-  const showUploadAction = shouldShowUploadAction(booking.status, Boolean(booking.paymentProof));
+  const showUploadAction = shouldShowUploadAction(
+    booking.status,
+    Boolean(booking.paymentProof),
+    booking.paymentPlan?.status,
+  );
   // #680: when the Emergency Card renders, the meeting point rides on
   // it — the standalone block below remains only for booking states
   // the card does not cover (cancelled / completed).

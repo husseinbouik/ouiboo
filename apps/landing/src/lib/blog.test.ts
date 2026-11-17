@@ -53,14 +53,14 @@ interface ParsedMarkdown {
 
 function parseMarkdown(slug: string, locale: string): ParsedMarkdown {
     const raw = fs.readFileSync(path.join(contentDir(), `${slug}.${locale}.md`), 'utf8');
-    const match = raw.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+    const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
     if (!match) throw new Error(`${slug}.${locale}.md: missing frontmatter block`);
     const frontmatter: Record<string, string> = {};
-    for (const line of match[1].split('\n')) {
+    for (const line of match[1].split(/\r?\n/)) {
         const idx = line.indexOf(':');
         frontmatter[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
     }
-    const blocks = match[2].trim().split(/\n\n+/).map((block) => block.trim()).filter(Boolean);
+    const blocks = match[2].trim().split(/\r?\n(?:\r?\n)+/).map((block) => block.trim()).filter(Boolean);
     const intro = blocks[0];
     const sections: ParsedMarkdown['sections'] = [];
     for (let i = 1; i < blocks.length; i += 2) {

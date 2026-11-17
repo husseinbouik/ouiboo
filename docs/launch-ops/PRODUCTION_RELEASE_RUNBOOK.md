@@ -13,7 +13,7 @@ Do not start production release until all are true:
 - [ ] DB backup procedure is ready
 - [ ] rollback owner is assigned
 - [ ] launch payment method remains `bank transfer + manual proof`
-- [ ] `CMI` and `CashPlus` are hidden if not approved and live-tested
+- [ ] `CMI` and `CashPlus` are hidden unless separately approved and live-tested
 - [ ] `ENABLE_GATEWAY_PAYMENTS=false` and `GATEWAY_PAYMENTS_LAUNCH_APPROVED=false` unless a separately approved provider rollout exists
 
 ## 2. Production Environment Setup
@@ -100,7 +100,7 @@ For launch:
 - traveler checkout must show only bank transfer instructions
 - proof upload must work before go-live
 - admin proof review must be verified after deploy
-- do not expose `CMI` or `CashPlus` in production until approved and tested
+- do not expose `CMI` or `CashPlus` in production until separately approved and tested
 - keep both gateway activation flags false for the manual-payment MVP
 
 ## 7. Go / No-Go Before Public Traffic
@@ -113,7 +113,7 @@ Do not open public traffic until all are true:
 - [ ] proof upload works
 - [ ] admin proof review works
 - [ ] agency dashboard loads
-- [ ] wallet and payout surfaces load
+- [ ] external payment records and manual bank-confirmation review load
 - [ ] email delivery works
 
 ## 8. Release Log

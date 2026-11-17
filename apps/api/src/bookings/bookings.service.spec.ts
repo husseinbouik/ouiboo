@@ -81,6 +81,7 @@ const mockExternalPaymentsService = {
     recordPaymentVerifiedInTransaction: jest.fn(),
     recordPaymentRejectedInTransaction: jest.fn(),
     recordPaymentPendingInTransaction: jest.fn(),
+    updateProofStatusInTransaction: jest.fn(),
 };
 
 // #369: default mock = non-staged sessions; staged tests override these.
@@ -90,6 +91,7 @@ const mockStagedPaymentsService = {
     createPlanInTransaction: jest.fn(),
     applyProofRejectionInTransaction: jest.fn(),
     applyBankConfirmationInTransaction: jest.fn(),
+    notifyBalanceDueForSession: jest.fn(),
 };
 
 describe('BookingsService', () => {

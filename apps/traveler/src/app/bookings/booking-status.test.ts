@@ -1,4 +1,4 @@
-import { BookingPaymentStatus, BookingStatus, PaymentMethod, RefundStatus, VerificationStatus } from '@ouiboo/types';
+import { BookingPaymentPlanStatus, BookingPaymentStatus, BookingStatus, PaymentMethod, RefundStatus, VerificationStatus } from '@ouiboo/types';
 import {
   canRetryTravelerPayment,
   canCancelTravelerBooking,
@@ -16,10 +16,16 @@ describe('traveler booking status helpers', () => {
     expect(getTravelerBookingStatusTone(BookingStatus.Cancelled)).toContain('rose');
   });
 
-  it('only shows the upload action for pending bookings without a proof', () => {
+  it('shows the upload action for an initial proof or a confirmed balance due', () => {
     expect(shouldShowUploadAction(BookingStatus.Pending, false)).toBe(true);
     expect(shouldShowUploadAction(BookingStatus.Pending, true)).toBe(false);
     expect(shouldShowUploadAction(BookingStatus.AwaitingValidation, false)).toBe(false);
+    expect(
+      shouldShowUploadAction(BookingStatus.Confirmed, true, BookingPaymentPlanStatus.BalanceDue),
+    ).toBe(true);
+    expect(
+      shouldShowUploadAction(BookingStatus.AwaitingValidation, true, BookingPaymentPlanStatus.BalanceDue),
+    ).toBe(false);
   });
 
   it('disables cancellation only for completed and cancelled bookings', () => {
