@@ -55,7 +55,9 @@ concurrency:
 
 jobs:
   lighthouse-a11y:
-    runs-on: ubuntu-latest
+    # Match the browser-E2E runner so Playwright's OS dependencies are
+    # installed and exercised on the same supported Ubuntu image.
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     # continue-on-error is on the Lighthouse step only (not job level) so
     # the blocking axe/keyboard steps still run if budgets are exceeded.
@@ -124,7 +126,9 @@ jobs:
       - name: Install Playwright Chromium
         # @axe-core/playwright is pinned in the lockfile so accessibility
         # checks run against the same immutable dependency set as npm ci.
-        run: npx playwright install chromium
+        # Reuse the browser-E2E installation command, including the Linux
+        # system dependencies required by GitHub-hosted runners.
+        run: npm run test:e2e:install
 
       - name: Run axe accessibility checks (desktop)
         run: |
