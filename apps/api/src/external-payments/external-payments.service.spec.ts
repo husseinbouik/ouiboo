@@ -7,6 +7,7 @@ import {
     PaymentLedgerEntryType,
     PaymentLedgerSource,
     PaymentMethod,
+    VerificationStatus,
 } from '@ouiboo/database';
 import {
     ExternalPaymentsService,
@@ -162,6 +163,31 @@ describe('ExternalPaymentsService', () => {
             expect(upsertArgs.update.status).toBe(ExternalPaymentStatus.PENDING_VERIFICATION);
             // Pending is not settlement: the append-only ledger is untouched.
             expect(tx.$executeRaw).not.toHaveBeenCalled();
+        });
+
+        it('retains proof evidence on the immutable payment stage', async () => {
+            const tx = makeTx();
+            const service = new ExternalPaymentsService({} as any);
+            const uploadedAt = new Date('2026-11-16T12:00:00.000Z');
+
+            await service.recordPaymentPendingInTransaction(tx, {
+                ...baseInput,
+                stage: ExternalPaymentStage.DEPOSIT,
+                proofEvidence: {
+                    imageUrl: 'private/payment-proofs/booking-1/deposit.jpg',
+                    uploadedAt,
+                    status: VerificationStatus.PENDING,
+                },
+            });
+
+            const upsertArgs = tx.externalPayment.upsert.mock.calls[0][0];
+            expect(upsertArgs.create).toMatchObject({
+                proofImageUrl: 'private/payment-proofs/booking-1/deposit.jpg',
+                proofUploadedAt: uploadedAt,
+                proofStatus: VerificationStatus.PENDING,
+                proofRejectionReason: null,
+            });
+            expect(upsertArgs.update.proofImageUrl).toBe('private/payment-proofs/booking-1/deposit.jpg');
         });
     });
 

@@ -5,7 +5,7 @@ name: Staging Release
 # Contract:
 #   1. A staging SHA is only "released" after the required push checks for
 #      that exact SHA are green: build (20.x), browser-e2e,
-#      Secret scanning (Gitleaks), SAST (Semgrep), SAST (CodeQL), CodeQL.
+#      Secret scanning (Gitleaks), SAST (Semgrep), SAST (CodeQL).
 #      (The remaining two branch-protection contexts — `review` and
 #      `smoke` — exist only on pull requests, so they gate the merge that
 #      produced this SHA, not the push itself.)
@@ -94,7 +94,7 @@ jobs:
             state=$(echo "$json" | python3 -c "
           import json, sys
           required = ['build (20.x)', 'browser-e2e', 'Secret scanning (Gitleaks)',
-                      'SAST (Semgrep)', 'SAST (CodeQL)', 'CodeQL']
+                      'SAST (Semgrep)', 'SAST (CodeQL)']
           runs = json.load(sys.stdin).get('check_runs', [])
           latest = {}
           for r in runs:
@@ -109,12 +109,6 @@ jobs:
               elif r['status'] != 'completed':
                   pending.append(name)
               elif r['conclusion'] == 'success':
-                  pass
-              elif name == 'CodeQL' and r['conclusion'] == 'neutral':
-                  # Default-setup CodeQL reports 'neutral' on pushes where
-                  # it has nothing new to analyze. Accepted for that
-                  # context only — the SAST (CodeQL) workflow job above
-                  # remains success-only.
                   pass
               else:
                   failed.append(name)
@@ -220,7 +214,7 @@ jobs:
             "trigger": "${{ github.event_name }}",
             "required_checks_verified": [
               "build (20.x)", "browser-e2e", "Secret scanning (Gitleaks)",
-              "SAST (Semgrep)", "SAST (CodeQL)", "CodeQL"
+              "SAST (Semgrep)", "SAST (CodeQL)"
             ],
             "pr_only_contexts_gating_the_merge": ["review", "smoke"],
             "migrations": "applied by this workflow (prisma migrate deploy, staging, single owner)",

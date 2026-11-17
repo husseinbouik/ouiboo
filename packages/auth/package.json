@@ -6,13 +6,12 @@
   "dependencies": {
     "@ouiboo/api-client": "*",
     "@tanstack/react-query": "*",
-    "next": "16.4.2",
+    "next": "16.4.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependencies": {
     "@tanstack/react-query": "*",
-    "next": ">=14.0.0",
     "react": "^19.0.0"
   },
   "devDependencies": {

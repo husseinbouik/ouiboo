@@ -1,5 +1,4 @@
 {
-  "dependencies": {},
   "description": "Shared BFF session primitives for the Ouiboo portals (Edge-runtime safe). Extracted from the three Next.js apps in #252.",
   "devDependencies": {
     "@types/jest": "^29.5.14",
@@ -11,7 +10,7 @@
   "main": "./index.ts",
   "name": "@ouiboo/session",
   "peerDependencies": {
-    "next": ">=14.0.0"
+    "next": "16.4.6"
   },
   "private": true,
   "scripts": {
