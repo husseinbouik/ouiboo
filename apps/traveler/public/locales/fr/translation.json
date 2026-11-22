@@ -295,7 +295,17 @@
       "perGroup": "par groupe",
       "perVehicle": "par véhicule",
       "perBooking": "par réservation"
-    }
+    },
+    "paymentMethodLabel": "Moyen de paiement",
+    "cashPlusTitle": "Cash Plus",
+    "cashPlusHint": "Payez en espèces dans un point Cash Plus",
+    "cashPlusBeneficiary": "Bénéficiaire",
+    "cashPlusPhone": "Numéro Cash Plus",
+    "cashPlusAmountDue": "Montant à payer",
+    "cashPlusFeeNote": "Les frais d’envoi Cash Plus sont à votre charge, en plus de ce montant — l’agence doit recevoir le montant intégral.",
+    "cashPlusTransactionCode": "Code de transaction Cash Plus",
+    "cashPlusTransactionCodePlaceholder": "ex. CP-2026-000123",
+    "cashPlusCodeOrReceipt": "Saisissez le code de transaction de votre reçu Cash Plus et/ou téléversez le reçu ci-dessous."
   },
   "trust": {
     "title": "Pourquoi réserver sur Ouiboo",
@@ -1226,7 +1236,9 @@
     "method": "Méthode",
     "paymentMethodValue": {
       "MANUAL": "Virement manuel",
-      "GATEWAY": "Paiement en ligne"
+      "GATEWAY": "Paiement en ligne",
+      "CASH_PLUS": "Cash Plus",
+      "BANK_TRANSFER": "Virement bancaire"
     },
     "proof": "Justificatif",
     "refund": "Remboursement",
@@ -1285,7 +1297,14 @@
     },
     "meetingPoint": "Point de rendez-vous",
     "meetingPickup": "L'agence propose le ramassage des voyageurs pour ce voyage.",
-    "viewOnMap": "Voir sur la carte"
+    "viewOnMap": "Voir sur la carte",
+    "cashPlusCodeLabel": "Code Cash Plus ({{stage}})",
+    "cashPlusBeneficiary": "Bénéficiaire Cash Plus",
+    "cashPlusPayAtPoint": "Payez cette étape dans un point Cash Plus pour {{agency}}, puis saisissez le code de transaction de votre reçu.",
+    "cashPlusFeeNote": "Les frais d’envoi Cash Plus sont en sus — l’agence doit recevoir le montant intégral de l’étape.",
+    "cashPlusCodePlaceholder": "Code de transaction Cash Plus",
+    "cashPlusSubmitCode": "Envoyer le code",
+    "cashPlusCodeOrReceipt": "Vous pouvez aussi téléverser la photo du reçu, à la place du code ou en plus."
   },
   "verificationRecord": {
     "title": "Fiche de vérification",

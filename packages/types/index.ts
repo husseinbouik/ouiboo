@@ -84,6 +84,15 @@ export enum PaymentMethod {
 
 export type PaymentMethodType = PaymentMethod;
 
+/** #988: which manual channel a traveller chose — bank transfer or
+ * Cash Plus. Both are MANUAL (traveller pays the agency directly). */
+export enum ManualPaymentChannel {
+    BankTransfer = "BANK_TRANSFER",
+    CashPlus = "CASH_PLUS",
+}
+
+export type ManualPaymentChannelType = ManualPaymentChannel;
+
 export enum PaymentProvider {
     Cmi = "CMI",
     Stripe = "STRIPE",
@@ -231,6 +240,16 @@ export interface AgencyProfile {
     bankDetailsStatus?: BankDetailsStatus;
     bankDetailsVerifiedAt?: string;
     bankDetailsRejectionReason?: string;
+    // #988: Cash Plus destination (#421 pattern — live values are
+    // admin-verified only; submissions pend until verified).
+    cashPlusBeneficiaryName?: string;
+    cashPlusPhone?: string;
+    pendingCashPlusBeneficiaryName?: string;
+    pendingCashPlusPhone?: string;
+    cashPlusEnabled?: boolean;
+    cashPlusStatus?: BankDetailsStatus;
+    cashPlusVerifiedAt?: string;
+    cashPlusRejectionReason?: string;
 }
 
 export enum TripStatus {
@@ -830,6 +849,8 @@ export interface Booking {
     currency: string;
     guestsCount: number;
     paymentMethod: PaymentMethod;
+    /** #988: chosen manual channel (null for gateway / legacy rows). */
+    manualPaymentChannel?: ManualPaymentChannel | null;
     paymentStatus: BookingPaymentStatus;
     paymentProofUrl?: string;
     paymentProofId?: string;
@@ -896,6 +917,8 @@ export interface BookingAgencySummary {
     /** #688: RC insurer name + policy validity window (public record). */
     insuranceInsurer?: string | null;
     insuranceExpiry?: string | null;
+    /** #988: verified+enabled Cash Plus destination (API-gated). */
+    cashPlus?: { beneficiaryName: string; phone: string } | null;
     /** #700: Law 31-08 Art. 29(2) seller block — address, phone, IF/RC. */
     businessAddress?: string | null;
     businessPhone?: string | null;
@@ -1012,6 +1035,14 @@ export interface PaymentProof {
     uploadedAt: string;
     status: VerificationStatus;
     rejectionReason?: string;
+    /** #988: Cash Plus transaction code supplied with the proof. */
+    transactionCode?: string | null;
+    /** #988: per-stage manual channel + Cash Plus code records. */
+    stagePayments?: {
+        stage: string | null;
+        manualChannel: ManualPaymentChannel | null;
+        transactionCode: string | null;
+    }[];
     /**
      * #422 (Council P0-20): read-only bank-confirmation facts of the
      * stage's ExternalPayment, stamped only when the agency confirms the

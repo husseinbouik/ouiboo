@@ -32,6 +32,7 @@ describe('BookingsController idempotency + duplicate-credit routes (#494)', () =
     const bookingsService = {
         create: jest.fn(async () => ({ id: 'booking-1' })),
         uploadPaymentProof: jest.fn(async () => ({ id: 'proof-1' })),
+        submitPaymentProofCode: jest.fn(async () => ({ id: 'proof-1' })),
         createDuplicateCreditFlag: jest.fn(async () => ({ id: 'flag-1', status: 'OPEN' })),
     };
     const controller = new BookingsController(bookingsService as any, { getSuggestions: jest.fn(async () => []) } as any);
@@ -56,7 +57,20 @@ describe('BookingsController idempotency + duplicate-credit routes (#494)', () =
         const req = { user: { userId: 'traveler-1' } };
         const file = { originalname: 'proof.png' };
         await controller.uploadPaymentProof(req, 'booking-1', file as any, 'proof-uuid-1');
-        expect(bookingsService.uploadPaymentProof).toHaveBeenCalledWith('booking-1', 'traveler-1', file, 'proof-uuid-1');
+        expect(bookingsService.uploadPaymentProof).toHaveBeenCalledWith('booking-1', 'traveler-1', file, 'proof-uuid-1', undefined);
+    });
+
+    it('uploadPaymentProof forwards a Cash Plus transaction code to the service (#988)', async () => {
+        const req = { user: { userId: 'traveler-1' } };
+        const file = { originalname: 'receipt.png' };
+        await controller.uploadPaymentProof(req, 'booking-1', file as any, 'proof-uuid-2', 'CP-2026-777');
+        expect(bookingsService.uploadPaymentProof).toHaveBeenCalledWith('booking-1', 'traveler-1', file, 'proof-uuid-2', 'CP-2026-777');
+    });
+
+    it('submitPaymentProofCode forwards booking id, traveller id and the code (#988)', async () => {
+        const req = { user: { userId: 'traveler-1' } };
+        await controller.submitPaymentProofCode(req, 'booking-1', { transactionCode: 'CP-2026-777' });
+        expect(bookingsService.submitPaymentProofCode).toHaveBeenCalledWith('booking-1', 'traveler-1', 'CP-2026-777');
     });
 
     it('flagDuplicateCredit forwards tenant, acting user and the report body', async () => {

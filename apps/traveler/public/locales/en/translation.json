@@ -295,7 +295,17 @@
       "perGroup": "per group",
       "perVehicle": "per vehicle",
       "perBooking": "per booking"
-    }
+    },
+    "paymentMethodLabel": "Payment method",
+    "cashPlusTitle": "Cash Plus",
+    "cashPlusHint": "Pay in cash at a Cash Plus point",
+    "cashPlusBeneficiary": "Beneficiary",
+    "cashPlusPhone": "Cash Plus number",
+    "cashPlusAmountDue": "Amount to pay",
+    "cashPlusFeeNote": "The Cash Plus sending fee is paid by you, on top of this amount — the agency must receive the full amount.",
+    "cashPlusTransactionCode": "Cash Plus transaction code",
+    "cashPlusTransactionCodePlaceholder": "e.g. CP-2026-000123",
+    "cashPlusCodeOrReceipt": "Enter the transaction code from your Cash Plus receipt, and/or upload the receipt below."
   },
   "trust": {
     "title": "Why book on Ouiboo",
@@ -1226,7 +1236,9 @@
     "method": "Method",
     "paymentMethodValue": {
       "MANUAL": "Manual transfer",
-      "GATEWAY": "Online payment"
+      "GATEWAY": "Online payment",
+      "CASH_PLUS": "Cash Plus",
+      "BANK_TRANSFER": "Bank transfer"
     },
     "proof": "Proof",
     "refund": "Refund",
@@ -1285,7 +1297,14 @@
     },
     "meetingPoint": "Meeting point",
     "meetingPickup": "The agency offers traveller pickup for this trip.",
-    "viewOnMap": "View on map"
+    "viewOnMap": "View on map",
+    "cashPlusCodeLabel": "Cash Plus code ({{stage}})",
+    "cashPlusBeneficiary": "Cash Plus beneficiary",
+    "cashPlusPayAtPoint": "Pay this stage at a Cash Plus point for {{agency}}, then enter the transaction code from your receipt.",
+    "cashPlusFeeNote": "The Cash Plus sending fee is on top — the agency must receive the full stage amount.",
+    "cashPlusCodePlaceholder": "Cash Plus transaction code",
+    "cashPlusSubmitCode": "Submit code",
+    "cashPlusCodeOrReceipt": "You can also upload the receipt photo instead of, or as well as, the code."
   },
   "verificationRecord": {
     "title": "Verification record",

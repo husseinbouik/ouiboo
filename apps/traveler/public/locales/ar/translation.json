@@ -295,7 +295,17 @@
       "perGroup": "للمجموعة",
       "perVehicle": "للسيارة",
       "perBooking": "للحجز"
-    }
+    },
+    "paymentMethodLabel": "طريقة الدفع",
+    "cashPlusTitle": "كاش بلوس",
+    "cashPlusHint": "ادفع نقدًا في نقطة كاش بلوس",
+    "cashPlusBeneficiary": "المستفيد",
+    "cashPlusPhone": "رقم كاش بلوس",
+    "cashPlusAmountDue": "المبلغ المستحق",
+    "cashPlusFeeNote": "رسوم إرسال كاش بلوس على حسابك، زيادة على هذا المبلغ — يجب أن تتلقى الوكالة المبلغ كاملًا.",
+    "cashPlusTransactionCode": "رمز عملية كاش بلوس",
+    "cashPlusTransactionCodePlaceholder": "مثال: CP-2026-000123",
+    "cashPlusCodeOrReceipt": "أدخل رمز العملية من وصل كاش بلوس و/أو حمّل الوصل أدناه."
   },
   "trust": {
     "title": "لماذا تحجز عبر Ouiboo؟",
@@ -1226,7 +1236,9 @@
     "method": "طريقة الدفع",
     "paymentMethodValue": {
       "MANUAL": "تحويل يدوي",
-      "GATEWAY": "دفع عبر الإنترنت"
+      "GATEWAY": "دفع عبر الإنترنت",
+      "CASH_PLUS": "كاش بلوس",
+      "BANK_TRANSFER": "تحويل بنكي"
     },
     "proof": "الإثبات",
     "refund": "الاسترداد",
@@ -1285,7 +1297,14 @@
     },
     "meetingPoint": "نقطة الالتقاء",
     "meetingPickup": "توفر الوكالة استلام المسافرين لهذه الرحلة.",
-    "viewOnMap": "عرض على الخريطة"
+    "viewOnMap": "عرض على الخريطة",
+    "cashPlusCodeLabel": "رمز كاش بلوس ({{stage}})",
+    "cashPlusBeneficiary": "مستفيد كاش بلوس",
+    "cashPlusPayAtPoint": "ادفع هذه المرحلة في نقطة كاش بلوس لصالح {{agency}}، ثم أدخل رمز العملية من الوصل.",
+    "cashPlusFeeNote": "رسوم إرسال كاش بلوس إضافية — يجب أن تتلقى الوكالة مبلغ المرحلة كاملًا.",
+    "cashPlusCodePlaceholder": "رمز عملية كاش بلوس",
+    "cashPlusSubmitCode": "إرسال الرمز",
+    "cashPlusCodeOrReceipt": "يمكنك أيضًا تحميل صورة الوصل بدل الرمز أو إضافة إليه."
   },
   "verificationRecord": {
     "title": "سجل التحقق",

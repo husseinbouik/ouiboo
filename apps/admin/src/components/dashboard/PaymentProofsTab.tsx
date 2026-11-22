@@ -82,6 +82,12 @@ export default function PaymentProofsTab({
                    <td className="px-6 py-4">
                       <p className="font-bold text-sm">{payment.booking?.session?.template?.title || t('dashboard.labels.booking')}</p>
                       <p className="text-[10px] text-muted-foreground font-mono italic">#{payment.booking?.id?.substring(0, 8)}</p>
+                      {payment.booking?.manualPaymentChannel && (
+                        <p className="text-[10px] font-semibold text-muted-foreground">
+                          {payment.booking.manualPaymentChannel === 'CASH_PLUS' ? t('dashboard.labels.methodCashPlus') : t('dashboard.labels.methodBankTransfer')}
+                          {payment.transactionCode ? ` · ${payment.transactionCode}` : ''}
+                        </p>
+                      )}
                    </td>
                    <td className="px-6 py-4 text-sm font-medium">
                       {payment.booking?.traveler?.name || t('dashboard.labels.traveler')}

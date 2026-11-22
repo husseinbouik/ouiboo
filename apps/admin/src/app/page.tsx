@@ -332,6 +332,30 @@ export default function AdminDashboard() {
     }
   });
 
+  // #988: Cash Plus destination verification — same contract as bank
+  // details (beneficiary mismatch needs an override; rejection a reason).
+  const verifyCashPlusMutation = useMutation({
+    mutationFn: async ({ id, status, reason, overrideReason }: { id: string, status: VerificationStatusType, reason?: string, overrideReason?: string }) => {
+      return apiClient.post(`/admin/agencies/${id}/cash-plus/verify`, { status, reason, overrideReason });
+    },
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
+      void queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
+      setAgencyFeedback({
+        type: 'success',
+        message: variables.status === VerificationStatus.Verified
+          ? t('dashboard.feedback.cashPlusVerified')
+          : t('dashboard.feedback.cashPlusRejected')
+      });
+    },
+    onError: (error: AxiosError<ApiErrorResponse>) => {
+      setAgencyFeedback({
+        type: 'error',
+        message: getErrorMessage(error, t('dashboard.feedback.cashPlusUpdateError'))
+      });
+    }
+  });
+
   // #415: private verification documents (licence scan, RC certificate)
   // are only ever opened through a short-lived signed URL — never the
   // public media route. The API allows admins to mint one for any key.
@@ -984,6 +1008,8 @@ export default function AdminDashboard() {
           onVerifyLicence={(id, status, opts) => verifyLicenceMutation.mutate({ id, status, ministryChecked: opts?.ministryChecked })}
           onVerifyInsurance={(id, status, reason) => verifyInsuranceMutation.mutate({ id, status, reason })}
           onVerifyBankDetails={(id, status, opts) => verifyBankDetailsMutation.mutate({ id, status, reason: opts?.reason, overrideReason: opts?.overrideReason })}
+          isVerifyingCashPlus={verifyCashPlusMutation.isPending}
+          onVerifyCashPlus={(id, status, opts) => verifyCashPlusMutation.mutate({ id, status, reason: opts?.reason, overrideReason: opts?.overrideReason })}
           onViewDocument={handleViewPrivateDocument}
         />
       )}

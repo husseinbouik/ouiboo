@@ -177,7 +177,9 @@
       "verifyInsurance": "Verify insurance",
       "rejectInsurance": "Reject insurance",
       "verifyBankDetails": "Verify bank details",
-      "rejectBankDetails": "Reject bank details"
+      "rejectBankDetails": "Reject bank details",
+      "verifyCashPlus": "Verify Cash Plus",
+      "rejectCashPlus": "Reject Cash Plus"
     },
     "labels": {
       "ice": "ICE",
@@ -241,7 +243,18 @@
       "bankHolderMismatch": "Holder is not the agency — third-party account",
       "overrideReason": "Override reason",
       "overrideReasonPlaceholder": "Why this holder is acceptable (e.g. trade-name account)",
-      "verificationPaused": "Verification paused"
+      "verificationPaused": "Verification paused",
+      "cashPlusReview": "Cash Plus review",
+      "cashPlusEnabled": "Enabled",
+      "yes": "Yes",
+      "no": "No",
+      "pendingCashPlus": "Pending Cash Plus submission",
+      "currentCashPlus": "Current Cash Plus infos",
+      "cashPlusBeneficiary": "Beneficiary",
+      "cashPlusPhone": "Cash Plus number",
+      "cashPlusPending": "Cash Plus: pending review",
+      "methodCashPlus": "Cash Plus",
+      "methodBankTransfer": "Bank transfer"
     },
     "messages": {
       "noBankDetails": "No bank details on file.",
@@ -255,7 +268,8 @@
       "noPhone": "No phone on file",
       "noAddress": "No address provided.",
       "unknown": "Unknown",
-      "loading": "Loading"
+      "loading": "Loading",
+      "noCashPlus": "No Cash Plus infos submitted."
     },
     "prompts": {
       "paymentProofRejection": "Add a rejection reason for this payment proof.",
@@ -284,7 +298,10 @@
       "bankDetailsVerified": "Bank details verified",
       "bankDetailsRejected": "Bank details rejected",
       "bankDetailsUpdateError": "Could not update the bank details",
-      "documentLoadError": "Unable to load the document."
+      "documentLoadError": "Unable to load the document.",
+      "cashPlusVerified": "Cash Plus infos verified and live for travellers.",
+      "cashPlusRejected": "Cash Plus infos rejected.",
+      "cashPlusUpdateError": "Could not update the Cash Plus review."
     },
     "aria": {
       "mainNavigation": "Main navigation",

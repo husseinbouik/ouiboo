@@ -7,6 +7,7 @@ import {
     PaymentCustodian,
     PaymentLedgerEntryType,
     PaymentLedgerSource,
+    ManualPaymentChannel,
     PaymentMethod,
     Prisma,
     VerificationStatus,
@@ -82,6 +83,10 @@ export interface RecordExternalPaymentInput {
      * DEPOSIT and one BALANCE payment per booking.
      */
     stage?: ExternalPaymentStage;
+    /** #988: the manual channel chosen for this stage payment and the
+     * Cash Plus transaction code the traveller supplied as proof. */
+    manualChannel?: ManualPaymentChannel | null;
+    transactionCode?: string | null;
     /** Stage-scoped proof evidence retained when the current proof slot is reused. */
     proofEvidence?: {
         imageUrl: string;
@@ -492,6 +497,13 @@ export class ExternalPaymentsService {
                 proofRejectionReason: input.proofEvidence.rejectionReason ?? null,
             }
             : {};
+        // #988: channel/code facts are written when a caller supplies
+        // them (proof upload / booking-time records); other transitions
+        // leave them untouched.
+        const channelFields = {
+            ...(input.manualChannel !== undefined ? { manualChannel: input.manualChannel } : {}),
+            ...(input.transactionCode !== undefined ? { transactionCode: input.transactionCode } : {}),
+        };
         return tx.externalPayment.upsert({
             where: { bookingId_stage: { bookingId: input.bookingId, stage } },
             create: {
@@ -507,6 +519,7 @@ export class ExternalPaymentsService {
                 status: outcome.status,
                 verifiedAt: outcome.verifiedAt ?? null,
                 stage,
+                ...channelFields,
                 ...proofFields,
                 ...bankFields,
             },
@@ -519,6 +532,7 @@ export class ExternalPaymentsService {
                 custodian: input.custodian,
                 status: outcome.status,
                 stage,
+                ...channelFields,
                 ...proofFields,
                 ...(outcome.verifiedAt !== undefined ? { verifiedAt: outcome.verifiedAt } : {}),
                 ...bankFields,

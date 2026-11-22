@@ -279,6 +279,8 @@ export function PaymentProofReviewModal({
               {isBankConfirmationStage && !readOnly && onConfirmBankPayment && (
                 <PaymentProofBankConfirmation
                   key={booking.id}
+                  channel={booking.manualPaymentChannel ?? null}
+                  suggestedReference={booking.paymentProof?.transactionCode ?? null}
                   expectedAmount={getExpectedStageAmount(booking)}
                   currency={booking.currency}
                   isLoading={isConfirming}

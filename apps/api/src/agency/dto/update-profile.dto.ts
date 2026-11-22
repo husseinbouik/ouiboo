@@ -1,4 +1,4 @@
-import { IsArray, IsObject, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsBoolean, IsObject, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
 // #419: international phone shape — leading '+' or digit, then digits
 // with common separators. Deliberately not country-specific (no +212
@@ -51,6 +51,26 @@ export class UpdateAgencyProfileDto {
   @IsString()
   @MaxLength(2048)
   bankAttestationUrl?: string;
+
+  // #988: Cash Plus manual payment destination. The toggle plus the
+  // beneficiary name + phone the agency receives on; saving new infos
+  // puts them into pending-review (admin verifies, #421 pattern).
+  @IsOptional()
+  @IsBoolean()
+  cashPlusEnabled?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  cashPlusBeneficiaryName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  @Matches(EMERGENCY_CONTACT_PHONE_PATTERN, {
+    message: 'cashPlusPhone must be a reachable phone number',
+  })
+  cashPlusPhone?: string;
 
   // #371: legal identity fields (plan §6). Licence fields are managed
   // through the onboarding flow and are deliberately not editable here.

@@ -131,8 +131,33 @@ export class BookingsController {
         // #494 (B16): one UUID per proof attempt; replay semantics in
         // the service (same file = stored proof, different = 409).
         @Headers('idempotency-key') idempotencyKey?: string,
+        // #988: optional Cash Plus transaction code sent with the receipt.
+        @Body('transactionCode') transactionCode?: string,
     ) {
-        return this.bookingsService.uploadPaymentProof(id, req.user.userId, file, idempotencyKey);
+        return this.bookingsService.uploadPaymentProof(id, req.user.userId, file, idempotencyKey, transactionCode);
+    }
+
+    @Post(':id/payment-proof-code')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RateLimitGuard)
+    @RateLimit({ points: 6, windowMs: 10 * 60_000, keyPrefix: 'bookings:payment-proof-code' })
+    @RateLimitSensitive()
+    @ApiOperation({ summary: 'Submit a Cash Plus transaction code as payment proof (#988)' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: ['transactionCode'],
+            properties: {
+                transactionCode: { type: 'string', example: 'CP-2026-000123' },
+            },
+        },
+    })
+    submitPaymentProofCode(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { transactionCode?: string },
+    ) {
+        return this.bookingsService.submitPaymentProofCode(id, req.user.userId, body?.transactionCode);
     }
 
     @Post(':id/duplicate-credit')

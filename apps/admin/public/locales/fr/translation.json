@@ -177,7 +177,9 @@
       "verifyInsurance": "Vérifier l'assurance",
       "rejectInsurance": "Rejeter l'assurance",
       "verifyBankDetails": "Vérifier les coordonnées bancaires",
-      "rejectBankDetails": "Rejeter les coordonnées bancaires"
+      "rejectBankDetails": "Rejeter les coordonnées bancaires",
+      "verifyCashPlus": "Vérifier Cash Plus",
+      "rejectCashPlus": "Rejeter Cash Plus"
     },
     "labels": {
       "ice": "ICE",
@@ -241,7 +243,18 @@
       "bankHolderMismatch": "Le titulaire n'est pas l'agence — compte tiers",
       "overrideReason": "Motif de dérogation",
       "overrideReasonPlaceholder": "Pourquoi ce titulaire est acceptable (ex. compte au nom commercial)",
-      "verificationPaused": "Vérification suspendue"
+      "verificationPaused": "Vérification suspendue",
+      "cashPlusReview": "Vérification Cash Plus",
+      "cashPlusEnabled": "Activé",
+      "yes": "Oui",
+      "no": "Non",
+      "pendingCashPlus": "Soumission Cash Plus en attente",
+      "currentCashPlus": "Informations Cash Plus actuelles",
+      "cashPlusBeneficiary": "Bénéficiaire",
+      "cashPlusPhone": "Numéro Cash Plus",
+      "cashPlusPending": "Cash Plus : en attente de vérification",
+      "methodCashPlus": "Cash Plus",
+      "methodBankTransfer": "Virement bancaire"
     },
     "messages": {
       "noBankDetails": "Aucune coordonnée bancaire enregistrée.",
@@ -255,7 +268,8 @@
       "noPhone": "Aucun téléphone enregistré",
       "noAddress": "Aucune adresse fournie.",
       "unknown": "Inconnu",
-      "loading": "Chargement"
+      "loading": "Chargement",
+      "noCashPlus": "Aucune information Cash Plus soumise."
     },
     "prompts": {
       "paymentProofRejection": "Ajoutez un motif de rejet pour ce justificatif de paiement.",
@@ -284,7 +298,10 @@
       "bankDetailsVerified": "Coordonnées bancaires vérifiées",
       "bankDetailsRejected": "Coordonnées bancaires rejetées",
       "bankDetailsUpdateError": "Impossible de mettre à jour les coordonnées bancaires",
-      "documentLoadError": "Impossible de charger le document."
+      "documentLoadError": "Impossible de charger le document.",
+      "cashPlusVerified": "Informations Cash Plus vérifiées et visibles pour les voyageurs.",
+      "cashPlusRejected": "Informations Cash Plus rejetées.",
+      "cashPlusUpdateError": "Impossible de mettre à jour la vérification Cash Plus."
     },
     "aria": {
       "mainNavigation": "Navigation principale",

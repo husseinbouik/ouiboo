@@ -718,7 +718,7 @@ describe('BookingsService', () => {
             await expect(service.create('user-123', {
                 ...createDto,
                 paymentMethod: 'CARD',
-            } as any)).rejects.toThrow('Only bank transfer payment is available');
+            } as any)).rejects.toThrow('Only manual payment (bank transfer or Cash Plus) is available');
             expect(db.$transaction).not.toHaveBeenCalled();
         });
 

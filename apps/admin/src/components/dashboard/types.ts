@@ -218,6 +218,16 @@ export type AdminAgency = {
   bankDetailsVerifiedAt?: string | null;
   bankDetailsVerifiedBy?: string | null;
   bankDetailsRejectionReason?: string | null;
+  // #988: Cash Plus destination — live infos, pending submission, review state.
+  cashPlusBeneficiaryName?: string | null;
+  cashPlusPhone?: string | null;
+  pendingCashPlusBeneficiaryName?: string | null;
+  pendingCashPlusPhone?: string | null;
+  cashPlusEnabled?: boolean | null;
+  cashPlusStatus?: string | null;
+  cashPlusVerifiedAt?: string | null;
+  cashPlusVerifiedBy?: string | null;
+  cashPlusRejectionReason?: string | null;
 };
 
 export type AdminTrip = {
@@ -237,6 +247,8 @@ export type AdminPaymentProof = {
   id: string;
   bookingId?: string;
   amount?: number;
+  /** #988: Cash Plus transaction code on the proof, when supplied. */
+  transactionCode?: string | null;
   downloadUrl?: string;
   uploadedAt?: string | null;
   booking?: AdminBooking | null;

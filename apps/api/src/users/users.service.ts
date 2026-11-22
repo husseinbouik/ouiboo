@@ -389,6 +389,7 @@ export class UsersService {
                         // detached; the (already scrubbed) details revert
                         // to unverified.
                         bankAttestationUrl: null, bankAccountHolderName: null, pendingBankDetails: null, bankDetailsStatus: 'UNVERIFIED', bankDetailsVerifiedAt: null, bankDetailsVerifiedBy: null, bankDetailsRejectionReason: null,
+                        cashPlusBeneficiaryName: null, cashPlusPhone: null, pendingCashPlusBeneficiaryName: null, pendingCashPlusPhone: null, cashPlusEnabled: false, cashPlusStatus: 'UNVERIFIED', cashPlusVerifiedAt: null, cashPlusVerifiedBy: null, cashPlusRejectionReason: null,
                     },
                 });
             }
