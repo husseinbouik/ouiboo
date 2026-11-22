@@ -2,14 +2,14 @@
 
 This is the source-of-truth pre-pilot checklist. `[x]` means verified evidence exists in the current code or recorded environment. `[ ]` means incomplete, externally owned or not yet rehearsed. Do not infer production readiness from a build alone.
 
-## Evidence snapshot — 2026-11-11
+## Evidence snapshot — 2026-11-17
 
-The pull-request candidate is based on remote `staging` commit `4e26f28885da83181eab474ed70ab910deedc35f`; the stabilization documentation is committed on top of that base. It has not yet been deployed, so live staging health does not attest this candidate.
+The current launch-readiness candidate is based on remote `staging` commit `00b108d1f7b02644cdf10f9a4035fadcb53480c7`. Local evidence below applies to the candidate worktree and must not be described as live staging evidence until its pull request is merged and the exact staging SHA is attested.
 
 | Gate | Status | Evidence / required action |
 |---|---|---|
 | Git repository integrity | READY | The invalid `master`, `origin/HEAD`, `stash`, and `master` reflog pointers were repaired on 2026-11-11 after a recoverable `.git` backup and preservation of the historical and remote master commits. `git fsck --full` exits 0; dangling objects remain available for later housekeeping. |
-| Production-like migration rehearsal | PARTIAL | Synthetic legacy rehearsal passed on 2026-11-10; an approved sanitized snapshot at representative cardinality is still required. |
+| Production-like migration rehearsal | PARTIAL | Synthetic legacy rehearsal passed on 2026-11-10. On 2026-11-16 a clean PostgreSQL database applied all 63 migrations, including `20260915133000_add_currency_status_enums_and_indexes` and the new additive balance-proof migration, and `prisma migrate status` reported current. An approved sanitized snapshot at representative cardinality is still required. |
 | PostgreSQL staging readiness | PARTIAL | Staging `/health`, `/health/ready`, and `/health/db` returned 200 with `database: ok`; release migration attestation is not green. |
 | Redis staging readiness | READY | Staging `/health/ready` and `/health/redis` returned 200 with `redis: ok`. This does not prove worker consumption. |
 | Background worker | REQUIRES EXTERNAL INFRASTRUCTURE | Code, command, heartbeat, retries, and probe exist; no independently observed staging worker heartbeat or processed job evidence is available. |
@@ -18,17 +18,19 @@ The pull-request candidate is based on remote `staging` commit `4e26f28885da8318
 | Monitoring/alerting | PARTIAL | Scheduled uptime and staging smoke workflows passed on remote `master`; worker/job failures and error-rate alerts are not evidenced. |
 | Backup/restore | REQUIRES EXTERNAL INFRASTRUCTURE | Procedures exist; no staging backup artifact and successful isolated restore evidence exists. |
 | Rollback | PARTIAL | Immutable-SHA procedure is documented; application, worker, configuration, and DB compatibility rollback have not been rehearsed. |
-| Full manual-payment journey | BLOCKED | No approved staging identities, test mailbox, proof fixture ownership, or finance reviewer was supplied. |
+| Full manual-payment journey | PARTIAL | A PostgreSQL-backed API E2E passed on 2026-11-16 for deposit confirmation → group confirmation → balance notification → balance proof → bank confirmation → `FULLY_PAID`, with separate deposit/balance proof evidence. Live staging still needs approved identities, mailbox, private storage and a finance reviewer. |
 | Operational ownership | REQUIRES HUMAN ACTION | All launch roles and response targets remain unassigned. |
 | Legal/business gates | REQUIRES HUMAN ACTION | Terms, privacy, agency agreement, verified-badge meaning, manual-transfer responsibility, refunds, disputes, and commission require approval. |
 
-Remote evidence: all five staging application URLs and the API dependency health endpoints returned 200 on 2026-11-10. The scheduled `Staging Smoke Tests` run `42634821243` passed for remote SHA `4597c8be...`. The latest `Staging Release` run `42185003280` failed its required-check gate; its migration and attestation jobs were skipped. Therefore reachability is proven, but release provenance for the current candidate is not.
+Remote evidence: all five staging application URLs and the API dependency health endpoints returned 200 on 2026-11-10. The scheduled `Staging Smoke Tests` run `42634821243` passed for remote SHA `4597c8be...`. The latest release-controller run inspected for staging SHA `00b108d1f...` failed because it required a bare `CodeQL` push context that GitHub did not emit; the repository-owned blocking `SAST (CodeQL)` check passed. The candidate removes only that nonexistent duplicate push requirement. Migration and attestation must still pass after merge, so release provenance remains open.
 
 The local `scripts/smoke-deploy.mjs` run against those URLs was blocked by this workstation's Node TLS trust chain (`unable to get local issuer certificate`). TLS verification was not disabled. Direct PowerShell requests and the GitHub-hosted smoke workflow succeeded, so this is recorded as a local runner limitation rather than evidence that the staging sites were unavailable.
 
+Candidate verification on 2026-11-17: monorepo lint completed with no errors (existing warnings remain), all nine unit/integration test tasks passed, the production build passed on Next.js 16.4.6, the production dependency audit reported zero vulnerabilities, and Playwright passed all 22 local projects while starting the same standalone artifacts used by the application images. PostgreSQL-backed API E2E passed the 31 booking, email-notification and payment-record tests relevant to this candidate. The complete API E2E suite remains a CI/staging gate because the workstation has no Redis runtime; CI provisions both PostgreSQL and Redis through `apps/api/test/docker-compose.test.yml`.
+
 ## Security
 
-- [x] Production dependency audit has no Critical or High findings (`npm audit --audit-level=high --omit=dev`, 2026-11-10)
+- [x] Production dependency audit is clean (`npm audit --audit-level=high --omit=dev`, 2026-11-17); Nodemailer 10.6.0 and Next.js 16.4.6 remove the advisories found during this candidate review
 - [x] Sensitive verified agency changes return the agency to pending review and create an audit event
 - [ ] Git history and production secrets have been reviewed after invalid refs are repaired
 - [x] Current traveler/agency/admin API authorization inventory has been reviewed
@@ -44,6 +46,7 @@ The local `scripts/smoke-deploy.mjs` run against those URLs was blocked by this 
 - [ ] Every pilot trip has an operations-approved cancellation/refund policy
 - [ ] Full staging booking and manual-payment journey has passed with real email and storage
 - [ ] Booking confirmation and booking access have passed staging smoke testing
+- [x] PostgreSQL-backed API E2E completes deposit, group confirmation, balance proof, bank confirmation and `FULLY_PAID` with distinct stage evidence
 
 ## Agency journey
 
@@ -63,12 +66,14 @@ The local `scripts/smoke-deploy.mjs` run against those URLs was blocked by this 
 - [ ] Exact candidate SHA passes the Staging Release gate, migration job and attestation job
 - [ ] Production Redis and worker runtime are deployed and heartbeat-healthy
 - [x] Playwright starts Next.js standalone artifacts like the container deployment
+- [x] Local standalone browser gate passed 22/22 traveler desktop/mobile, agency and admin tests on 2026-11-17
 - [x] Local traveler smoke covers home/search/trip and booking/manual-payment confirmation
 - [x] Basic scheduled frontend/API uptime monitoring is demonstrated on remote `master`
 - [ ] Worker heartbeat, repeated job failure, payment-error and unexpected-server-error alerts are demonstrated
 - [ ] Backup restore is rehearsed against a safe environment
 - [ ] Rollback of the complete immutable release is rehearsed
 - [x] Target migration passes the local synthetic legacy-data rehearsal
+- [x] All migrations apply in order to a clean PostgreSQL rehearsal database and `migrate status` is current (2026-11-16)
 - [ ] Migration is rehearsed against an approved sanitized production-like snapshot
 
 ## Operations

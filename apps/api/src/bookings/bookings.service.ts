@@ -6,7 +6,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
-import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus } from '@ouiboo/database';
+import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus, VerificationStatus } from '@ouiboo/database';
 import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails, normalizeBookingMeetingPoint } from './booking-response.util';
 import { resolvePaymentProofDownloadUrl } from './payment-proof-url.util';
 import { Prisma } from '@ouiboo/database';
@@ -1203,6 +1203,11 @@ export class BookingsService {
                 custodian: PaymentCustodian.AGENCY,
                 source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
                 stage,
+                proofEvidence: {
+                    imageUrl: uploadResult.filename,
+                    uploadedAt: proof.uploadedAt,
+                    status: VerificationStatus.PENDING,
+                },
             });
 
             return {
@@ -1455,6 +1460,19 @@ export class BookingsService {
                 throw new BadRequestException('Payment proof has already been reviewed');
             }
 
+            const proofStage = booking.paymentPlan
+                ? (booking.paymentPlan.status === BookingPaymentPlanStatus.BALANCE_DUE
+                    ? ExternalPaymentStage.BALANCE
+                    : ExternalPaymentStage.DEPOSIT)
+                : ExternalPaymentStage.FULL;
+            await this.externalPaymentsService.updateProofStatusInTransaction(
+                tx,
+                bookingId,
+                proofStage,
+                approved ? VerificationStatus.ACCEPTED : VerificationStatus.REJECTED,
+                approved ? null : rejectionReason,
+            );
+
             if (approved) {
                 const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
                 return { booking: updated, fullyPaid: false };
@@ -1578,6 +1596,18 @@ export class BookingsService {
                 throw new BadRequestException('Payment proof must be accepted before bank confirmation');
             }
 
+            const proofStage = plan
+                ? (plan.status === BookingPaymentPlanStatus.BALANCE_DUE
+                    ? ExternalPaymentStage.BALANCE
+                    : ExternalPaymentStage.DEPOSIT)
+                : ExternalPaymentStage.FULL;
+            await this.externalPaymentsService.updateProofStatusInTransaction(
+                tx,
+                bookingId,
+                proofStage,
+                VerificationStatus.VERIFIED,
+            );
+
             // #369: staged bookings follow the plan state machine (deposit
             // stage, then balance after confirmation); the recorded amount
             // is the confirmed bank credit, not the expected amount.
@@ -1592,7 +1622,13 @@ export class BookingsService {
                     bankConfirmedBy: confirmedByUserId,
                 });
                 const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
-                return { booking: updated, fullyPaid: decision.fullyPaid };
+                return {
+                    booking: updated,
+                    fullyPaid: decision.fullyPaid,
+                    balanceDueSessionId: decision.planStatus === BookingPaymentPlanStatus.BALANCE_DUE
+                        ? booking.sessionId
+                        : null,
+                };
             }
 
             // #368: bank confirmation records the verified fact that the
@@ -1625,8 +1661,14 @@ export class BookingsService {
             }
 
             const updated = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
-            return { booking: updated, fullyPaid: true };
+            return { booking: updated, fullyPaid: true, balanceDueSessionId: null };
         });
+
+        if (updatedBooking.balanceDueSessionId) {
+            await this.stagedPaymentsService
+                .notifyBalanceDueForSession(updatedBooking.balanceDueSessionId)
+                .catch((error) => console.error('Failed to create balance-due notifications', error));
+        }
 
         // The "payment confirmed" email means fully paid; a staged deposit
         // confirmation does not send it (the balance is still outstanding).

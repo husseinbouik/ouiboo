@@ -573,4 +573,62 @@ describe('StagedPaymentsService (#369)', () => {
         expect(summary).toEqual({ evaluated: 0, confirmed: 0, notConfirmed: 0 });
         expect(db.$transaction).not.toHaveBeenCalled();
     });
+
+    it('creates one in-app and localized email reminder for a newly due balance', async () => {
+        const startDate = new Date('2027-02-10T09:00:00.000Z');
+        const plan = {
+            id: 'plan-1',
+            balanceAmount: D('800.00'),
+            currency: 'MAD',
+            booking: {
+                id: 'booking-1',
+                travelerId: 'traveler-1',
+                locale: 'fr',
+                traveler: { email: 'traveler@example.test' },
+                session: { startDate, template: { title: 'Atlas Trek' } },
+            },
+        };
+        const notificationLog = { create: jest.fn(async () => ({ id: 'notification-1' })) };
+        const bookingPaymentPlan = {
+            findMany: jest.fn(async () => [plan]),
+            updateMany: jest.fn(async () => ({ count: 1 })),
+        };
+        const tx = { bookingPaymentPlan, notificationLog };
+        const db: any = {
+            bookingPaymentPlan,
+            $transaction: jest.fn(async (fn: any) => fn(tx)),
+        };
+        const email = { sendPaymentReminder: jest.fn(async () => undefined) };
+        const service = new StagedPaymentsService(
+            db,
+            makeExternalPayments() as any,
+            makeRefunds() as any,
+            email as any,
+        );
+
+        const count = await service.notifyBalanceDueForSession('session-1');
+
+        expect(count).toBe(1);
+        expect(bookingPaymentPlan.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+            where: expect.objectContaining({ id: 'plan-1', balanceNotifiedAt: null }),
+            data: { balanceNotifiedAt: expect.any(Date) },
+        }));
+        expect(notificationLog.create).toHaveBeenCalledWith({
+            data: expect.objectContaining({
+                userId: 'traveler-1',
+                notificationType: 'PAYMENT_REMINDER',
+                metadata: expect.objectContaining({
+                    kind: 'BALANCE_DUE',
+                    url: '/booking/booking-1',
+                }),
+            }),
+        });
+        expect(email.sendPaymentReminder).toHaveBeenCalledWith(
+            'traveler@example.test',
+            'Atlas Trek',
+            expect.any(Number),
+            expect.stringMatching(/\/booking\/booking-1$/),
+            'fr',
+        );
+    });
 });

@@ -6,8 +6,8 @@
  * mobile-only regressions (overlapping tap targets, clipped content,
  * hidden focus states) are caught in CI.
  *
- * Run in CI after `@axe-core/playwright` is installed with
- * `npm install --no-save @axe-core/playwright` (kept out of package.json).
+ * `@axe-core/playwright` is pinned in the repository's development
+ * dependencies so CI uses the immutable npm install.
  *
  * Usage: node .github/lighthouse/axe-check-mobile.mjs [baseUrl] [pagesCsv] [--role=ROLE]
  * A page that cannot be analyzed at all FAILS the check (#332), same as

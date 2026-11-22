@@ -113,7 +113,7 @@ export class NotificationJobsService {
           if (preferences && (!preferences.emailNotifications || !preferences.paymentReminder)) {
             continue;
           }
-          const bookingDashboardUrl = `${process.env.TRAVELER_APP_URL}/bookings/${booking.id}`;
+          const bookingDashboardUrl = `${process.env.TRAVELER_APP_URL}/booking/${booking.id}`;
           const hoursRemaining = 12;
           
           await this.emailService.sendPaymentReminder(

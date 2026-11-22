@@ -1,10 +1,12 @@
 import {
   BookingPaymentStatus,
+  BookingPaymentPlanStatus,
   BookingStatus,
   PaymentMethod,
   RefundStatus,
   VerificationStatus,
   type BookingPaymentStatusType,
+  type BookingPaymentPlanStatusType,
   type BookingStatusType,
   type PaymentMethodType,
   type RefundStatusType,
@@ -33,8 +35,21 @@ export const getTravelerBookingStatusTone = (status: BookingStatusType) => {
   }
 };
 
-export const shouldShowUploadAction = (status: BookingStatusType, hasPaymentProof: boolean) =>
-  status === BookingStatus.Pending && !hasPaymentProof;
+export const shouldShowUploadAction = (
+  status: BookingStatusType,
+  hasPaymentProof: boolean,
+  paymentPlanStatus?: BookingPaymentPlanStatusType | null,
+) => {
+  // A staged balance opens only after the group is confirmed. The deposit
+  // proof still exists at that point, so `hasPaymentProof` cannot hide the
+  // second upload action. While a new balance proof is under review the
+  // booking is AWAITING_VALIDATION and the action stays hidden; a rejected
+  // balance returns the booking to CONFIRMED and allows a safe retry.
+  if (paymentPlanStatus === BookingPaymentPlanStatus.BalanceDue) {
+    return status === BookingStatus.Confirmed;
+  }
+  return status === BookingStatus.Pending && !hasPaymentProof;
+};
 
 export const canCancelTravelerBooking = (status: BookingStatusType) =>
   status !== BookingStatus.Cancelled &&

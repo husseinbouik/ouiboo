@@ -1,8 +1,8 @@
 /**
  * Standalone axe-core accessibility check for key pages.
  *
- * Run in CI after `@axe-core/playwright` is installed with
- * `npm install --no-save @axe-core/playwright` (kept out of package.json).
+ * `@axe-core/playwright` is pinned in the repository's development
+ * dependencies so CI uses the immutable npm install.
  *
  * Usage: node .github/lighthouse/axe-check.mjs [baseUrl] [pagesCsv] [--role=ROLE]
  * Defaults: traveler base URL + /, /search, /login, /signup (issue #213).
