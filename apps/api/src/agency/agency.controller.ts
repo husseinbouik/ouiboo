@@ -617,6 +617,14 @@ export class AgencyController {
                 // "changed" for these fields at all.
                 bankAccountHolderName: true,
                 bankAttestationUrl: true,
+                // #988: Cash Plus destination review state.
+                cashPlusBeneficiaryName: true,
+                cashPlusPhone: true,
+                pendingCashPlusBeneficiaryName: true,
+                pendingCashPlusPhone: true,
+                cashPlusEnabled: true,
+                cashPlusStatus: true,
+                cashPlusVerifiedAt: true,
                 verificationStatus: true,
                 travelLicenceStatus: true,
                 licenceExpiry: true,
@@ -713,6 +721,51 @@ export class AgencyController {
             destination.bankAttestationUrl = data.bankAttestationUrl.trim() || null;
         }
 
+        // #988: Cash Plus infos follow the same rule as bank details —
+        // a submission pends for admin review and only verification
+        // promotes it to the live traveller-visible destination. The
+        // toggle is the agency's own switch and applies immediately;
+        // turning it off hides the method at checkout without erasing
+        // the verified infos.
+        const cashPlus: Prisma.AgencyProfileUpdateInput = {};
+        if (data.cashPlusEnabled !== undefined) {
+            cashPlus.cashPlusEnabled = data.cashPlusEnabled;
+        }
+        const submittedCpName =
+            data.cashPlusBeneficiaryName !== undefined ? data.cashPlusBeneficiaryName.trim() : undefined;
+        const submittedCpPhone =
+            data.cashPlusPhone !== undefined ? data.cashPlusPhone.trim() : undefined;
+        if (submittedCpName !== undefined || submittedCpPhone !== undefined) {
+            const nextName = submittedCpName || normalized(existing.pendingCashPlusBeneficiaryName) || normalized(existing.cashPlusBeneficiaryName);
+            const nextPhone = submittedCpPhone || normalized(existing.pendingCashPlusPhone) || normalized(existing.cashPlusPhone);
+            if (!nextName && !nextPhone) {
+                // Clearing both infos deactivates the destination.
+                cashPlus.cashPlusBeneficiaryName = null;
+                cashPlus.cashPlusPhone = null;
+                cashPlus.pendingCashPlusBeneficiaryName = null;
+                cashPlus.pendingCashPlusPhone = null;
+                cashPlus.cashPlusStatus = 'UNVERIFIED';
+                cashPlus.cashPlusVerifiedAt = null;
+                cashPlus.cashPlusVerifiedBy = null;
+                cashPlus.cashPlusRejectionReason = null;
+            } else if (
+                (nextName !== normalized(existing.pendingCashPlusBeneficiaryName) &&
+                    nextName !== normalized(existing.cashPlusBeneficiaryName)) ||
+                (nextPhone !== normalized(existing.pendingCashPlusPhone) &&
+                    nextPhone !== normalized(existing.cashPlusPhone))
+            ) {
+                // A genuinely new submission (name or phone changed
+                // versus both the pending and the live values).
+                if (!nextName || !nextPhone) {
+                    throw new BadRequestException('Cash Plus beneficiary name and phone number are both required');
+                }
+                cashPlus.pendingCashPlusBeneficiaryName = nextName;
+                cashPlus.pendingCashPlusPhone = nextPhone;
+                cashPlus.cashPlusStatus = 'PENDING_REVIEW';
+                cashPlus.cashPlusRejectionReason = null;
+            }
+        }
+
         return this.prisma.agencyProfile.update({
             where: { id: req.tenantId },
             data: {
@@ -752,6 +805,7 @@ export class AgencyController {
                         ? data.emergencyContactPhone.trim() || null
                         : undefined,
                 ...destination,
+                ...cashPlus,
             }
         });
     }

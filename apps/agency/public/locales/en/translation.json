@@ -542,7 +542,9 @@
     "noHistory": "No payments recorded yet.",
     "na": "N/A",
     "howTitle": "How do payments work?",
-    "howBody": "Travellers pay your agency directly — by bank transfer to your account or through your payment provider. When a payment is verified, OuiBoo records it here as received by your merchant account. OuiBoo never holds traveller money, so there is no OuiBoo balance to withdraw: the funds are already with you or your provider."
+    "howBody": "Travellers pay your agency directly — by bank transfer to your account or through your payment provider. When a payment is verified, OuiBoo records it here as received by your merchant account. OuiBoo never holds traveller money, so there is no OuiBoo balance to withdraw: the funds are already with you or your provider.",
+    "methodCashPlus": "Cash Plus",
+    "methodBankTransfer": "Bank transfer"
   },
   "reviews": {
     "title": "Reviews Manager",
@@ -1004,7 +1006,16 @@
     "storefrontAboutFr": "Storefront about (French)",
     "storefrontAboutAr": "Storefront about (Arabic)",
     "storefrontAboutEn": "Storefront about (English)",
-    "storefrontLanguages": "Languages you work in (codes, comma separated)"
+    "storefrontLanguages": "Languages you work in (codes, comma separated)",
+    "cashPlusTitle": "Cash Plus payments",
+    "cashPlusSubtitle": "Let travellers pay you in cash at a Cash Plus point. New infos are reviewed before they go live.",
+    "cashPlusStatusLabel": "Cash Plus review status",
+    "cashPlusBeneficiaryName": "Cash Plus beneficiary name",
+    "cashPlusBeneficiaryNamePlaceholder": "Name registered with Cash Plus",
+    "cashPlusBeneficiaryNameHint": "The name travellers will see at checkout — it must be your agency.",
+    "cashPlusPhone": "Cash Plus phone number",
+    "cashPlusPhonePlaceholder": "+212 6 00 00 00 00",
+    "cashPlusPhoneHint": "The number travellers send to at the Cash Plus point."
   },
   "analytics": {
     "dashboardTitle": "Analytics Dashboard",
@@ -1132,7 +1143,17 @@
     "bankReferenceHint": "Required — the reference of the transfer in your bank account.",
     "confirmBankReceipt": "Confirm Bank Receipt",
     "confirmingBankReceipt": "Confirming...",
-    "actionFailed": "Something went wrong. Please try again."
+    "actionFailed": "Something went wrong. Please try again.",
+    "cashPlusConfirmationTitle": "Confirm the Cash Plus payment",
+    "cashPlusConfirmationInstruction": "Confirm only when the Cash Plus payment has actually reached you. The amount must equal the stage amount in full — the sending fee is the traveller’s, paid on top. Accepting the proof alone does not settle the payment; this confirmation does.",
+    "cashPlusReference": "Cash Plus transaction code",
+    "cashPlusReferencePlaceholder": "Code from the Cash Plus receipt",
+    "cashPlusReferenceHint": "Must match the transaction code the traveller supplied.",
+    "method": "Payment method",
+    "methodCashPlus": "Cash Plus",
+    "methodBankTransfer": "Bank transfer",
+    "methodManual": "Manual payment",
+    "cashPlusCode": "Transaction code"
   },
   "bulkSession": {
     "helper": "Complete the dates, price, and seat count for every session.",

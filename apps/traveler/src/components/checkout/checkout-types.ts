@@ -33,6 +33,9 @@ export const getStagedAmounts = (session: CheckoutTripSession, guestCount: numbe
 export type CheckoutTrip = {
   agency?: {
     bankDetails?: string | null;
+    /** #988: verified+enabled Cash Plus destination (API-gated);
+     * null/absent when the agency has no verified Cash Plus infos. */
+    cashPlus?: { beneficiaryName: string; phone: string } | null;
     companyName?: string | null;
     /** #371: seller of record (legal name + verified licence). */
     legalName?: string | null;

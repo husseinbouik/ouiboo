@@ -17,6 +17,10 @@ type UseCheckoutBookingOptions = {
   fullName: string;
   phoneNumber: string;
   hasBankDetails: boolean;
+  /** #988: the manual channel the traveller selected. */
+  paymentMethod?: 'BANK_TRANSFER' | 'CASH_PLUS';
+  /** #988: Cash Plus transaction code entered at checkout. */
+  transactionCode?: string;
   proofFile: File | null;
   /** B9: the traveller's explicit terms acceptance (checkout checkbox). */
   termsAccepted: boolean;
@@ -39,6 +43,8 @@ export function useCheckoutBooking({
   fullName,
   phoneNumber,
   hasBankDetails,
+  paymentMethod = 'BANK_TRANSFER',
+  transactionCode,
   proofFile,
   termsAccepted,
   pricingSelection,
@@ -70,7 +76,7 @@ export function useCheckoutBooking({
       // #697: pay-on-arrival bookings collect nothing at checkout —
       // the traveller pays the agency on site, so bank details and a
       // proof are not part of this flow at all.
-      if (!hasBankDetails && !payOnArrival) {
+      if (!hasBankDetails && paymentMethod !== 'CASH_PLUS' && !payOnArrival) {
         throw new Error(t('checkout.errors.bankDetailsMissing'));
       }
       // B9: never create a booking without the explicit acceptance —
@@ -91,7 +97,7 @@ export function useCheckoutBooking({
           guestsCount: guestCount,
           fullName: fullName.trim(),
           phoneNumber: phoneNumber.trim(),
-          paymentMethod: 'BANK_TRANSFER',
+          paymentMethod,
           // #424: the traveller's active checkout locale — the API
           // persists it on the booking so booking-journey emails render
           // in this language.
@@ -133,6 +139,10 @@ export function useCheckoutBooking({
         try {
           const formData = new FormData();
           formData.append('file', proofFile);
+          // #988: the Cash Plus transaction code rides with the receipt.
+          if (transactionCode?.trim()) {
+            formData.append('transactionCode', transactionCode.trim());
+          }
           await apiClient.post(`/bookings/${bookingId}/payment-proof`, formData, {
             headers: {
               'Content-Type': 'multipart/form-data',
@@ -147,10 +157,22 @@ export function useCheckoutBooking({
         }
       }
 
+      // #988: Cash Plus code-only proof (no receipt image) — the code
+      // alone is the proof for this stage; confirmation settles it.
+      if (!proofFile && bookingId && paymentMethod === 'CASH_PLUS' && transactionCode?.trim()) {
+        try {
+          await apiClient.post(`/bookings/${bookingId}/payment-proof-code`, {
+            transactionCode: transactionCode.trim(),
+          });
+        } catch {
+          throw Object.assign(new Error('PROOF_UPLOAD_FAILED'), { bookingId });
+        }
+      }
+
       return { id: bookingId } as BookingResponse;
     },
     onSuccess: (data) => {
-      router.push(`/checkout/confirmation?bookingId=${data?.id ?? ''}&proof=${proofFile ? '1' : '0'}`);
+      router.push(`/checkout/confirmation?bookingId=${data?.id ?? ''}&proof=${proofFile || transactionCode?.trim() ? '1' : '0'}`);
     },
     onError: (error) => {
       const failedBookingId = (error as Error & { bookingId?: string }).bookingId;

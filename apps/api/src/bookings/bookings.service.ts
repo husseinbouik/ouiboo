@@ -6,7 +6,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateBookingDto, PaymentMethodEnum } from './dto/create-booking.dto';
 import { EmailService } from '../email/email.service';
 import { UploadService } from '../upload/upload.service';
-import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus, VerificationStatus } from '@ouiboo/database';
+import { BookingPaymentPlanStatus, BookingPaymentStatus, ExternalPaymentStage, ManualPaymentChannel, PaymentCustodian, PaymentLedgerSource, PaymentMethod, SessionGroupStatus, VerificationStatus } from '@ouiboo/database';
 import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails, normalizeBookingMeetingPoint } from './booking-response.util';
 import { resolvePaymentProofDownloadUrl } from './payment-proof-url.util';
 import { Prisma } from '@ouiboo/database';
@@ -25,6 +25,7 @@ import { normalizePromoCode, resolvePromoDiscount, type PromoResolution } from '
 import { resolvePriceRuleDiscount, selectPriceRule, type PriceRuleResolution, type SessionPriceRuleForBooking } from '../price-rules/price-rules.util';
 import { MAX_GROUP_DEPOSIT_PERCENT } from '../staged-payments/staged-payments.util';
 import { payOnArrivalBookingError, resolvePayLaterDeadline, type PickupPoint } from '../trips/batch-f.util';
+import { visibleCashPlus } from '../common/cash-plus.util';
 
 const DEFAULT_PAYMENT_PROOF_EXPIRATION_HOURS = 24;
 
@@ -461,6 +462,14 @@ export class BookingsService {
             throw new BadRequestException('This payment method is not available');
         }
 
+        // #988: Cash Plus is a manual channel, available only when the
+        // agency has enabled it AND an admin has verified its Cash Plus
+        // infos — the server re-checks here so an unverified destination
+        // can never be booked against, whatever the client renders.
+        if (dto.paymentMethod === PaymentMethodEnum.CASH_PLUS && !visibleCashPlus(agency)) {
+            throw new BadRequestException('Cash Plus is not available for this agency');
+        }
+
         // #694 (Council S6): a PRIVATE session is priced per-group and
         // booked exclusively — the min-group staged branch (and its
         // PENDING_MINIMUM state) NEVER applies to it.
@@ -480,11 +489,12 @@ export class BookingsService {
                 && session.confirmationDeadline <= now) {
                 throw new BadRequestException('The confirmation deadline for this trip has passed');
             }
-            // Phase 1: staged trips are paid by manual bank transfer only.
-            // A one-shot gateway payment would make an unconfirmed trip
-            // fully payable, which the staged model forbids (plan §53).
-            if (dto.paymentMethod && dto.paymentMethod !== PaymentMethodEnum.BANK_TRANSFER) {
-                throw new BadRequestException('Only bank transfer payment is available for this trip until it is confirmed');
+            // Phase 1: staged trips are paid by manual channels only
+            // (bank transfer, or Cash Plus since #988). A one-shot
+            // gateway payment would make an unconfirmed trip fully
+            // payable, which the staged model forbids (plan §53).
+            if (dto.paymentMethod && dto.paymentMethod !== PaymentMethodEnum.BANK_TRANSFER && dto.paymentMethod !== PaymentMethodEnum.CASH_PLUS) {
+                throw new BadRequestException('Only manual payment (bank transfer or Cash Plus) is available for this trip until it is confirmed');
             }
         }
 
@@ -649,6 +659,7 @@ export class BookingsService {
             // Map PaymentMethodEnum to PaymentMethod enum
             const paymentMethodMap: Record<PaymentMethodEnum, PaymentMethod> = {
               [PaymentMethodEnum.BANK_TRANSFER]: PaymentMethod.MANUAL,
+              [PaymentMethodEnum.CASH_PLUS]: PaymentMethod.MANUAL,
               [PaymentMethodEnum.CARD]: PaymentMethod.GATEWAY,
               [PaymentMethodEnum.WALLET]: PaymentMethod.MANUAL,
               [PaymentMethodEnum.MOBILE_MONEY]: PaymentMethod.GATEWAY,
@@ -740,6 +751,14 @@ export class BookingsService {
                     idempotencyKey,
                     idempotencyPayloadHash,
                     paymentMethod: persistedPaymentMethod,
+                    // #988: the chosen manual channel, recorded on the
+                    // booking (per-stage channels land on each stage's
+                    // ExternalPayment at proof time).
+                    manualPaymentChannel: dto.paymentMethod === PaymentMethodEnum.CASH_PLUS
+                        ? ManualPaymentChannel.CASH_PLUS
+                        : persistedPaymentMethod === PaymentMethod.MANUAL
+                            ? ManualPaymentChannel.BANK_TRANSFER
+                            : null,
                 },
                 include: {
                     session: {
@@ -1061,7 +1080,13 @@ export class BookingsService {
         return mapBookingDetails(booking, locale);
     }
 
-    async uploadPaymentProof(bookingId: string, userId: string, file: Express.Multer.File, rawIdempotencyKey?: string) {
+    async uploadPaymentProof(bookingId: string, userId: string, file: Express.Multer.File, rawIdempotencyKey?: string, rawTransactionCode?: string) {
+        // #988: the Cash Plus transaction code submitted alongside the
+        // receipt (trimmed, capped) — recorded on the proof and on the
+        // stage's ExternalPayment; the agency confirms against it.
+        const transactionCode = typeof rawTransactionCode === 'string' && rawTransactionCode.trim()
+            ? rawTransactionCode.trim().slice(0, 120)
+            : null;
         const booking = await this.db.booking.findUnique({
             where: { id: bookingId },
             include: {
@@ -1158,6 +1183,7 @@ export class BookingsService {
                     uploadedAt: new Date(),
                     status: 'PENDING',
                     rejectionReason: null,
+                    transactionCode,
                     // #494: the stored key always tracks the latest
                     // accepted submission (null when it sent none).
                     idempotencyKey: proofIdempotencyKey,
@@ -1167,6 +1193,7 @@ export class BookingsService {
                     bookingId,
                     imageUrl: uploadResult.filename,
                     status: 'PENDING',
+                    transactionCode,
                     idempotencyKey: proofIdempotencyKey,
                     idempotencyPayloadHash: proofPayloadHash,
                 },
@@ -1199,6 +1226,8 @@ export class BookingsService {
                 amount: expectedAmount,
                 currency: booking.currency,
                 method: booking.paymentMethod ?? PaymentMethod.MANUAL,
+                manualChannel: (booking as { manualPaymentChannel?: ManualPaymentChannel | null }).manualPaymentChannel ?? null,
+                transactionCode,
                 externalReference: proof.id,
                 custodian: PaymentCustodian.AGENCY,
                 source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
@@ -1214,6 +1243,112 @@ export class BookingsService {
                 ...proof,
                 downloadUrl,
             };
+        });
+    }
+
+    /**
+     * #988: Cash Plus proof by transaction code alone (no receipt
+     * image). Same stage rules as uploadPaymentProof: the plan decides
+     * the stage, the booking moves to AWAITING_VALIDATION, and the
+     * stage's ExternalPayment is recorded PENDING_VERIFICATION with the
+     * code — upload settles nothing; agency confirmation (reference =
+     * this code, exact stage amount) is what settles.
+     */
+    async submitPaymentProofCode(bookingId: string, userId: string, rawCode?: string) {
+        const transactionCode = typeof rawCode === 'string' ? rawCode.trim().slice(0, 120) : '';
+        if (!transactionCode) {
+            throw new BadRequestException('A Cash Plus transaction code is required');
+        }
+        const booking = await this.db.booking.findUnique({
+            where: { id: bookingId },
+            include: {
+                session: { include: { template: true } },
+                paymentPlan: true,
+                paymentProof: true,
+            },
+        });
+        if (!booking) {
+            throw new BadRequestException('Booking not found');
+        }
+        if (booking.travelerId !== userId) {
+            throw new ForbiddenException('Forbidden');
+        }
+        if ((booking as { manualPaymentChannel?: string | null }).manualPaymentChannel !== ManualPaymentChannel.CASH_PLUS) {
+            throw new BadRequestException('This booking was not made with Cash Plus');
+        }
+        const plan = booking.paymentPlan;
+        let isInitialStage = true;
+        if (plan) {
+            if (plan.status === BookingPaymentPlanStatus.BALANCE_DUE) {
+                isInitialStage = false;
+                if (!['CONFIRMED', 'REJECTED', 'AWAITING_VALIDATION'].includes(booking.status)) {
+                    throw new BadRequestException('Booking is not awaiting a balance payment proof');
+                }
+            } else if (plan.status === BookingPaymentPlanStatus.DEPOSIT_DUE) {
+                if (booking.session.groupStatus === SessionGroupStatus.NOT_CONFIRMED) {
+                    throw new BadRequestException('This trip was not confirmed because the minimum group size was not reached');
+                }
+                if (!['PENDING', 'REJECTED', 'AWAITING_VALIDATION'].includes(booking.status)) {
+                    throw new BadRequestException('Booking is not awaiting a deposit payment proof');
+                }
+            } else {
+                throw new BadRequestException('This booking is not awaiting a payment proof');
+            }
+        }
+        const allowedStatuses = new Set(['PENDING', 'REJECTED', 'AWAITING_VALIDATION']);
+        if (isInitialStage && !allowedStatuses.has(booking.status)) {
+            throw new BadRequestException('Booking cannot accept payment proof');
+        }
+
+        return this.db.$transaction(async (tx) => {
+            const proof = await tx.paymentProof.upsert({
+                where: { bookingId },
+                update: {
+                    uploadedAt: new Date(),
+                    status: 'PENDING',
+                    rejectionReason: null,
+                    transactionCode,
+                },
+                create: {
+                    bookingId,
+                    imageUrl: '',
+                    status: 'PENDING',
+                    transactionCode,
+                },
+            });
+            await tx.booking.update({
+                where: { id: bookingId },
+                data: {
+                    status: 'AWAITING_VALIDATION',
+                    paymentProofId: proof.id,
+                },
+            });
+            const stage = plan
+                ? (isInitialStage ? ExternalPaymentStage.DEPOSIT : ExternalPaymentStage.BALANCE)
+                : ExternalPaymentStage.FULL;
+            const expectedAmount = plan
+                ? (isInitialStage ? plan.depositAmount : plan.balanceAmount)
+                : booking.totalAmount;
+            await this.externalPaymentsService.recordPaymentPendingInTransaction(tx, {
+                bookingId,
+                agencyId: booking.session.template.agencyId,
+                travelerId: booking.travelerId,
+                amount: expectedAmount,
+                currency: booking.currency,
+                method: booking.paymentMethod ?? PaymentMethod.MANUAL,
+                manualChannel: ManualPaymentChannel.CASH_PLUS,
+                transactionCode,
+                externalReference: proof.id,
+                custodian: PaymentCustodian.AGENCY,
+                source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                stage,
+                proofEvidence: {
+                    imageUrl: '',
+                    uploadedAt: proof.uploadedAt,
+                    status: VerificationStatus.PENDING,
+                },
+            });
+            return { ...proof, downloadUrl: this.buildPaymentProofDownloadUrl(bookingId) };
         });
     }
 
@@ -1582,6 +1717,28 @@ export class BookingsService {
             throw new BadRequestException(
                 'Confirmed amount does not match the expected payment amount; a short credit cannot be confirmed — reject the proof or ask the traveller for a top-up',
             );
+        }
+
+        // #988: for a Cash Plus booking the confirmation reference IS
+        // the transaction code — when the traveller supplied one as
+        // proof for this stage, the agency must confirm with that exact
+        // code (the sending fee is the traveller's, paid on top, so the
+        // amount equality check above already binds the full stage
+        // amount). Bank-transfer bookings keep the #422 free bank
+        // reference semantics.
+        if ((booking as { manualPaymentChannel?: string | null }).manualPaymentChannel === ManualPaymentChannel.CASH_PLUS) {
+            const confirmStage = plan
+                ? (plan.status === BookingPaymentPlanStatus.BALANCE_DUE
+                    ? ExternalPaymentStage.BALANCE
+                    : ExternalPaymentStage.DEPOSIT)
+                : ExternalPaymentStage.FULL;
+            const stagePayment = await this.db.externalPayment.findUnique({
+                where: { bookingId_stage: { bookingId, stage: confirmStage } },
+                select: { transactionCode: true },
+            });
+            if (stagePayment?.transactionCode && stagePayment.transactionCode !== bankReference) {
+                throw new BadRequestException('Confirmation reference must be the Cash Plus transaction code supplied by the traveller');
+            }
         }
 
         const updatedBooking = await this.db.$transaction(async (tx) => {

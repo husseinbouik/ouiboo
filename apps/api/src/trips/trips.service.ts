@@ -6,6 +6,7 @@ import { toMoneyDecimal } from '../common/money.util';
 import { canOrganise, effectiveInsuranceStatus, effectiveVerificationStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
 import { publicBookableAgencyWhere } from '../common/agency-booking-eligibility.util';
 import { visibleBankDetails } from '../common/bank-details.util';
+import { visibleCashPlus } from '../common/cash-plus.util';
 import { BETA_CATALOG_CURRENCY, isCatalogCurrencyAllowed, isMadOnlyCatalogEnabled } from '../common/catalog-currency.util';
 import { resolveStagedSessionConfig } from '../staged-payments/staged-payments.util';
 import {
@@ -732,6 +733,14 @@ export class TripsService {
                         // below); the status fields drive that gate.
                         bankDetailsStatus: true,
                         bankDetailsVerifiedAt: true,
+                        // #988: Cash Plus destination — exposed only
+                        // through visibleCashPlus below (enabled +
+                        // admin-verified); the raw fields stay private.
+                        cashPlusBeneficiaryName: true,
+                        cashPlusPhone: true,
+                        cashPlusEnabled: true,
+                        cashPlusStatus: true,
+                        cashPlusVerifiedAt: true,
                         // #371: seller-of-record display on the trip page and
                         // at checkout (legal name + verified licence number).
                         // B4: the complete seller block also carries the
@@ -790,7 +799,18 @@ export class TripsService {
         // attestation. During a replacement review the previously
         // verified instructions stay live (visibleBankDetails encodes
         // that rule); the verification stamp itself is not exposed.
-        const { bankDetailsVerifiedAt: _verificationStamp, insuranceExpiry: _insuranceExpiry, ...publicAgency } = result.agency;
+        const {
+            bankDetailsVerifiedAt: _verificationStamp,
+            // #988: raw Cash Plus fields are NEVER public — only the
+            // gated `cashPlus` value computed below may leave the API.
+            cashPlusBeneficiaryName: _cpName,
+            cashPlusPhone: _cpPhone,
+            cashPlusEnabled: _cpEnabled,
+            cashPlusStatus: _cpStatus,
+            cashPlusVerifiedAt: _cashPlusStamp,
+            insuranceExpiry: _insuranceExpiry,
+            ...publicAgency
+        } = result.agency;
         // #546: resolve title/description into the request locale
         // (fallback French -> any language; no locale = French columns,
         // identical to the pre-#546 payload).
@@ -854,6 +874,9 @@ export class TripsService {
                 // #569: umbrella reconciled with licence + insurance.
                 verificationStatus: effectiveVerificationStatus(result.agency),
                 bankDetails: visibleBankDetails(result.agency),
+                // #988: verified+enabled Cash Plus infos only — null
+                // (never the raw pending/unverified values) otherwise.
+                cashPlus: visibleCashPlus(result.agency),
                 // #688: the insurance validity window joins the public
                 // payload ONLY while the insurance is effectively
                 // verified (the raw expiry stays stripped above, #569).

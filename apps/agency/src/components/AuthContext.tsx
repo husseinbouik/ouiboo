@@ -71,6 +71,15 @@ interface User {
         bankDetailsStatus?: string;
         bankDetailsVerifiedAt?: string;
         bankDetailsRejectionReason?: string;
+        // #988: Cash Plus destination (pending submission + review state)
+        cashPlusBeneficiaryName?: string;
+        cashPlusPhone?: string;
+        pendingCashPlusBeneficiaryName?: string;
+        pendingCashPlusPhone?: string;
+        cashPlusEnabled?: boolean;
+        cashPlusStatus?: string;
+        cashPlusVerifiedAt?: string;
+        cashPlusRejectionReason?: string;
         // #419: trip emergency contact (departure pack for travellers)
         emergencyContactName?: string;
         emergencyContactPhone?: string;

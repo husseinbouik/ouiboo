@@ -18,6 +18,11 @@ interface PaymentProofBankConfirmationProps {
   currency?: string;
   isLoading?: boolean;
   onConfirm: (payload: BankConfirmationPayload) => void;
+  /** #988: for a Cash Plus booking the confirmation reference is the
+   * transaction code — labels switch and the field prefills with the
+   * code the traveller supplied as proof. */
+  channel?: 'BANK_TRANSFER' | 'CASH_PLUS' | null;
+  suggestedReference?: string | null;
 }
 
 /**
@@ -31,10 +36,13 @@ export function PaymentProofBankConfirmation({
   currency,
   isLoading = false,
   onConfirm,
+  channel,
+  suggestedReference,
 }: PaymentProofBankConfirmationProps) {
   const { t, i18n } = useTranslation();
+  const isCashPlus = channel === 'CASH_PLUS';
   const [confirmedAmount, setConfirmedAmount] = useState(String(expectedAmount));
-  const [bankReference, setBankReference] = useState('');
+  const [bankReference, setBankReference] = useState(suggestedReference ?? '');
 
   const ready = isBankConfirmationReady(confirmedAmount, bankReference);
   const expectedText = formatCurrency(expectedAmount, currency, i18n.language);
@@ -51,10 +59,10 @@ export function PaymentProofBankConfirmation({
     <div className="space-y-4 pt-4 border-t border-border">
       <h3 className="font-semibold text-foreground flex items-center gap-2">
         <Landmark className="h-5 w-5 text-accent" />
-        {t('paymentProof.bankConfirmationTitle')}
+        {isCashPlus ? t('paymentProof.cashPlusConfirmationTitle') : t('paymentProof.bankConfirmationTitle')}
       </h3>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        {t('paymentProof.bankConfirmationInstruction')}
+        {isCashPlus ? t('paymentProof.cashPlusConfirmationInstruction') : t('paymentProof.bankConfirmationInstruction')}
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -78,19 +86,19 @@ export function PaymentProofBankConfirmation({
         </div>
         <div className="space-y-2">
           <Label htmlFor="bank-confirmation-reference">
-            {t('paymentProof.bankReference')}
+            {isCashPlus ? t('paymentProof.cashPlusReference') : t('paymentProof.bankReference')}
           </Label>
           <Input
             id="bank-confirmation-reference"
             type="text"
             value={bankReference}
             onChange={(e) => setBankReference(e.target.value)}
-            placeholder={t('paymentProof.bankReferencePlaceholder')}
+            placeholder={isCashPlus ? t('paymentProof.cashPlusReferencePlaceholder') : t('paymentProof.bankReferencePlaceholder')}
             disabled={isLoading}
             aria-required="true"
           />
           <p className="text-xs text-muted-foreground">
-            {t('paymentProof.bankReferenceHint')}
+            {isCashPlus ? t('paymentProof.cashPlusReferenceHint') : t('paymentProof.bankReferenceHint')}
           </p>
         </div>
       </div>

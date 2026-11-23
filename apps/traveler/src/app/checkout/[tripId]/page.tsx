@@ -32,6 +32,9 @@ export default function CheckoutPage() {
     ? parsedGuestsCount
     : null;
   const [proofFile, setProofFile] = useState<File | null>(null);
+  // #988: selected manual channel + Cash Plus transaction code.
+  const [paymentMethodOverride, setPaymentMethod] = useState<'BANK_TRANSFER' | 'CASH_PLUS' | null>(null);
+  const [transactionCode, setTransactionCode] = useState('');
   // Batch F: render-stable "now" for the pay-later deadline preview.
   const [nowMs] = useState(() => Date.now());
   const [proofPreview, setProofPreview] = useState<string | null>(null);
@@ -214,6 +217,12 @@ export default function CheckoutPage() {
   const selectedCurrency = selectedSession?.currency;
   const bankDetails = trip?.agency?.bankDetails?.trim() ?? '';
   const hasBankDetails = bankDetails.length > 0;
+  // #988: Cash Plus destination (API returns it only when verified +
+  // enabled). Default to Cash Plus when it is the only destination.
+  const cashPlus = trip?.agency?.cashPlus ?? null;
+  const paymentMethod: 'BANK_TRANSFER' | 'CASH_PLUS' =
+    paymentMethodOverride ?? (hasBankDetails ? 'BANK_TRANSFER' : cashPlus ? 'CASH_PLUS' : 'BANK_TRANSFER');
+  const hasSelectedDestination = paymentMethod === 'CASH_PLUS' ? Boolean(cashPlus) : hasBankDetails;
   const sessionDateLabel = selectedSession
     ? `${new Date(selectedSession.startDate).toLocaleDateString(i18n.language)} - ${new Date(selectedSession.endDate).toLocaleDateString(i18n.language)}`
     : t('checkout.selectSession');
@@ -226,6 +235,8 @@ export default function CheckoutPage() {
     fullName,
     phoneNumber,
     hasBankDetails,
+    paymentMethod,
+    transactionCode,
     proofFile,
     termsAccepted,
     pricingSelection,
@@ -269,7 +280,7 @@ export default function CheckoutPage() {
   // bookings only.
   const canSubmit = Boolean(
     selectedSessionId &&
-    hasBankDetails &&
+    hasSelectedDestination &&
     fullName.trim() &&
     phoneNumber.trim() &&
     (retryBookingId || termsAccepted)
@@ -335,6 +346,16 @@ export default function CheckoutPage() {
                 <CheckoutPayment
                   bankDetails={bankDetails}
                   hasBankDetails={hasBankDetails}
+                  cashPlus={cashPlus}
+                  paymentMethod={paymentMethod}
+                  onPaymentMethodChange={setPaymentMethod}
+                  transactionCode={transactionCode}
+                  onTransactionCodeChange={setTransactionCode}
+                  stageAmount={{
+                    amount: stagedAmounts ? stagedAmounts.depositDue : totalPrice,
+                    currency: selectedCurrency,
+                    language: i18n.language,
+                  }}
                   proofPreview={proofPreview}
                   onProofUpload={handleProofUpload}
                   onClearProof={clearProof}

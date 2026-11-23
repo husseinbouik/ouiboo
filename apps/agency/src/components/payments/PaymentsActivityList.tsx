@@ -15,6 +15,9 @@ export type AgencyPaymentListItem = {
   amount: string;
   currency: string;
   method: 'MANUAL' | 'GATEWAY';
+  /** #988: chosen manual channel for this stage payment. */
+  manualChannel?: 'BANK_TRANSFER' | 'CASH_PLUS' | null;
+  transactionCode?: string | null;
   provider?: string | null;
   status: 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED' | 'FAILED' | 'REFUNDED';
   custodian: 'AGENCY' | 'AGENCY_PSP';
@@ -110,7 +113,14 @@ export function PaymentsActivityList({
                     <td className="px-6 py-5 text-xs font-bold text-muted-foreground">
                       {payment.method === 'GATEWAY'
                         ? (payment.provider || t('payments.methodGateway'))
-                        : t('payments.methodManual')}
+                        : payment.manualChannel === 'CASH_PLUS'
+                          ? t('payments.methodCashPlus')
+                          : payment.manualChannel === 'BANK_TRANSFER'
+                            ? t('payments.methodBankTransfer')
+                            : t('payments.methodManual')}
+                      {payment.transactionCode && (
+                        <span className="block text-[10px] font-mono text-muted-foreground">{payment.transactionCode}</span>
+                      )}
                     </td>
                     <td className="px-6 py-5">
                       <span className={cn(

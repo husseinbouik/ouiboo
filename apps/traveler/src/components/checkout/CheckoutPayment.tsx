@@ -14,6 +14,16 @@ import { useDisplayAmountConverter } from '@/lib/display-currency';
 type CheckoutPaymentProps = {
   bankDetails: string;
   hasBankDetails: boolean;
+  /** #988: Cash Plus — shown only when the API returned a verified,
+   * enabled destination for this agency. */
+  cashPlus?: { beneficiaryName: string; phone: string } | null;
+  paymentMethod?: 'BANK_TRANSFER' | 'CASH_PLUS';
+  onPaymentMethodChange?: (method: 'BANK_TRANSFER' | 'CASH_PLUS') => void;
+  transactionCode?: string;
+  onTransactionCodeChange?: (code: string) => void;
+  /** #988: the stage amount due at checkout (deposit for staged
+   * trips, otherwise the total) in the session currency. */
+  stageAmount?: { amount: number; currency: string | undefined; language: string } | null;
   proofPreview: string | null;
   onProofUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onClearProof: () => void;
@@ -33,6 +43,12 @@ type CheckoutPaymentProps = {
 export function CheckoutPayment({
   bankDetails,
   hasBankDetails,
+  cashPlus,
+  paymentMethod = 'BANK_TRANSFER',
+  onPaymentMethodChange,
+  transactionCode = '',
+  onTransactionCodeChange,
+  stageAmount,
   proofPreview,
   onProofUpload,
   onClearProof,
@@ -63,6 +79,65 @@ export function CheckoutPayment({
         <h2 className="text-2xl font-black font-display">{t('checkout.bankTransfer')}</h2>
       </div>
 
+      {cashPlus && (
+        <div className="space-y-3" role="radiogroup" aria-label={t('checkout.paymentMethodLabel')}>
+          <p className="text-xs font-black text-foreground uppercase tracking-widest">{t('checkout.paymentMethodLabel')}</p>
+          <div className="flex flex-wrap gap-3">
+            {hasBankDetails && (
+              <button
+                type="button"
+                role="radio"
+                aria-checked={paymentMethod === 'BANK_TRANSFER'}
+                onClick={() => onPaymentMethodChange?.('BANK_TRANSFER')}
+                className={cn("px-4 py-2.5 rounded-xl border-2 text-sm font-bold", paymentMethod === 'BANK_TRANSFER' ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground")}
+              >
+                {t('checkout.bankTransferTitle')}
+              </button>
+            )}
+            <button
+              type="button"
+              role="radio"
+              aria-checked={paymentMethod === 'CASH_PLUS'}
+              onClick={() => onPaymentMethodChange?.('CASH_PLUS')}
+              className={cn("px-4 py-2.5 rounded-xl border-2 text-sm font-bold", paymentMethod === 'CASH_PLUS' ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground")}
+            >
+              {t('checkout.cashPlusTitle')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {paymentMethod === 'CASH_PLUS' && cashPlus ? (
+        <div className="p-6 rounded-3xl border-2 border-primary/20 bg-primary/5 space-y-4">
+          <div className="flex items-center gap-3">
+            <Banknote className="h-8 w-8 text-primary" />
+            <div>
+              <h4 className="font-black text-lg">{t('checkout.cashPlusTitle')}</h4>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{t('checkout.cashPlusHint')}</p>
+            </div>
+          </div>
+          <div className="bg-card/70 p-4 rounded-xl text-sm space-y-2 leading-relaxed">
+            <p><span className="font-black">{t('checkout.cashPlusBeneficiary')}:</span> {cashPlus.beneficiaryName}</p>
+            <p><span className="font-black">{t('checkout.cashPlusPhone')}:</span> <span className="font-mono">{cashPlus.phone}</span></p>
+            {stageAmount && (
+              <p><span className="font-black">{t('checkout.cashPlusAmountDue')}:</span> {formatCurrency(stageAmount.amount, stageAmount.currency, stageAmount.language)}</p>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground font-medium">{t('checkout.cashPlusFeeNote')}</p>
+          <div className="space-y-2">
+            <label htmlFor="cash-plus-transaction-code" className="text-xs font-black text-foreground uppercase tracking-widest">{t('checkout.cashPlusTransactionCode')}</label>
+            <input
+              id="cash-plus-transaction-code"
+              type="text"
+              value={transactionCode}
+              onChange={(event) => onTransactionCodeChange?.(event.target.value)}
+              placeholder={t('checkout.cashPlusTransactionCodePlaceholder')}
+              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground font-medium">{t('checkout.cashPlusCodeOrReceipt')}</p>
+          </div>
+        </div>
+      ) : (
       <div className={cn(
         "p-6 rounded-3xl border-2 space-y-4",
         hasBankDetails ? "border-primary/20 bg-primary/5" : "border-rose-200 bg-rose-50"
@@ -103,8 +178,9 @@ export function CheckoutPayment({
           </p>
         )}
       </div>
+      )}
 
-      {stagedInfo && hasBankDetails && (
+      {stagedInfo && (hasBankDetails || paymentMethod === 'CASH_PLUS') && (
         <div className="p-6 rounded-3xl border-2 border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 space-y-3">
           <div className="flex items-center gap-3">
             <Info className="h-6 w-6 text-amber-600" />

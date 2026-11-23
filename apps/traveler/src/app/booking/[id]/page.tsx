@@ -86,6 +86,9 @@ export default function BookingDetailsPage() {
   const bookingId = Array.isArray(id) ? id[0] : id;
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
+  // #988: Cash Plus transaction code for the current stage's proof.
+  const [cashPlusCode, setCashPlusCode] = useState('');
+  const [codeSubmitting, setCodeSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelRefundState, setCancelRefundState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [cancelRefundError, setCancelRefundError] = useState('');
@@ -129,6 +132,9 @@ export default function BookingDetailsPage() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('file', file);
+      if (cashPlusCode.trim()) {
+        formData.append('transactionCode', cashPlusCode.trim());
+      }
       await apiClient.post(`/bookings/${bookingId}/payment-proof`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -165,6 +171,21 @@ export default function BookingDetailsPage() {
 
     setUploading(true);
     uploadProofMutation.mutate(file);
+  };
+
+  // #988: submit the Cash Plus transaction code as this stage's proof.
+  const handleSubmitCashPlusCode = async () => {
+    if (!cashPlusCode.trim() || !bookingId) return;
+    setCodeSubmitting(true);
+    try {
+      await apiClient.post(`/bookings/${bookingId}/payment-proof-code`, {
+        transactionCode: cashPlusCode.trim(),
+      });
+      await queryClient.invalidateQueries({ queryKey: ['booking-details-page', bookingId] });
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+    } finally {
+      setCodeSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -252,9 +273,13 @@ export default function BookingDetailsPage() {
   // #616: the payment snapshot's system values (payment method,
   // refund status) are enum codes — render their locale strings,
   // falling back to the raw value for any unmapped code.
-  const paymentMethodLabel = t(`bookingDetail.paymentMethodValue.${booking.paymentMethod}`, {
-    defaultValue: booking.paymentMethod,
-  });
+  const paymentMethodLabel = booking.manualPaymentChannel === 'CASH_PLUS'
+    ? t('bookingDetail.paymentMethodValue.CASH_PLUS')
+    : booking.manualPaymentChannel === 'BANK_TRANSFER'
+      ? t('bookingDetail.paymentMethodValue.BANK_TRANSFER')
+      : t(`bookingDetail.paymentMethodValue.${booking.paymentMethod}`, {
+          defaultValue: booking.paymentMethod,
+        });
   const refundStatusLabel = booking.refundStatus
     ? t(`bookingDetail.refundStatusValue.${booking.refundStatus}`, {
         defaultValue: booking.refundStatus.replace('_', ' '),
@@ -432,6 +457,14 @@ export default function BookingDetailsPage() {
                   <div className="mt-4 space-y-2 text-sm">
                     <p><span className="font-black text-foreground">{t('bookingDetail.total')}:</span> <BookingTotalWithDisplay amount={booking.totalAmount} currency={booking.currency} language={i18n.language} /></p>
                     <p><span className="font-black text-foreground">{t('bookingDetail.method')}:</span> {paymentMethodLabel}</p>
+                    {(booking.paymentProof?.stagePayments ?? [])
+                      .filter((stagePayment) => stagePayment.transactionCode)
+                      .map((stagePayment) => (
+                        <p key={stagePayment.stage ?? 'FULL'}>
+                          <span className="font-black text-foreground">{t('bookingDetail.cashPlusCodeLabel', { stage: stagePayment.stage ?? '' })}:</span>{' '}
+                          <span className="font-mono">{stagePayment.transactionCode}</span>
+                        </p>
+                      ))}
                     <p><span className="font-black text-foreground">{t('bookingDetail.proof')}:</span> {proofLabel}</p>
                     {booking.refundStatus && (
                       <p><span className="font-black text-foreground">{t('bookingDetail.refund')}:</span> {refundStatusLabel}</p>
@@ -478,6 +511,38 @@ export default function BookingDetailsPage() {
                       <span className="font-black text-foreground">{t('bookingDetail.refundStatus')}:</span> {refundStatusLabel}
                     </p>
                   )}
+                </div>
+              )}
+
+              {booking.manualPaymentChannel === 'CASH_PLUS' && showUploadAction && (
+                <div className="rounded-2xl border border-border/60 bg-muted/20 p-5 space-y-3">
+                  <p className="text-sm font-semibold text-foreground">{t('bookingDetail.cashPlusPayAtPoint', { agency: booking.session.template.agency?.companyName || t('bookingDetail.defaultAgency') })}</p>
+                  {booking.session.template.agency?.cashPlus && (
+                    <p className="text-sm text-foreground">
+                      <span className="font-black">{t('bookingDetail.cashPlusBeneficiary')}:</span> {booking.session.template.agency.cashPlus.beneficiaryName}
+                      {' · '}
+                      <span className="font-mono">{booking.session.template.agency.cashPlus.phone}</span>
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">{t('bookingDetail.cashPlusFeeNote')}</p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <input
+                      type="text"
+                      value={cashPlusCode}
+                      onChange={(event) => setCashPlusCode(event.target.value)}
+                      placeholder={t('bookingDetail.cashPlusCodePlaceholder')}
+                      aria-label={t('bookingDetail.cashPlusCodePlaceholder')}
+                      className="h-12 px-4 rounded-xl border border-border bg-card text-sm font-mono min-w-56"
+                    />
+                    <Button
+                      onClick={handleSubmitCashPlusCode}
+                      disabled={!cashPlusCode.trim() || codeSubmitting}
+                      className="h-12 px-6 rounded-xl bg-sunset-orange hover:bg-orange-600 border-none text-xs font-black uppercase tracking-widest"
+                    >
+                      {codeSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('bookingDetail.cashPlusSubmitCode')}
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-medium">{t('bookingDetail.cashPlusCodeOrReceipt')}</p>
                 </div>
               )}
 

@@ -791,6 +791,105 @@ export class AdminController {
         return updated;
     }
 
+    @Post('agencies/:id/cash-plus/verify')
+    @ApiOperation({ summary: 'Verify or reject an agency Cash Plus payment destination (#988)' })
+    async verifyAgencyCashPlus(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string; overrideReason?: string },
+    ) {
+        const status = body?.status;
+        if (!status || !['VERIFIED', 'REJECTED'].includes(status)) {
+            throw new BadRequestException('Invalid Cash Plus verification status');
+        }
+        const agency = await this.db.agencyProfile.findUnique({
+            where: { id },
+            select: {
+                id: true,
+                cashPlusBeneficiaryName: true,
+                pendingCashPlusBeneficiaryName: true,
+                pendingCashPlusPhone: true,
+                legalName: true,
+                companyName: true,
+                cashPlusVerifiedAt: true,
+            },
+        });
+        if (!agency) {
+            throw new BadRequestException('Agency not found');
+        }
+        if (!agency.pendingCashPlusBeneficiaryName || !agency.pendingCashPlusPhone) {
+            throw new BadRequestException('Agency has no Cash Plus infos pending review');
+        }
+
+        if (status === 'VERIFIED') {
+            // #988: same rule as bank details (#421) — the Cash Plus
+            // beneficiary must be the agency itself. A beneficiary-name
+            // mismatch against the legal/trade name blocks verification
+            // unless the admin records an override reason.
+            const beneficiary = agency.pendingCashPlusBeneficiaryName.trim();
+            const normalize = (value: string) => value.toLowerCase().replace(/\s+/g, ' ').trim();
+            const beneficiaryMatches = [agency.legalName, agency.companyName]
+                .filter((name): name is string => !!name && name.trim().length > 0)
+                .some((name) => normalize(name) === normalize(beneficiary));
+            const overrideReason = body.overrideReason?.trim() || null;
+            if (!beneficiaryMatches && !overrideReason) {
+                throw new BadRequestException(
+                    'Cash Plus beneficiary name does not match the agency legal name; record an override reason to verify anyway',
+                );
+            }
+            const updated = await this.db.agencyProfile.update({
+                where: { id },
+                data: {
+                    // Promote the reviewed submission to the live,
+                    // traveller-visible Cash Plus destination.
+                    cashPlusBeneficiaryName: agency.pendingCashPlusBeneficiaryName,
+                    cashPlusPhone: agency.pendingCashPlusPhone,
+                    pendingCashPlusBeneficiaryName: null,
+                    pendingCashPlusPhone: null,
+                    cashPlusStatus: 'VERIFIED',
+                    cashPlusVerifiedAt: new Date(),
+                    cashPlusVerifiedBy: req?.user?.userId ?? null,
+                    cashPlusRejectionReason: null,
+                },
+            });
+            this.auditLogService.log({
+                actorId: req?.user?.userId,
+                actorEmail: req?.user?.email,
+                action: 'AGENCY_CASH_PLUS_VERIFIED',
+                targetType: 'AgencyProfile',
+                targetId: id,
+                metadata: { status, beneficiaryMatches, overrideReason },
+            }).catch((err) => console.error('Audit log failed', err));
+            return updated;
+        }
+
+        const reason = body.reason?.trim();
+        if (!reason) {
+            throw new BadRequestException('A reason is required to reject Cash Plus infos');
+        }
+        // A rejected REPLACEMENT does not take a verified destination
+        // offline: the live infos and their verified standing remain.
+        const keepsVerifiedDestination = !!agency.cashPlusBeneficiaryName && !!agency.cashPlusVerifiedAt;
+        const updated = await this.db.agencyProfile.update({
+            where: { id },
+            data: {
+                pendingCashPlusBeneficiaryName: null,
+                pendingCashPlusPhone: null,
+                cashPlusStatus: keepsVerifiedDestination ? 'VERIFIED' : 'REJECTED',
+                cashPlusRejectionReason: reason,
+            },
+        });
+        this.auditLogService.log({
+            actorId: req?.user?.userId,
+            actorEmail: req?.user?.email,
+            action: 'AGENCY_CASH_PLUS_REJECTED',
+            targetType: 'AgencyProfile',
+            targetId: id,
+            metadata: { status, reason, keepsVerifiedDestination },
+        }).catch((err) => console.error('Audit log failed', err));
+        return updated;
+    }
+
     @Get('pending-trips')
     @ApiOperation({ summary: 'Get trips pending verification' })
     async getPendingTrips(
