@@ -27,7 +27,7 @@ import {
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
-import { BetaBadge, Logo, LogoLockup } from '@ouiboo/ui';
+import { Logo, LogoLockup } from '@ouiboo/ui';
 import { useAuth } from '../AuthContext';
 
 export function AgencySidebar() {
@@ -112,7 +112,6 @@ export function AgencySidebar() {
           ) : (
             <>
               <LogoLockup height={28} tone="auto" />
-              <BetaBadge />
             </>
           )}
         </Link>

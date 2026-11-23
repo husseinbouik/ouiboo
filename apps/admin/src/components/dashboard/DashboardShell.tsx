@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Search, LogOut } from 'lucide-react';
-import { Card, CardContent, ThemeToggle, LanguageSwitcher, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, BetaBadge, LogoLockup, CommandPalette, type CommandPaletteItem } from '@ouiboo/ui';
+import { Card, CardContent, ThemeToggle, LanguageSwitcher, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, LogoLockup, CommandPalette, type CommandPaletteItem } from '@ouiboo/ui';
 import type { AdminTab } from './types';
 import FlagDiagnostics from './FlagDiagnostics';
 
@@ -64,7 +64,6 @@ export default function DashboardShell({
         {/* #794: the final lockup on the fixed deep-blue sidebar —
             the on-dark colourway (white ring/letters, orange arc). */}
         <LogoLockup height={28} tone="on-dark" />
-        <BetaBadge />
      </div>
      
      <nav aria-label={t('dashboard.aria.mainNavigation')} className="space-y-2 flex-1">
