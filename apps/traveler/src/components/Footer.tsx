@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { BetaBadge, LogoLockup } from '@ouiboo/ui';
+import { LogoLockup } from '@ouiboo/ui';
 import { SUPPORT_EMAIL, supportMailto } from '@/lib/support';
 
 /**
@@ -25,7 +25,6 @@ export function Footer() {
           <div className="flex items-center gap-2">
             {/* #794: final lockup, matching the navbar. */}
             <LogoLockup height={30} tone="auto" />
-            <BetaBadge />
           </div>
 
           <nav aria-label={t('footer.support')} className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm font-semibold text-muted-foreground">

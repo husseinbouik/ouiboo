@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslation } from 'react-i18next'
-import { LogoLockup, BetaBadge } from '@ouiboo/ui'
+import { LogoLockup } from '@ouiboo/ui'
 import { CookiePreferencesButton } from './AnalyticsConsent'
 import type { ShowcaseCardData } from '../lib/showcase'
 
@@ -149,7 +149,6 @@ export default function LandingPage({
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-5">
           <a href="#top" className="flex items-center gap-2.5" aria-label="Ouiboo">
             <LogoLockup height={30} tone="on-dark" />
-            <BetaBadge />
           </a>
           <nav className="hidden items-center gap-[34px] text-[15px] font-medium min-[901px]:flex" aria-label={t('common.globalNavigationLabel')}>
             <a href="#how" className="opacity-90 hover:underline hover:underline-offset-[5px] hover:opacity-100">
@@ -657,7 +656,6 @@ export default function LandingPage({
             <div className="max-lg:col-span-2">
               <a href="#top" className="flex items-center gap-2.5 text-white" aria-label="Ouiboo">
                 <LogoLockup height={30} tone="on-dark" />
-                <BetaBadge />
               </a>
               <p className="mt-[14px] max-w-[300px] text-[14.5px] leading-[1.6] text-white/[0.66]">{t('hw.footer.tagline')}</p>
             </div>

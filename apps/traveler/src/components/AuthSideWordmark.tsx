@@ -1,4 +1,4 @@
-import { BetaBadge, LogoLockup } from '@ouiboo/ui';
+import { LogoLockup } from '@ouiboo/ui';
 
 /**
  * Side-panel wordmark shared by the traveller split-screen auth pages
@@ -11,7 +11,6 @@ export function AuthSideWordmark() {
   return (
     <div className="flex items-center gap-2.5">
       <LogoLockup height={38} tone="on-dark" />
-      <BetaBadge />
     </div>
   );
 }
