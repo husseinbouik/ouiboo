@@ -3,7 +3,7 @@
 import type { AxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Button, Input, ThemeToggle, LanguageSwitcher, BetaBadge, LogoLockup } from '@ouiboo/ui';
+import { Button, Input, ThemeToggle, LanguageSwitcher, LogoLockup } from '@ouiboo/ui';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 import { useMutation } from '@tanstack/react-query';
@@ -254,7 +254,6 @@ export default function AdminLoginPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           <div className="flex items-center gap-3">
             <LogoLockup height={32} tone="on-dark" />
-            <BetaBadge />
           </div>
           <div className="space-y-4 max-w-md">
             <p className="text-4xl font-black leading-tight">{t('login.heroTitle')}</p>

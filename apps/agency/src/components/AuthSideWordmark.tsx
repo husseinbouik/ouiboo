@@ -1,4 +1,4 @@
-import { BetaBadge, LogoLockup } from '@ouiboo/ui';
+import { LogoLockup } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 
 /**
@@ -13,7 +13,6 @@ export function AuthSideWordmark({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
       <LogoLockup height={38} tone="on-dark" />
-      <BetaBadge />
     </div>
   );
 }

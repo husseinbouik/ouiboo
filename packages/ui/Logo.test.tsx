@@ -139,9 +139,11 @@ describe('Logo adoption inventory (#794)', () => {
     }
   });
 
-  it('the BETA pill stays a separate badge beside the lockup', () => {
+  it('no lockup renders the BETA pill (de-beta, founder decision 2026-11-11)', () => {
+    // Supersedes the #794-era guard that pinned the pill beside every
+    // lockup: the founder ordered all user-facing beta branding removed.
     for (const file of Object.values(LOCKUPS)) {
-      expect(repoFile(file)).toContain('<BetaBadge');
+      expect(repoFile(file)).not.toContain('<BetaBadge');
     }
     expect(logoSource).not.toContain('<BetaBadge');
   });

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button, ThemeToggle, LanguageSwitcher, BetaBadge, LogoLockup } from '@ouiboo/ui';
+import { Button, ThemeToggle, LanguageSwitcher, LogoLockup } from '@ouiboo/ui';
 import {
   Menu,
   X,
@@ -260,7 +260,6 @@ const [isOpen, setIsOpen] = useState(false);
             stays a separate badge beside it. */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
             <LogoLockup height={30} tone={isTransparent ? "on-dark" : "auto"} />
-            <BetaBadge />
         </Link>
 
         <div className="hidden lg:flex items-center gap-6 mx-4 xl:gap-8 xl:mx-6">
@@ -509,7 +508,6 @@ const [isOpen, setIsOpen] = useState(false);
                   <div className="flex items-center gap-2">
                      {/* #794: same final lockup as the desktop bar. */}
                      <LogoLockup height={30} tone="auto" />
-                     <BetaBadge />
                   </div>
                   <button ref={mobileMenuCloseRef} onClick={() => setIsOpen(false)} aria-label={t('nav.closeMenu', 'Close navigation menu')} className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center hit-slop">
                      <X className="h-5 w-5" />
