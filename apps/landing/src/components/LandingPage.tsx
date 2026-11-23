@@ -50,6 +50,7 @@ if (
 const NAVY = '#0A192F'
 const DEEP = '#060D1A'
 const ORANGE = '#FF6B35'
+const ORANGE_ACTION = '#B93E0C'
 // The remaining section colours live in the --hw-* variables at the
 // bottom of this file (light values = the approved design; .dark set =
 // the next-themes dark rendering). NAVY/DEEP/ORANGE stay constants:
@@ -186,7 +187,7 @@ export default function LandingPage({
             <a
               href={`${travelerUrl}/signup?lang=${currentLang}`}
               className="whitespace-nowrap rounded-full px-[18px] py-[9px] text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(255,107,53,.6)] transition-colors"
-              style={{ backgroundColor: ORANGE }}
+              style={{ backgroundColor: ORANGE_ACTION }}
             >
               {t('hw.nav.signup')}
             </a>
@@ -247,7 +248,7 @@ export default function LandingPage({
                 <a
                   href={`${travelerUrl}/signup?lang=${currentLang}`}
                   className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)] transition-colors max-sm:px-5 max-sm:py-[13px] max-sm:text-[14.5px]"
-                  style={{ backgroundColor: ORANGE }}
+                  style={{ backgroundColor: ORANGE_ACTION }}
                 >
                   {t('hw.hero.ctaSignup')}
                 </a>
@@ -594,7 +595,7 @@ export default function LandingPage({
               <Link
                 href="/agences"
                 className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)]"
-                style={{ backgroundColor: ORANGE }}
+                style={{ backgroundColor: ORANGE_ACTION }}
               >
                 {t('hw.agencies.cta')} <Arrow />
               </Link>
@@ -749,7 +750,7 @@ export default function LandingPage({
           --hw-ink: #14263f;
           --hw-heading: #0a192f;
           --hw-muted: #5b6b82;
-          --hw-accent: #e04e1a;
+          --hw-accent: #b93e0c;
           --hw-chip: #0a192f;
         }
         .dark .hw-root {
