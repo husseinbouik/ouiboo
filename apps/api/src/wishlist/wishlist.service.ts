@@ -67,12 +67,21 @@ export class WishlistService {
 
   /**
    * Get user's wishlist
+   *
+   * Search-page council item 16 (#962): ALL saves are returned —
+   * including saves whose trip has been deactivated — each flagged
+   * `isActive`, so the page can render a 'No longer available'
+   * tombstone instead of the save silently vanishing. (The old
+   * status filter here, paired with getWishlistCount counting every
+   * save, made the header badge and the page permanently disagree.)
+   * The count endpoint already counted all saves, so badge == page
+   * total again with no change there.
    */
   async getUserWishlist(userId: string, page: number = 1, limit: number = 20, locale?: string | null) {
     const safePage = Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1;
     const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(1, Math.floor(limit))) : 20;
     const skip = (safePage - 1) * safeLimit;
-    const where = { userId, tripTemplate: { status: 'ACTIVE' as const } };
+    const where = { userId };
 
     const [wishlists, total] = await Promise.all([
       this.prisma.wishlist.findMany({
@@ -113,8 +122,12 @@ export class WishlistService {
     return {
       // Keep the raw translation map available but resolve the catalogue
       // fields for the traveller's requested language, just like public
-      // discovery and rebooking suggestions do.
-      items: wishlists.map((wishlist) => localizeTripPayload(wishlist.tripTemplate, normalizeTripLocale(locale))),
+      // discovery and rebooking suggestions do. `isActive` is additive
+      // (#962): false marks a deactivated save for the tombstone row.
+      items: wishlists.map((wishlist) => ({
+        ...localizeTripPayload(wishlist.tripTemplate, normalizeTripLocale(locale)),
+        isActive: wishlist.tripTemplate.status === 'ACTIVE',
+      })),
       total,
       page: safePage,
       pages: Math.ceil(total / safeLimit),

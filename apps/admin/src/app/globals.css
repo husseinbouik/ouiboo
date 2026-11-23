@@ -5,9 +5,15 @@
 @variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: var(--font-manrope), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-space-grotesk), var(--font-manrope), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
+  /* Stacks converge on @ouiboo/tokens (#572). The previous admin-local
+     stacks referenced --font-geist-sans / --font-geist-mono, which no
+     app loads — an unresolvable var() anywhere in the list makes the
+     whole stack invalid at computed-value time, so admin's sans/display
+     could never resolve even once the next/font variables moved to
+     <html> (#929). Geist was never loaded; the references are dropped. */
+  --font-sans: var(--font-manrope), var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
 }
 
 body {

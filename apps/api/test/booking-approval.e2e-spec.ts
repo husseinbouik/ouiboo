@@ -191,6 +191,7 @@ describe('E2E: booking + payment approval flow', () => {
             'traveler-123',
             expect.objectContaining({ mimetype: 'image/png' }),
             undefined, // #494: no Idempotency-Key header on this request
+            undefined, // #988: no Cash Plus transaction code on this request
         );
     });
 

@@ -43,6 +43,7 @@ function renderModal(overrides: Partial<AdminAgency> = {}) {
     onVerifyLicence: jest.fn(),
     onVerifyInsurance: jest.fn(),
     onVerifyBankDetails: jest.fn(),
+    onVerifyCashPlus: jest.fn(),
     onViewDocument: jest.fn(),
   };
   const utils = render(
@@ -54,6 +55,7 @@ function renderModal(overrides: Partial<AdminAgency> = {}) {
       isVerifyingLicence={false}
       isVerifyingInsurance={false}
       isVerifyingBankDetails={false}
+      isVerifyingCashPlus={false}
       {...handlers}
     />,
   );

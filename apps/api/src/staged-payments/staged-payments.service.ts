@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import {
     BookingPaymentPlanStatus,
     BookingPaymentStatus,
@@ -10,10 +10,12 @@ import {
     PaymentMethod,
     Prisma,
     SessionGroupStatus,
+    NotificationType,
 } from '@ouiboo/database';
 import { DatabaseService } from '../database/database.service';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { RefundsService } from '../refunds/refunds.service';
+import { EmailService } from '../email/email.service';
 import { multiplyMoney } from '../common/money.util';
 import {
     GROUP_MINIMUM_NOT_REACHED_REASON,
@@ -99,7 +101,98 @@ export class StagedPaymentsService {
         private db: DatabaseService,
         private externalPaymentsService: ExternalPaymentsService,
         private refundsService: RefundsService,
+        @Optional() private emailService?: EmailService,
     ) { }
+
+    /**
+     * Create the launch-MVP balance-due notification after a group-confirm
+     * transaction commits. `balanceNotifiedAt` is an atomic per-plan claim,
+     * so payment retries/admin retries cannot send duplicates. The in-app
+     * notification remains available if SMTP fails; email is best-effort and
+     * never rolls back an already-confirmed group.
+     */
+    async notifyBalanceDueForSession(sessionId: string): Promise<number> {
+        const plans = await this.db.bookingPaymentPlan.findMany({
+            where: {
+                sessionId,
+                status: BookingPaymentPlanStatus.BALANCE_DUE,
+                balanceNotifiedAt: null,
+            },
+            include: {
+                booking: {
+                    select: {
+                        id: true,
+                        travelerId: true,
+                        locale: true,
+                        traveler: { select: { email: true } },
+                        session: {
+                            select: {
+                                startDate: true,
+                                template: { select: { title: true } },
+                            },
+                        },
+                    },
+                },
+            },
+            take: 500,
+        });
+
+        let notified = 0;
+        for (const plan of plans) {
+            const now = new Date();
+            const claimed = await this.db.$transaction(async (tx) => {
+                const result = await tx.bookingPaymentPlan.updateMany({
+                    where: {
+                        id: plan.id,
+                        status: BookingPaymentPlanStatus.BALANCE_DUE,
+                        balanceNotifiedAt: null,
+                    },
+                    data: { balanceNotifiedAt: now },
+                });
+                if (result.count !== 1) return false;
+                await tx.notificationLog.create({
+                    data: {
+                        userId: plan.booking.travelerId,
+                        notificationType: NotificationType.PAYMENT_REMINDER,
+                        recipientEmail: plan.booking.traveler.email,
+                        subject: `Balance due for ${plan.booking.session.template.title}`,
+                        message: `Your trip is confirmed. The remaining balance of ${plan.balanceAmount.toFixed(2)} ${plan.currency} is due to the agency before departure.`,
+                        status: 'SENT',
+                        sentAt: now,
+                        metadata: {
+                            kind: 'BALANCE_DUE',
+                            bookingId: plan.booking.id,
+                            sessionId,
+                            url: `/booking/${plan.booking.id}`,
+                        },
+                    },
+                });
+                return true;
+            });
+            if (!claimed) continue;
+            notified += 1;
+
+            if (this.emailService) {
+                const hoursUntilDue = Math.max(
+                    0,
+                    Math.ceil((plan.booking.session.startDate.getTime() - now.getTime()) / 3_600_000),
+                );
+                const travelerBaseUrl = process.env.TRAVELER_APP_URL || 'http://localhost:3002';
+                try {
+                    await this.emailService.sendPaymentReminder(
+                        plan.booking.traveler.email,
+                        plan.booking.session.template.title,
+                        hoursUntilDue,
+                        `${travelerBaseUrl}/booking/${plan.booking.id}`,
+                        plan.booking.locale,
+                    );
+                } catch (error) {
+                    this.logger.error(`Balance-due email failed for booking ${plan.booking.id}`, error);
+                }
+            }
+        }
+        return notified;
+    }
 
     /** Whether a session row uses staged payments. */
     isStagedSession(session: { minBookings: number; deposit: Prisma.Decimal }): boolean {

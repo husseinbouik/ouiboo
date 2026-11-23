@@ -71,6 +71,11 @@ jest.mock('./WishlistButton', () => ({
   WishlistButton: () => null,
 }));
 
+// #882: TripCard uses the router for photo-tap navigation.
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: jest.fn() }),
+}));
+
 jest.mock('next/link', () => {
   const Link = ({ children, href, ...props }: any) => (
     <a href={href} {...props}>

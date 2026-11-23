@@ -37,6 +37,8 @@ import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 
 type SettingsFormValues = {
+  cashPlusBeneficiaryName: string;
+  cashPlusPhone: string;
   bankAccountHolderName: string;
   bankAttestationUrl: string;
   bankDetails: string;
@@ -69,6 +71,9 @@ export default function SettingsPage() {
       // #421: show the pending submission when one is under review — it is
       // what the agency last submitted; bankDetails stays the live value.
       bankDetails: user?.agencyProfile?.pendingBankDetails || user?.agencyProfile?.bankDetails || '',
+      // #988: Cash Plus infos — pending submission shown when under review.
+      cashPlusBeneficiaryName: user?.agencyProfile?.pendingCashPlusBeneficiaryName || user?.agencyProfile?.cashPlusBeneficiaryName || '',
+      cashPlusPhone: user?.agencyProfile?.pendingCashPlusPhone || user?.agencyProfile?.cashPlusPhone || '',
       bankAccountHolderName: user?.agencyProfile?.bankAccountHolderName || '',
       bankAttestationUrl: user?.agencyProfile?.bankAttestationUrl || '',
       // #419: trip emergency contact (departure pack on traveller bookings).
@@ -92,6 +97,11 @@ export default function SettingsPage() {
   // bank attestation; travellers only ever see the VERIFIED instructions.
   const bankDetailsStatus = user?.agencyProfile?.bankDetailsStatus || BankDetailsStatus.Unverified;
   const bankStatusMeta = getBankDetailsStatusMeta(bankDetailsStatus);
+  // #988: Cash Plus review state + agency toggle (local until saved).
+  const cashPlusStatus = user?.agencyProfile?.cashPlusStatus || BankDetailsStatus.Unverified;
+  const cashPlusStatusMeta = getBankDetailsStatusMeta(cashPlusStatus);
+  const [cashPlusEnabled, setCashPlusEnabled] = React.useState<boolean | null>(null);
+  const cashPlusEnabledValue = cashPlusEnabled ?? Boolean(user?.agencyProfile?.cashPlusEnabled);
 
   // #859: agency logo. The AgencyProfile.logo column and the whole
   // traveller-side rendering chain (public profile, trip seller block)
@@ -176,6 +186,18 @@ export default function SettingsPage() {
           bio: data.bio,
           bankDetails: data.bankDetails,
           bankAccountHolderName: data.bankAccountHolderName,
+          // #988: Cash Plus toggle + infos (infos only sent when at
+          // least one is filled — an empty pair would fail validation;
+          // clearing is done by toggling off + clearing both fields
+          // while the other stays filled is a partial edit the API
+          // resolves against the stored values).
+          cashPlusEnabled: cashPlusEnabledValue,
+          ...(data.cashPlusBeneficiaryName.trim() || data.cashPlusPhone.trim()
+            ? {
+                ...(data.cashPlusBeneficiaryName.trim() ? { cashPlusBeneficiaryName: data.cashPlusBeneficiaryName } : {}),
+                ...(data.cashPlusPhone.trim() ? { cashPlusPhone: data.cashPlusPhone } : {}),
+              }
+            : {}),
           bankAttestationUrl: data.bankAttestationUrl,
           emergencyContactName: data.emergencyContactName,
           emergencyContactPhone: data.emergencyContactPhone,
@@ -390,6 +412,55 @@ export default function SettingsPage() {
                     placeholder={t('settings.bankHolderNamePlaceholder')}
                   />
                   <p className="text-xs text-muted-foreground">{t('settings.bankHolderNameHint')}</p>
+                </div>
+                <div className="space-y-4 border-t border-border pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold">{t('settings.cashPlusTitle')}</p>
+                      <p className="text-xs text-muted-foreground">{t('settings.cashPlusSubtitle')}</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={cashPlusEnabledValue}
+                      aria-label={t('settings.cashPlusTitle')}
+                      onClick={() => setCashPlusEnabled(!cashPlusEnabledValue)}
+                      className={`relative h-6 w-11 rounded-full transition-colors ${cashPlusEnabledValue ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                    >
+                      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${cashPlusEnabledValue ? 'inset-inline-end-0.5' : 'inset-inline-start-0.5'}`} style={{ insetInlineStart: cashPlusEnabledValue ? undefined : '0.125rem', insetInlineEnd: cashPlusEnabledValue ? '0.125rem' : undefined }} />
+                    </button>
+                  </div>
+                  <div
+                    role="status"
+                    className={`rounded-lg border px-3 py-2 text-sm ${cashPlusStatusMeta.className}`}
+                  >
+                    <p className="font-semibold">{t('settings.cashPlusStatusLabel')}</p>
+                    <p className="mt-0.5">{t(cashPlusStatusMeta.textKey)}</p>
+                    {cashPlusStatus === BankDetailsStatus.Rejected && user?.agencyProfile?.cashPlusRejectionReason && (
+                      <p className="mt-1">
+                        {t('settings.bankRejectionReason', { reason: user.agencyProfile.cashPlusRejectionReason })}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="settings-cashplus-name">{t('settings.cashPlusBeneficiaryName')}</Label>
+                    <Input
+                      id="settings-cashplus-name"
+                      {...register('cashPlusBeneficiaryName')}
+                      placeholder={t('settings.cashPlusBeneficiaryNamePlaceholder')}
+                    />
+                    <p className="text-xs text-muted-foreground">{t('settings.cashPlusBeneficiaryNameHint')}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="settings-cashplus-phone">{t('settings.cashPlusPhone')}</Label>
+                    <Input
+                      id="settings-cashplus-phone"
+                      type="tel"
+                      {...register('cashPlusPhone')}
+                      placeholder={t('settings.cashPlusPhonePlaceholder')}
+                    />
+                    <p className="text-xs text-muted-foreground">{t('settings.cashPlusPhoneHint')}</p>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="settings-bank-attestation">{t('settings.bankAttestationUrl')}</Label>

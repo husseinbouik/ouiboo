@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Card, Badge, Button } from '@ouiboo/ui';
-import { MapPin, Star, Zap } from 'lucide-react';
+import { Card, Badge, Button, SafeImage } from '@ouiboo/ui';
+import { Clock, MapPin, Star, Zap } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -11,17 +12,23 @@ import { cn } from '@ouiboo/ui/utils';
 import { SessionStatus, type SessionStatusType, type VerificationStatusType } from '@ouiboo/types';
 import { WishlistButton } from './WishlistButton';
 import { SnapRail } from './SnapRail';
-import { useDisplayPrice } from '@/lib/display-currency';
+import { useDisplayAmountConverter, useDisplayPrice } from '@/lib/display-currency';
 import { localizeLocationSuffix } from '@/lib/localized-location';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
 import { ratingDisplayState } from '@/lib/review-display';
 import { CancellationOneLiner } from './CancellationOneLiner';
+import { todayLocalISO } from '@/lib/hero-search';
 import type { CancellationSummary } from '@ouiboo/types';
 
 export interface TripCardTrip {
   id: string;
   title: string;
   category?: string;
+  /** #885: curation inputs — cluster eligibility (lib/curation.ts)
+   * reads the stamped slug, falling back to startLocation. */
+  destinationSlug?: string | null;
+  featured?: boolean | null;
+  createdAt?: string | null;
   /** #498: authoritative trip currency. The API enforces a single currency
    * per trip (every session must match the template currency), and the trip
    * payload already carries it — the card type just never declared it. */
@@ -50,6 +57,14 @@ export interface TripCardTrip {
     startDate: string;
   }>;
   agency?: {
+    /** Carried by every public trip payload; used by the featured
+     * curation (#879/#885) to enforce one trip per agency. */
+    id?: string;
+    /** #878, as superseded by the founder decision of 2026-11-12:
+     * test/example supply — an internal data-layer flag only. It
+     * suppresses every verification claim on the card; it no longer
+     * renders any badge or label. */
+    isTestData?: boolean;
     companyName?: string;
     verificationStatus?: VerificationStatusType;
     /** #413 (Council B10): what+when verification statement fields. */
@@ -65,6 +80,41 @@ export interface TripCardTrip {
 
 interface TripCardProps {
   trip: TripCardTrip;
+  /** Hybrid (#926): rendered-width hint for the photo rail when the
+   * card renders wider than the standard grid cell (the Selected
+   * rail's featured-card break), so a wide card never upscales. */
+  imageSizes?: string;
+  /** Search council punch item 9 (#886): inside result grids the
+   * card renders a single static photo — a per-card carousel would
+   * put an arrow/dot tab stop per card into the grid's tab order.
+   * The home rail keeps the settled SnapRail behaviour (#882). */
+  staticPhoto?: boolean;
+  /** Card A 'Clean Marketplace' (founder choice 2026-11-13,
+   * superseding the #975 Classic Rail card chrome): 16:10 photo,
+   * wishlist heart top-right ON the photo, spots badge on the photo
+   * at bottom-left (separate corner — never clashing with the
+   * heart), white category pill top-left, no option pills, no
+   * "View Details" button, no "From" price block — the bottom row
+   * is "<amount> MAD / person" plus the next session date when one
+   * exists. Every other surface keeps the default chrome. */
+  variant?: 'default' | 'search';
+  /** Search-page council item 19 (#965): the wishlist page needs to
+   * observe a removal so it can leave a persistent in-place tombstone
+   * with Undo (the button's toast alone never satisfies the page
+   * pattern). Optional — every other surface keeps the bare button. */
+  onWishlistToggle?: (tripId: string, next: boolean) => void;
+}
+
+/** Search-page council K6b: the badge's date is part of the locked
+ * template, per locale — EN `17 Nov`, FR `17 nov.` with the 1st as
+ * `1er` (Intl yields a bare "1"), AR the full month name (Arabic has
+ * no month abbreviation; Intl's short form already gives it). */
+function formatBadgeDate(date: Date, language: string): string {
+  const base = new Intl.DateTimeFormat(language || 'en', { day: 'numeric', month: 'short' }).format(date);
+  if ((language || '').startsWith('fr') && date.getDate() === 1) {
+    return base.replace(/^1(?=[\s.])/, '1er');
+  }
+  return base;
 }
 
 /** #673: a licence expiry only supports the dated statement while it is
@@ -76,8 +126,9 @@ function futureLicenceExpiry(value?: string | null): Date | null {
   return Number.isNaN(date.getTime()) || date.getTime() <= new Date().getTime() ? null : date;
 }
 
-export function TripCard({ trip }: TripCardProps) {
+export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'default', onWishlistToggle }: TripCardProps) {
   const { t, i18n } = useTranslation();
+  const router = useRouter();
   // #745 (remainder): the API resolves a translated startLocation
   // when the trip's translations map carries one; for the remaining
   // single-language strings the country suffix localizes here.
@@ -95,9 +146,22 @@ export function TripCard({ trip }: TripCardProps) {
   const openSessions = sessions.filter(
     (session) => session.status === SessionStatus.Open && session.availableSeats > 0
   );
-  const nextSession = [...openSessions].sort((a, b) => {
-    return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-  })[0];
+  // Search council D6 / punch item 15 (#886): the spots badge states
+  // its basis — the seats left on the NEXT upcoming session, with
+  // that session's date (Pattern S1). The figure is the API's live
+  // next-session `availableSeats`, transactionally maintained. A
+  // session whose day has already passed is stale data, not a
+  // promise: it never feeds the badge — with no upcoming session the
+  // card falls back to the sold-out state, which claims nothing.
+  const todayISO = todayLocalISO();
+  const nextSession = [...openSessions]
+    .filter((session) => String(session.startDate).slice(0, 10) >= todayISO)
+    .sort((a, b) => {
+      return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+    })[0];
+  const nextSessionDateLabel = nextSession
+    ? formatBadgeDate(new Date(nextSession.startDate), i18n.language || 'en')
+    : null;
   const minPrice = sessions.length
     ? Math.min(...sessions.map((session) => Number(session.price || 0)))
     : null;
@@ -114,6 +178,16 @@ export function TripCard({ trip }: TripCardProps) {
   // rate exists the hook falls back to this authoritative currency.
   // Display only — checkout still charges priceCurrency.
   const displayPrice = useDisplayPrice(minPrice, priceCurrency, i18n.language);
+  const isSearch = variant === 'search';
+  // #975: the search card's price is a grouped whole amount + currency
+  // ("From 1 450 MAD per person") — the display-currency converter
+  // supplies the number, Intl supplies the locale grouping, and no
+  // decimals are ever shown.
+  const convertAmount = useDisplayAmountConverter(priceCurrency);
+  const searchPrice = isSearch ? convertAmount(minPrice) : null;
+  const searchPriceLabel = searchPrice
+    ? `${new Intl.NumberFormat(i18n.language || 'en', { maximumFractionDigits: 0 }).format(searchPrice.amount)} ${searchPrice.currency}`
+    : null;
   // #413 (Council B10) + #673 (Council S6): the dated what+when
   // verification statement. Each part is present only when that check
   // actually passed and carries its real date (and, for the licence,
@@ -129,12 +203,15 @@ export function TripCard({ trip }: TripCardProps) {
       : new Intl.DateTimeFormat(i18n.language || 'en', { dateStyle: 'medium' }).format(date);
   };
   const licenceExpiryDate = futureLicenceExpiry(trip.agency?.licenceExpiry);
+  // #878: test/example supply carries no verification claims at all.
   const licenceCheckedDate =
-    trip.agency?.travelLicenceStatus === 'VERIFIED' && (!trip.agency?.licenceExpiry || licenceExpiryDate)
+    !trip.agency?.isTestData &&
+    trip.agency?.travelLicenceStatus === 'VERIFIED' &&
+    (!trip.agency?.licenceExpiry || licenceExpiryDate)
       ? formatCheckDate(trip.agency?.licenceVerifiedAt)
       : null;
   const insuranceEvidencedDate =
-    trip.agency?.insuranceStatus === 'VERIFIED'
+    !trip.agency?.isTestData && trip.agency?.insuranceStatus === 'VERIFIED'
       ? formatCheckDate(trip.agency?.insuranceVerifiedAt)
       : null;
   const verificationChecks = [
@@ -144,6 +221,22 @@ export function TripCard({ trip }: TripCardProps) {
       : null,
     insuranceEvidencedDate ? t('tripCard.insuranceEvidenced', { date: insuranceEvidencedDate }) : null,
   ].filter((part): part is string => Boolean(part));
+
+  // Search-page council punch item 11 (#886 — Trust's K2 concession
+  // condition, lapsing if cut): "<Agency> · Checked before listing"
+  // as a legible line at caption weight, riding this card's existing
+  // verification paragraph (no new row, no badge). #975 (founder
+  // decision 2026-11-12): the "Example" labels were removed from the
+  // traveller UI, so this line now shows as designed for any agency
+  // with a VERIFIED, unexpired licence — test supply included. The
+  // DATED statements above keep their #878 test-supply gates: a date
+  // is a stronger claim than the checked line.
+  const agencyCheckedLine =
+    trip.agency?.travelLicenceStatus === 'VERIFIED' &&
+    (!trip.agency?.licenceExpiry || licenceExpiryDate) &&
+    trip.agency?.companyName
+      ? `${trip.agency.companyName} · ${t('tripCard.checkedBeforeListing')}`
+      : null;
 
   // #333: warm the trip-detail query on hover/focus/press so tapping a card
   // paints instantly instead of starting a cold request chain. Uses the exact
@@ -168,8 +261,8 @@ export function TripCard({ trip }: TripCardProps) {
   };
 
   return (
-    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className="group border-border shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl overflow-hidden bg-card h-full flex flex-col">
-      <div className="relative h-64 overflow-hidden">
+    <Card onMouseEnter={prefetchTrip} onFocus={prefetchTrip} onPointerDown={prefetchTrip} className={cn("group border-border shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden bg-card h-full flex flex-col", isSearch ? "rounded-2xl" : "rounded-3xl")}>
+      <div className={cn("relative overflow-hidden", isSearch ? "aspect-[16/10]" : "h-64")}>
         {/* #490 round 2: the card renders the SAME Snap Rail component
             as the trip-page gallery — native scroll-snap glide (touch
             swipe and mouse drag both advance it), counter + caption
@@ -183,68 +276,132 @@ export function TripCard({ trip }: TripCardProps) {
             #571: the overlays stay minimal — category badge, ONE
             availability badge, the wishlist button and the rail
             controls; the footer is the single price surface. */}
-        {/* Founder decision 2026-10-29: a card photo tap is a plain
-            link to the trip page — the #623 full-screen viewer opens
-            from the trip page only, never from cards. The rail's root
+        {/* Founder decision 2026-10-29: a card photo tap navigates to
+            the trip page — the #623 full-screen viewer opens from the
+            trip page only, never from cards. The rail's root
             click-capture swallows the click that follows a drag, so
             swipes never navigate; its arrows and indicators cancel
-            their own clicks, so they keep cycling photos in place. */}
-        <Link href={`/trip/${trip.id}`} className="absolute inset-0 block">
+            their own clicks, so they keep cycling photos in place.
+            #882: the rail is no longer wrapped in a Link — interactive
+            content (arrows, dots, focusable slides) nested inside an
+            anchor is invalid and screen readers announced the whole
+            photo strip as one link. Photo navigation now runs through
+            the rail's genuine-click callback (router.push), and the
+            card body below stays a real link. */}
+        <div className="absolute inset-0 block">
+          {staticPhoto ? (
+            <div className="h-full w-full cursor-pointer" onClick={() => router.push(`/trip/${trip.id}`)}>
+              <SafeImage
+                src={images[0]}
+                alt={trip.imageAlts?.[0] ?? (displayLocation ? `${trip.title} · ${displayLocation}` : trip.title)}
+                fill
+                sizes={imageSizes ?? "(min-width: 1024px) 33vw, 100vw"}
+                className="object-cover"
+                blurDataURL={trip.imageBlurDataURLs?.[0] ?? undefined}
+                style={{ viewTransitionName: tripCoverViewTransitionName(trip.id) }}
+              />
+            </div>
+          ) : (
           <SnapRail
             images={images}
             imageAlts={trip.imageAlts}
             imageBlurDataURLs={trip.imageBlurDataURLs}
             captionFallback={displayLocation ? `${trip.title} · ${displayLocation}` : trip.title}
-            ariaLabel={t('tripDetails.photosLabel')}
+            ariaLabel={t('tripCard.photoCarousel', { title: trip.title })}
             rootClassName="h-full"
             viewportClassName="h-full"
-            sizes="(min-width: 1024px) 33vw, 100vw"
+            sizes={imageSizes ?? "(min-width: 1024px) 33vw, 100vw"}
             showIndicators
+            deferOffscreenSlides
+            onSlideClick={() => router.push(`/trip/${trip.id}`)}
             slideStyle={(idx, isActive) =>
               isActive ? { viewTransitionName: tripCoverViewTransitionName(trip.id) } : undefined
             }
           />
-        </Link>
+          )}
+        </div>
 
-        <div className="absolute top-3 start-3">
-          <Badge className="bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 shadow-md tracking-wider border-none">
+        <div className="absolute top-3 start-3 flex flex-col items-start gap-2">
+          <Badge className={cn(
+            "shadow-md border-none",
+            isSearch
+              ? "bg-white/95 text-deep-blue text-[11px] font-semibold rounded-full normal-case px-3 py-1 tracking-normal"
+              : "bg-card/95 text-foreground text-[10px] font-bold rounded-lg uppercase px-3 py-1 tracking-wider",
+          )}>
             {categoryLabel}
           </Badge>
+          {/* Founder decision 2026-11-12 (superseding #878): the
+              "Example" badge that test supply carried here is
+              REMOVED — no user-facing Example label renders anywhere
+              in the traveller UI. The isTestData flag stays in the
+              data layer (internal only) and still suppresses every
+              verification claim below; it has no UI surface. */}
         </div>
 
-        <div className="absolute top-3 end-16 flex flex-col items-end gap-2">
-          {/* #571 rework: solid, legible spots badge — white bold text at
-              12px on a solid deep-green fill; solid amber when fewer
-              than 5 seats remain; solid dark red when sold out. The old
-              10px dark-green text on a 15%-tint pill was unreadable on
-              photographic backgrounds. */}
+        {/* Card A (2026-11-13): on the search variant the spots badge
+            sits on the photo at bottom-left — its own corner, clear
+            of the category pill (top-left) and the wishlist heart
+            (top-right). This supersedes the #978 top-right zone, whose
+            long K6 wording reached back over the category pill. Other
+            variants keep their geometry. */}
+        <div className={cn(
+          "absolute flex flex-col gap-2",
+          isSearch ? "bottom-3 start-3 max-w-[calc(100%-1.5rem)] items-start" : "top-3 end-16 items-end",
+        )}>
+          {/* #571 rework + search-page council K6a (punch item 10,
+              #886): the badge colours are a measured spec, not a
+              palette pick — available = #15803D with white text
+              (5.02:1); the low state (≤5 seats, the council's
+              threshold) = the frozen warn pair #B45309 on #FEF3C7
+              (4.51:1); sold out keeps its dark red. Prohibited pairs
+              (#16A34A, white-on-orange) never ship; the fix is always
+              colour, never shorter text (K6b wording is locked in
+              the locale templates). */}
           <Badge
             data-testid="trip-card-spots-badge"
-            data-state={nextSession ? (nextSession.availableSeats < 5 ? 'low' : 'available') : 'sold-out'}
+            data-state={nextSession ? (nextSession.availableSeats <= 5 ? 'low' : 'available') : 'sold-out'}
             className={cn(
-              "text-xs font-bold rounded-lg uppercase px-3 py-1.5 shadow-md tracking-wide border-none flex items-center gap-1 text-white",
+              "max-w-full text-xs font-bold rounded-lg px-3 py-1.5 shadow-md border-none flex items-center gap-1",
               nextSession
-                ? nextSession.availableSeats < 5
-                  ? "bg-amber-600"
-                  : "bg-emerald-700"
-                : "bg-rose-800"
+                ? nextSession.availableSeats <= 5
+                  ? "bg-[#FEF3C7] text-[#B45309]"
+                  : "bg-[#15803D] text-white"
+                : "bg-rose-800 text-white"
             )}>
             <Zap className="h-3.5 w-3.5" />
-            {nextSession ? t('tripCard.spots', { count: nextSession.availableSeats }) : t('tripCard.soldOut')}
+            {nextSession
+              ? t('tripCard.spotsLeftSession', { count: nextSession.availableSeats, date: nextSessionDateLabel ?? '' })
+              : t('tripCard.soldOut')}
           </Badge>
         </div>
 
-          <WishlistButton tripId={trip.id} className="absolute top-3 end-3" />
+          <WishlistButton
+            tripId={trip.id}
+            variant={isSearch ? 'light' : 'dark'}
+            className="absolute top-3 end-3"
+            onToggled={onWishlistToggle ? (next) => onWishlistToggle(trip.id, next) : undefined}
+          />
       </div>
 
-      <Link href={`/trip/${trip.id}`} className="flex-1 flex flex-col p-6">
+      <Link href={`/trip/${trip.id}`} className={cn("flex-1 flex flex-col", isSearch ? "p-4" : "p-6")}>
         <div className="space-y-3 flex-1">
           <div className="flex justify-between items-start gap-3">
-            <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 leading-tight">{trip.title}</h3>
+            {/* Hybrid P0-7 (#926/#745): titles are never clamped on
+                the default chrome — FR/AR titles were cut at two
+                lines; the reserved two-line min-height keeps card
+                geometry (and CLS) exactly where the clamp held it.
+                Card A exception (founder choice 2026-11-13): the
+                /search variant clamps at two lines by design. */}
+            <h3 className={cn("text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-tight min-h-[2.85rem]", isSearch && "line-clamp-2")}>{trip.title}</h3>
             {/* #681 (Council S6): an average is a claim — it renders only
                 at/above MIN_REVIEWS_FOR_RATING reviews. Below that the
                 count is still published (even when small); at zero the
                 card says "No reviews yet" instead of a bare 0.0. */}
+            {isSearch && ratingDisplayState(trip.reviewCount) === 'empty' ? (
+              <span className="shrink-0 rounded-full bg-sand px-2.5 py-1 text-xs font-medium text-deep-blue dark:bg-muted dark:text-foreground">
+                {t('reviews.noReviewsYet')}
+              </span>
+            ) : (
             <div className="flex items-center gap-1 shrink-0 bg-warning/10 px-2 py-0.5 rounded-md">
               <Star className={cn("h-3.5 w-3.5 text-warning", ratingDisplayState(trip.reviewCount) === 'rated' ? "fill-warning" : "fill-none")} />
               <span className="text-xs font-bold text-warning-dark">
@@ -255,6 +412,7 @@ export function TripCard({ trip }: TripCardProps) {
                     : t('reviews.noReviewsYet')}
               </span>
             </div>
+            )}
           </div>
 
           {/* #317: public cards never display an internal approval state.
@@ -263,22 +421,22 @@ export function TripCard({ trip }: TripCardProps) {
               what+when statement when the checks are on record; without a
               dated check on record there is no verification line at all
               (the old hedge copy is retired). */}
-          {verificationChecks.length > 0 ? (
+          {agencyCheckedLine || verificationChecks.length > 0 ? (
             <p className="text-[11px] font-medium text-muted-foreground">
-              {verificationChecks.join(' · ')}
+              {[agencyCheckedLine, ...verificationChecks].filter(Boolean).join(' · ')}
             </p>
           ) : null}
           
           <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {displayLocation}</span>
             <span>•</span>
-            <span className="flex items-center gap-1"><Zap className="h-3.5 w-3.5" /> {trip.durationDays ? t('tripCard.days', { count: trip.durationDays }) : ''}</span>
+            <span className="flex items-center gap-1">{isSearch ? <Clock className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />} {trip.durationDays ? t('tripCard.days', { count: trip.durationDays }) : ''}</span>
           </div>
 
           {/* #687: the one-line cancellation summary on the card,
               naming the agency as refund obligor. */}
           <CancellationOneLiner summary={trip.cancellationSummary} agencyName={trip.agency?.companyName} />
-          {(trip.payOnArrivalEnabled || trip.privateTourEnabled) ? (
+          {!isSearch && (trip.payOnArrivalEnabled || trip.privateTourEnabled) ? (
             <div className="flex flex-wrap gap-1.5">
               {trip.payOnArrivalEnabled ? (
                 <Badge className="bg-sky-700 text-white text-[10px] font-bold rounded-lg px-2 py-0.5 border-none">{t('batchF.payOnArrivalBadge')}</Badge>
@@ -290,6 +448,18 @@ export function TripCard({ trip }: TripCardProps) {
           ) : null}
         </div>
 
+        {isSearch ? (
+          <p className="mt-4 flex items-baseline justify-between gap-3 border-t border-border pt-3 text-sm text-muted-foreground">
+            <span>
+              <span className="oui-numeric text-base font-bold text-foreground">{searchPriceLabel ?? '---'}</span>
+              {' / '}
+              {t('tripCard.perPerson')}
+            </span>
+            {nextSession && nextSessionDateLabel ? (
+              <span className="shrink-0 text-xs font-medium">{t('tripCard.nextSession', { date: nextSessionDateLabel })}</span>
+            ) : null}
+          </p>
+        ) : (
         <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{t('tripCard.from')}</span>
@@ -303,6 +473,7 @@ export function TripCard({ trip }: TripCardProps) {
             {t('tripCard.viewDetails')}
           </span>
         </div>
+        )}
       </Link>
 
     </Card>

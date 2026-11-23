@@ -8,7 +8,7 @@
  *     focus targets are a WCAG 2.4.3 / 2.4.7 failure.
  *
  * This is a smoke-level check, not a full tab-order audit. Run in CI after
- * `npm install --no-save @axe-core/playwright` + `npx playwright install chromium`
+ * `npm ci` + `npx playwright install chromium`
  * (same prerequisites as axe-check.mjs).
  *
  * Usage: node .github/lighthouse/keyboard-nav-check.mjs [baseUrl] [pagesCsv] [--role=ROLE]

@@ -89,3 +89,19 @@ export function buildHeroSearchParams(
 export function isInvalidDateRange(dateFrom: string, dateTo: string): boolean {
   return Boolean(dateFrom && dateTo && dateTo < dateFrom);
 }
+
+/** Today's date as a local yyyy-mm-dd string (the same frame the
+ * date inputs speak — UTC would reject "today" for early-morning
+ * travellers east of Greenwich). */
+export function todayLocalISO(now: Date = new Date()): string {
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+/** #877: a picked date strictly before today is a dead end — every
+ * session it could match is already gone. Empty values are not past
+ * dates (the fields are optional). */
+export function isPastDate(value: string, today: string = todayLocalISO()): boolean {
+  return Boolean(value && value < today);
+}

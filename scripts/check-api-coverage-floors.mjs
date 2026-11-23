@@ -39,10 +39,11 @@ try {
 const modules = new Map();
 for (const [path, data] of Object.entries(summary)) {
   if (path === 'total') continue;
+  const normalizedPath = path.replaceAll('\\', '/');
   const marker = '/apps/api/src/';
-  const idx = path.indexOf(marker);
+  const idx = normalizedPath.indexOf(marker);
   if (idx === -1) continue;
-  const mod = path.slice(idx + marker.length).split('/')[0];
+  const mod = normalizedPath.slice(idx + marker.length).split('/')[0];
   if (!modules.has(mod)) {
     modules.set(mod, Object.fromEntries(METRICS.map((m) => [m, { covered: 0, total: 0 }])));
   }

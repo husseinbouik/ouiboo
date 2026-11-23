@@ -65,6 +65,9 @@ export default function AgenciesTab({
                        {agency.bankDetailsStatus && (
                          <Badge className={getAdminBankDetailsBadgeClass(agency.bankDetailsStatus)}>{getAdminBankDetailsBadgeLabel(agency.bankDetailsStatus, t)}</Badge>
                        )}
+                       {agency.cashPlusStatus === 'PENDING_REVIEW' && (
+                         <Badge className={getAdminBankDetailsBadgeClass(agency.cashPlusStatus)}>{t('dashboard.labels.cashPlusPending')}</Badge>
+                       )}
                        {/* #415: expiry sweep paused this agency's trips */}
                        {agency.verificationPausedAt && (
                          <Badge className="bg-danger/15 text-danger">{t('dashboard.labels.verificationPaused')}</Badge>

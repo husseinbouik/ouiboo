@@ -7,8 +7,10 @@ import {
     PaymentCustodian,
     PaymentLedgerEntryType,
     PaymentLedgerSource,
+    ManualPaymentChannel,
     PaymentMethod,
     Prisma,
+    VerificationStatus,
 } from '@ouiboo/database';
 import { randomUUID } from 'node:crypto';
 
@@ -81,6 +83,17 @@ export interface RecordExternalPaymentInput {
      * DEPOSIT and one BALANCE payment per booking.
      */
     stage?: ExternalPaymentStage;
+    /** #988: the manual channel chosen for this stage payment and the
+     * Cash Plus transaction code the traveller supplied as proof. */
+    manualChannel?: ManualPaymentChannel | null;
+    transactionCode?: string | null;
+    /** Stage-scoped proof evidence retained when the current proof slot is reused. */
+    proofEvidence?: {
+        imageUrl: string;
+        uploadedAt: Date;
+        status: VerificationStatus;
+        rejectionReason?: string | null;
+    };
 }
 
 /**
@@ -162,6 +175,27 @@ export class ExternalPaymentsService {
             status: ExternalPaymentStatus.PENDING_VERIFICATION,
             verifiedAt: null,
             clearBankConfirmation: true,
+        });
+    }
+
+    /** Update the retained proof decision for one immutable payment stage. */
+    async updateProofStatusInTransaction(
+        tx: Prisma.TransactionClient,
+        bookingId: string,
+        stage: ExternalPaymentStage,
+        status: VerificationStatus,
+        rejectionReason?: string | null,
+    ) {
+        // updateMany deliberately tolerates legacy proofs created before
+        // stage records existed. New uploads always create the row first;
+        // legacy review must not become a 500 merely because enrichment is
+        // unavailable for historical evidence.
+        return tx.externalPayment.updateMany({
+            where: { bookingId, stage },
+            data: {
+                proofStatus: status,
+                proofRejectionReason: rejectionReason ?? null,
+            },
         });
     }
 
@@ -455,6 +489,21 @@ export class ExternalPaymentsService {
                     bankConfirmedBy: null,
                 }
                 : {};
+        const proofFields = input.proofEvidence
+            ? {
+                proofImageUrl: input.proofEvidence.imageUrl,
+                proofUploadedAt: input.proofEvidence.uploadedAt,
+                proofStatus: input.proofEvidence.status,
+                proofRejectionReason: input.proofEvidence.rejectionReason ?? null,
+            }
+            : {};
+        // #988: channel/code facts are written when a caller supplies
+        // them (proof upload / booking-time records); other transitions
+        // leave them untouched.
+        const channelFields = {
+            ...(input.manualChannel !== undefined ? { manualChannel: input.manualChannel } : {}),
+            ...(input.transactionCode !== undefined ? { transactionCode: input.transactionCode } : {}),
+        };
         return tx.externalPayment.upsert({
             where: { bookingId_stage: { bookingId: input.bookingId, stage } },
             create: {
@@ -470,6 +519,8 @@ export class ExternalPaymentsService {
                 status: outcome.status,
                 verifiedAt: outcome.verifiedAt ?? null,
                 stage,
+                ...channelFields,
+                ...proofFields,
                 ...bankFields,
             },
             update: {
@@ -481,6 +532,8 @@ export class ExternalPaymentsService {
                 custodian: input.custodian,
                 status: outcome.status,
                 stage,
+                ...channelFields,
+                ...proofFields,
                 ...(outcome.verifiedAt !== undefined ? { verifiedAt: outcome.verifiedAt } : {}),
                 ...bankFields,
             },

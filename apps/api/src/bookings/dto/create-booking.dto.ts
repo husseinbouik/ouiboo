@@ -34,6 +34,10 @@ export const ALLOWED_BOOKING_TERMS_VERSIONS: string[] = [
 
 export enum PaymentMethodEnum {
     BANK_TRANSFER = 'BANK_TRANSFER',
+    // #988: Cash Plus — a second MANUAL channel (traveller pays the
+    // agency at a Cash Plus point; proof = receipt and/or transaction
+    // code). Never a gateway payment.
+    CASH_PLUS = 'CASH_PLUS',
     CARD = 'CARD',
     WALLET = 'WALLET',
     MOBILE_MONEY = 'MOBILE_MONEY',

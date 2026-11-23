@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Lock } from 'lucide-react';
-import { Button, Input } from '@ouiboo/ui';
+import { Button, Input, Logo } from '@ouiboo/ui';
 import { useAuth } from './AuthContext';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -87,8 +87,14 @@ export function AuthModal() {
 
                     <div className="p-8 md:p-10">
                         <div className="text-center mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-accent/10 text-accent flex items-center justify-center font-bold text-2xl mx-auto mb-4">
-                                O
+                            {/* Brand lockup: the V1 Route-End symbol via the
+                                shared Logo component (symbol-alone is the
+                                sanctioned icon form). tone="auto" follows
+                                the modal's themed card — white ring on the
+                                dark surface, navy on light, arc + dot always
+                                sunset orange (settled colourways, #936). */}
+                            <div className="flex items-center justify-center mx-auto mb-4">
+                                <Logo size={48} tone="auto" aria-label="Ouiboo" />
                             </div>
                             <h2 className="text-2xl font-bold text-foreground">{t('authModal.title')}</h2>
                             <p className="text-sm text-muted-foreground mt-2 font-medium">{t('authModal.subtitle')}</p>

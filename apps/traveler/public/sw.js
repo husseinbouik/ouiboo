@@ -15,14 +15,27 @@
  *   visits to /login, and caching that redirect meant a later offline
  *   load of the same route replayed the 307 and walled a signed-in
  *   user out. A redirect is never a usable offline shell.
- * - Static assets (/_next/static, /locales, icons, manifest):
- *   stale-while-revalidate.
+ * - Static assets (/_next/static, icons, manifest):
+ *   stale-while-revalidate. Their URLs are content-hashed or fixed, so
+ *   a cached copy can never be a DIFFERENT build's content.
+ * - Locale bundles (/locales/*.json): NETWORK FIRST, cache only as an
+ *   offline fallback. #975: under stale-while-revalidate, the first
+ *   load after any deploy that adds translation keys rendered the
+ *   PREVIOUS bundle for the whole session — i18next loads the bundle
+ *   once per page load and the missing-key handler returns the raw
+ *   key, so a returning phone showed literal strings like
+ *   "search.stateTrips" until a second reload (founder screenshot
+ *   2026-11-12; reproduced with a seeded stale cache). Network-first
+ *   makes the first post-deploy load render the fresh bundle. The v4
+ *   bump also purges every v3 cache on activate, clearing the stale
+ *   bundles already sitting on returning devices.
  */
-const SW_VERSION = 'ouiboo-sw-v3';
+const SW_VERSION = 'ouiboo-sw-v4';
 const STATIC_CACHE = `${SW_VERSION}-static`;
 const PAGE_CACHE = `${SW_VERSION}-pages`;
 
-const STATIC_PATH_PREFIXES = ['/_next/static/', '/locales/', '/icons/'];
+const LOCALE_PATH_PREFIX = '/locales/';
+const STATIC_PATH_PREFIXES = ['/_next/static/', '/icons/'];
 const STATIC_PATHS = new Set(['/manifest.webmanifest', '/icon.png', '/favicon.ico']);
 
 self.addEventListener('install', (event) => {
@@ -71,6 +84,29 @@ self.addEventListener('fetch', (event) => {
           const bookings = await caches.match('/bookings', { ignoreSearch: true });
           if (bookings) return bookings;
           throw new Error('offline and no cached page');
+        }
+      })(),
+    );
+    return;
+  }
+
+  if (url.pathname.startsWith(LOCALE_PATH_PREFIX)) {
+    // #975: network first (see header). The cache is written on every
+    // successful fetch and read ONLY when the network fails, so an
+    // offline revisit still renders the last-seen language.
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(STATIC_CACHE);
+        try {
+          const response = await fetch(request);
+          if (response.ok) {
+            cache.put(request, response.clone());
+          }
+          return response;
+        } catch {
+          const cached = await cache.match(request);
+          if (cached) return cached;
+          throw new Error('offline and no cached locale bundle');
         }
       })(),
     );

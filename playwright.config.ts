@@ -31,22 +31,22 @@ export default defineConfig({
       timeout: 30_000,
     },
     {
-      // Use `next start` (standalone output removed - broken in Next.js 16)
-      command: 'npm run start --workspace apps/traveler',
+      // Exercise the same standalone artifact layout used by the app image.
+      command: 'node scripts/start-next-standalone.mjs traveler 3001',
       url: 'http://localhost:3001/login',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       env: { ...process.env, NEXT_PUBLIC_API_URL: 'http://localhost:3000/api' },
     },
     {
-      command: 'npm run start --workspace apps/agency',
+      command: 'node scripts/start-next-standalone.mjs agency 3002',
       url: 'http://localhost:3002/login',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       env: { ...process.env, NEXT_PUBLIC_API_URL: 'http://localhost:3000/api' },
     },
     {
-      command: 'npm run start --workspace apps/admin',
+      command: 'node scripts/start-next-standalone.mjs admin 3003',
       url: 'http://localhost:3003/login',
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
@@ -74,6 +74,10 @@ export default defineConfig({
       use: {
         ...devices['Pixel 7'],
         baseURL: 'http://localhost:3001',
+        // Match the desktop projects on Windows, where the corporate TLS
+        // trust chain can prevent Playwright from downloading its bundled
+        // Chromium. CI remains on Playwright Chromium.
+        channel: process.platform === 'win32' ? 'chrome' : undefined,
       },
     },
     {

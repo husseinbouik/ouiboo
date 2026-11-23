@@ -34,6 +34,7 @@
  */
 @theme inline {
   --color-background: var(--background);
+  --color-paper: var(--paper);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -160,6 +161,9 @@
 
   /* Semantic */
   --background: #fffaf4;
+  /* Warm paper ground (#926; retained under #929 pure-B: Option B
+     paints this exact ground on the USP strip and Why-book cards). */
+  --paper: #fdfbf7;
   --foreground: #0a192f;
   --card: rgba(255, 255, 255, 0.92);
   --card-foreground: #0a192f;
@@ -217,6 +221,8 @@
 
 .dark {
   --background: #06101f;
+  /* No paper ground on dark: paper surfaces stay on the dark ground. */
+  --paper: var(--background);
   --foreground: #f8fafc;
   --card: rgba(13, 28, 52, 0.92);
   --card-foreground: #f8fafc;
@@ -290,10 +296,19 @@
 
 .dark[data-emphasis="traveler"] {
   --primary: var(--sunset-orange);
-  --primary-foreground: #ffffff;
+  /* AA on the vivid orange (#332 pattern, council P0-2): white on
+     #FF6B35 measures 2.84:1 and fails at every size, so text-bearing
+     vivid-orange surfaces take NAVY labels — #0A192F on #FF6B35 is
+     6.21:1. The vivid orange itself is unchanged and stays the
+     display/lead colour; raw orange under light text is
+     decoration-only. The same rule sets the sidebar-primary and
+     lead foregrounds in this layer (light mode already pairs the
+     lead token with navy). */
+  --primary-foreground: #0a192f;
   --sidebar-primary: var(--sunset-orange);
+  --sidebar-primary-foreground: #0a192f;
   --lead: var(--sunset-orange);
-  --lead-foreground: #ffffff;
+  --lead-foreground: #0a192f;
   --support: var(--deep-blue);
 }
 

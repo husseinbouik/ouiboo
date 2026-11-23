@@ -52,6 +52,12 @@ type AgencyReviewModalProps = {
     status: VerificationStatusType,
     opts?: { reason?: string; overrideReason?: string },
   ) => void;
+  isVerifyingCashPlus: boolean;
+  onVerifyCashPlus: (
+    id: string,
+    status: VerificationStatusType,
+    opts?: { reason?: string; overrideReason?: string },
+  ) => void;
   onViewDocument: (key: string) => void;
 };
 
@@ -63,6 +69,8 @@ export default function AgencyReviewModal({
   isVerifyingLicence,
   isVerifyingInsurance,
   isVerifyingBankDetails,
+  isVerifyingCashPlus,
+  onVerifyCashPlus,
   onClose,
   onVerify,
   onVerifyLicence,
@@ -73,6 +81,14 @@ export default function AgencyReviewModal({
   const licenceStatus = getEffectiveLicenceStatus(selectedAgency);
   const insuranceStatus = getEffectiveInsuranceStatus(selectedAgency);
   const holderMatches = bankHolderNameMatches(selectedAgency);
+  // #988: Cash Plus beneficiary must be the agency itself (same rule as
+  // the bank holder); null when there is no pending submission.
+  const normalizeName = (value?: string | null) => (value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const cashPlusBeneficiaryMatches = selectedAgency.pendingCashPlusBeneficiaryName
+    ? [selectedAgency.legalName, selectedAgency.companyName].some(
+        (name) => !!name && normalizeName(name) === normalizeName(selectedAgency.pendingCashPlusBeneficiaryName),
+      )
+    : null;
   const insuredMatches = insuranceInsuredNameMatches(selectedAgency);
 
   // Review-form state, reset whenever a different agency is opened
@@ -82,12 +98,16 @@ export default function AgencyReviewModal({
   const [insuranceReason, setInsuranceReason] = useState('');
   const [bankOverrideReason, setBankOverrideReason] = useState('');
   const [bankRejectionReason, setBankRejectionReason] = useState('');
+  const [cashPlusOverrideReason, setCashPlusOverrideReason] = useState('');
+  const [cashPlusRejectionReason, setCashPlusRejectionReason] = useState('');
   if (formAgencyId !== selectedAgency.id) {
     setFormAgencyId(selectedAgency.id);
     setMinistryChecked(false);
     setInsuranceReason('');
     setBankOverrideReason('');
     setBankRejectionReason('');
+    setCashPlusOverrideReason('');
+    setCashPlusRejectionReason('');
   }
 
   const expiryCell = (value?: string | null) =>
@@ -436,6 +456,104 @@ export default function AgencyReviewModal({
                     >
                       <XCircle className="h-4 w-4 ms-2" />
                       {t('dashboard.actions.rejectBankDetails')}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+          <div className="md:col-span-2 space-y-2 border-t border-border pt-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('dashboard.labels.cashPlusReview')}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className={getAdminBankDetailsBadgeClass(selectedAgency.cashPlusStatus)}>
+                {getAdminBankDetailsBadgeLabel(selectedAgency.cashPlusStatus, t)}
+              </Badge>
+              <span className="text-muted-foreground text-xs">
+                {t('dashboard.labels.cashPlusEnabled')}: {selectedAgency.cashPlusEnabled ? t('dashboard.labels.yes') : t('dashboard.labels.no')}
+              </span>
+              {selectedAgency.cashPlusVerifiedAt && (
+                <span className="text-muted-foreground text-xs">
+                  {t('dashboard.labels.bankDetailsVerifiedAt')}: {new Date(selectedAgency.cashPlusVerifiedAt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+            {selectedAgency.pendingCashPlusBeneficiaryName ? (
+              <div className="space-y-1 text-muted-foreground">
+                <p>{t('dashboard.labels.pendingCashPlus')}</p>
+                <p>{t('dashboard.labels.cashPlusBeneficiary')}: <span className="text-foreground font-medium">{selectedAgency.pendingCashPlusBeneficiaryName}</span>
+                  {cashPlusBeneficiaryMatches === false && (
+                    <span className="text-danger font-medium"> — {t('dashboard.labels.bankHolderMismatch')}</span>
+                  )}
+                </p>
+                <p>{t('dashboard.labels.cashPlusPhone')}: <span className="text-foreground font-medium">{selectedAgency.pendingCashPlusPhone || t('dashboard.labels.na')}</span></p>
+              </div>
+            ) : selectedAgency.cashPlusBeneficiaryName ? (
+              <div className="space-y-1 text-muted-foreground">
+                <p>{t('dashboard.labels.currentCashPlus')}</p>
+                <p>{t('dashboard.labels.cashPlusBeneficiary')}: <span className="text-foreground font-medium">{selectedAgency.cashPlusBeneficiaryName}</span></p>
+                <p>{t('dashboard.labels.cashPlusPhone')}: <span className="text-foreground font-medium">{selectedAgency.cashPlusPhone || t('dashboard.labels.na')}</span></p>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">{t('dashboard.messages.noCashPlus')}</p>
+            )}
+            {selectedAgency.cashPlusRejectionReason && (
+              <p className="text-danger">{t('dashboard.labels.bankDetailsRejectionReason')}: {selectedAgency.cashPlusRejectionReason}</p>
+            )}
+            {(() => {
+              const canVerify = canVerifyBankDetails(selectedAgency.cashPlusStatus, selectedAgency.pendingCashPlusBeneficiaryName);
+              const canReject = canRejectBankDetails(selectedAgency.cashPlusStatus, selectedAgency.pendingCashPlusBeneficiaryName);
+              if (!canVerify && !canReject) return null;
+              const overrideRequired = cashPlusBeneficiaryMatches === false;
+              return (
+                <div className="space-y-3 pt-2">
+                  {overrideRequired && (
+                    <div className="space-y-1">
+                      <label htmlFor="cashplus-override-reason" className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {t('dashboard.labels.overrideReason')}
+                      </label>
+                      <input
+                        id="cashplus-override-reason"
+                        type="text"
+                        value={cashPlusOverrideReason}
+                        onChange={(event) => setCashPlusOverrideReason(event.target.value)}
+                        placeholder={t('dashboard.labels.overrideReasonPlaceholder')}
+                        className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    <label htmlFor="cashplus-rejection-reason" className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t('dashboard.labels.rejectionReasonLabel')}
+                    </label>
+                    <input
+                      id="cashplus-rejection-reason"
+                      type="text"
+                      value={cashPlusRejectionReason}
+                      onChange={(event) => setCashPlusRejectionReason(event.target.value)}
+                      placeholder={t('dashboard.labels.rejectionReasonPlaceholder')}
+                      className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      className="bg-success text-success-foreground hover:bg-success/90 border-none"
+                      onClick={() => onVerifyCashPlus(selectedAgency.id, VerificationStatus.Verified, {
+                        overrideReason: overrideRequired ? cashPlusOverrideReason.trim() : undefined,
+                      })}
+                      disabled={!canVerify || isVerifyingCashPlus || (overrideRequired && !cashPlusOverrideReason.trim())}
+                    >
+                      <CheckCircle2 className="h-4 w-4 ms-2" />
+                      {t('dashboard.actions.verifyCashPlus')}
+                    </Button>
+                    <Button
+                      className="bg-danger/10 text-danger hover:bg-danger/15 border-none"
+                      onClick={() => onVerifyCashPlus(selectedAgency.id, VerificationStatus.Rejected, {
+                        reason: cashPlusRejectionReason.trim(),
+                      })}
+                      disabled={!canReject || isVerifyingCashPlus || !cashPlusRejectionReason.trim()}
+                    >
+                      <XCircle className="h-4 w-4 ms-2" />
+                      {t('dashboard.actions.rejectCashPlus')}
                     </Button>
                   </div>
                 </div>

@@ -2,7 +2,8 @@
  * @jest-environment jsdom
  */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import HomeClient from './HomeClient';
 
 const mockPush = jest.fn();
@@ -48,6 +49,10 @@ describe('HomeClient hero search (#723)', () => {
         if (destination !== undefined) {
             fireEvent.change(screen.getByLabelText('hero.where'), { target: { value: destination } });
         }
+        if (dateFrom !== undefined || dateTo !== undefined) {
+            // #877: dates live behind the "Add dates" toggle — open it first.
+            fireEvent.click(screen.getByRole('button', { name: 'hero.addDates' }));
+        }
         if (dateFrom !== undefined) {
             fireEvent.change(screen.getByLabelText('search.startDate'), { target: { value: dateFrom } });
         }
@@ -58,15 +63,17 @@ describe('HomeClient hero search (#723)', () => {
 
     it('submits a known destination as the destination facet with canonical date params', () => {
         render(<HomeClient featuredTrips={[]} />);
-        fillHero('search.destinationNames.chefchaouen', '2026-11-10', '2026-11-12');
+        // #877: dates must be in the future — past dates are rejected
+        // inline by design, so this #723-era fixture uses 2027 dates.
+        fillHero('search.destinationNames.chefchaouen', '2027-11-10', '2027-11-12');
 
         fireEvent.click(screen.getByRole('button', { name: 'hero.search' }));
 
         expect(mockPush).toHaveBeenCalledTimes(1);
         const url = mockPush.mock.calls[0][0] as string;
         expect(url).toContain('destination=chefchaouen');
-        expect(url).toContain('dateFrom=2026-11-10');
-        expect(url).toContain('dateTo=2026-11-12');
+        expect(url).toContain('dateFrom=2027-11-10');
+        expect(url).toContain('dateTo=2027-11-12');
         expect(url).not.toContain('q=');
     });
 
@@ -100,7 +107,9 @@ describe('HomeClient hero search (#723)', () => {
 
     it('blocks an inverted date range with an accessible validation message', () => {
         render(<HomeClient featuredTrips={[]} />);
-        fillHero('', '2026-11-12', '2026-11-10');
+        // Future dates, so the range check — not the #877 past-date
+        // check, which runs first — is what fires.
+        fillHero('', '2027-11-12', '2027-11-10');
 
         fireEvent.click(screen.getByRole('button', { name: 'hero.search' }));
 
@@ -108,6 +117,205 @@ describe('HomeClient hero search (#723)', () => {
         const alert = screen.getByRole('alert');
         expect(alert.textContent).toBe('hero.dateRangeError');
         expect(screen.getByLabelText('search.startDate').getAttribute('aria-describedby')).toBe('hero-date-error');
+    });
+
+    it('blocks past dates with the past-date validation message (#877)', () => {
+        render(<HomeClient featuredTrips={[]} />);
+        fillHero('', '2020-01-10', '2020-01-12');
+
+        fireEvent.click(screen.getByRole('button', { name: 'hero.search' }));
+
+        expect(mockPush).not.toHaveBeenCalled();
+        expect(screen.getByRole('alert').textContent).toBe('hero.pastDateError');
+    });
+});
+
+describe('HomeClient static imagery + trust strip (founder amendments 2026-11-11, #880/#887/#898/#917)', () => {
+    it('renders the fixed signature hero photo — a place, not a trip link', () => {
+        const { container } = render(<HomeClient featuredTrips={[]} />);
+        const heroImg = container.querySelector('img[alt="hero.photoAlt"]');
+        expect(heroImg).not.toBeNull();
+        expect(heroImg?.getAttribute('src')).toContain('hero-atlas-night');
+        expect(screen.getAllByText('hero.photoCaption').length).toBeGreaterThan(0);
+        // The hero is a photograph of a place: it must not navigate
+        // to a trip and must not carry a trip title.
+        expect(heroImg?.closest('a')).toBeNull();
+    });
+
+    it('renders the #887 claims as the Option B USP strip under the search zone (#929)', () => {
+        render(<HomeClient featuredTrips={[]} />);
+        expect(screen.getByText('usp.checkedTitle')).not.toBeNull();
+        expect(screen.getByText('usp.payTitle')).not.toBeNull();
+        expect(screen.getByText('usp.pricesTitle')).not.toBeNull();
+    });
+
+    it('destination tiles use the fixed curated asset, never a trip photo (#898)', () => {
+        const trip: any = {
+            id: 'chef-1',
+            title: 'Blue City',
+            destinationSlug: 'chefchaouen',
+            startLocation: 'Chefchaouen',
+            images: ['https://example.com/trip-photo.jpg'],
+            sessions: [],
+            agency: { id: 'agency-1' },
+        };
+        // The tiles this catalogue renders use react-query
+        // (display-currency) — provide a client like the app does.
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={queryClient}>
+                <HomeClient catalogTrips={[trip]} />
+            </QueryClientProvider>,
+        );
+        // Search council (#942): the tiles now live in the
+        // first-screen row under the hero pill (relocated from the
+        // below-fold sections, which are gone).
+        const row = screen.getByTestId('home-destination-tiles');
+        const tileSrcs = [...row.querySelectorAll('img')].map((img) => img.getAttribute('src') ?? '');
+        expect(tileSrcs.some((src) => src.includes('chefchaouen'))).toBe(true);
+        expect(tileSrcs.some((src) => src.includes('trip-photo'))).toBe(false);
+        // Photo-truth audit (council P0-1, #898) + verified
+        // follow-up curation (2026-11-11): Tangier and Tétouan now
+        // carry curated photographs that were visually verified
+        // against their labels (the Kasbah Mosque's octagonal
+        // minaret; a white-medina sabat alley), so their tiles
+        // render those frozen assets — never trip media. (Tangier
+        // has no trip in this fixture, so it renders as a zero
+        // place; Tétouan likewise.)
+        expect(tileSrcs.some((src) => src.includes('tangier'))).toBe(true);
+        expect(tileSrcs.some((src) => src.includes('tetouan'))).toBe(true);
+    });
+});
+
+describe('HomeClient coverage showcase + category tiles (round 2, founder 2026-11-11)', () => {
+    function wrap(ui: React.ReactNode) {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        return <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>;
+    }
+
+    function catalogTrip(partial: Record<string, unknown>) {
+        return {
+            title: 'Trip',
+            images: [],
+            sessions: [],
+            agency: { id: 'agency-1' },
+            ...partial,
+        } as any;
+    }
+
+    it('the first-screen tile row carries the rule-based destination set (#942, relocating the showcase)', () => {
+        const trips = [
+            catalogTrip({ id: 'merz-1', title: 'Merzouga Camel Trek', startLocation: 'Merzouga', destinationSlug: null, images: ['https://images.unsplash.com/photo-aaaa1111?q=80&w=1200'] }),
+            catalogTrip({ id: 'merz-2', title: 'Dunes Night', startLocation: 'Merzouga, Morocco', destinationSlug: null, images: ['https://images.unsplash.com/photo-bbbb2222?q=80&w=1200'] }),
+            catalogTrip({ id: 'tang-1', title: 'Tangier Day', startLocation: 'Tanger', destinationSlug: 'tangier' }),
+        ];
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        // The below-fold sections the row relocates are gone.
+        expect(screen.queryByText('featured.coverage.title')).toBeNull();
+        expect(screen.queryByText('featured.betaRegion.title')).toBeNull();
+        expect(screen.queryByText('featured.allTrips.title')).toBeNull();
+        const row = screen.getByTestId('home-destination-tiles');
+        // The two Merzouga spellings group into a single tile that
+        // links into search for the place.
+        const tile = within(row).getByRole('link', { name: /Merzouga/ });
+        expect(tile.getAttribute('href')).toBe('/search?q=Merzouga');
+        // Cluster destinations lead and carry the facet href.
+        const tangier = within(row).getByRole('link', { name: /destinationNames\.tangier/ });
+        expect(tangier.getAttribute('href')).toBe('/search?destination=tangier');
+        // Tétouan is present as the honest zero — labelled, and NOT
+        // a link (a 0-trip destination is a #877 dead end).
+        expect(within(row).queryByRole('link', { name: /destinationNames\.tetouan/ })).toBeNull();
+        expect(row.textContent).toContain('featured.betaRegion.noTripsYet');
+        // The old showcase's honestly-empty well-known places are
+        // not part of the rule-based set and leave with the section.
+        expect(screen.queryByText('featured.coverage.names.agadir')).toBeNull();
+        expect(screen.queryByText('featured.coverage.names.dakhla')).toBeNull();
+    });
+
+    it('a place joins the row the moment a trip exists there', () => {
+        const trips = [
+            catalogTrip({ id: 'aga-1', title: 'Agadir Beach Break', startLocation: 'Agadir', destinationSlug: null }),
+        ];
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        const row = screen.getByTestId('home-destination-tiles');
+        const tile = within(row).getByRole('link', { name: /Agadir/ });
+        expect(tile.getAttribute('href')).toBe('/search?q=Agadir');
+    });
+
+    it('coverage tiles: curated statics render; unverified media photos stay withheld (photo-truth, #898)', () => {
+        const trips = [
+            // Casablanca's only tour carries no photograph of
+            // Casablanca: a tropical beach, an aerial shoreline and
+            // a spice flat-lay (all in NON_PLACE_PHOTO_IDS) — the
+            // media pick withholds all three; the tile renders the
+            // curated verified static instead (asserted below).
+            catalogTrip({
+                id: 'casa-1',
+                title: 'Casablanca & Rabat Heritage Tour',
+                startLocation: 'Casablanca',
+                destinationSlug: null,
+                images: [
+                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200',
+                    'https://images.unsplash.com/photo-1505142468610-359e7d316be0?q=80&w=1200',
+                    'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?q=80&w=1200',
+                ],
+            }),
+            // A truthful pick is untouched: Merzouga keeps the photo
+            // from its own trips.
+            catalogTrip({
+                id: 'merz-1',
+                title: 'Merzouga Camel Trek',
+                startLocation: 'Merzouga',
+                destinationSlug: null,
+                images: ['https://images.unsplash.com/photo-1542401886-65d6c61db217?q=80&w=1200'],
+            }),
+            // Ouarzazate has NO curated static: a trip media photo
+            // verified not to depict it (the tropical beach, in
+            // NON_PLACE_PHOTO_IDS) must still be withheld — the
+            // tile renders graded, count and price, no photo.
+            catalogTrip({
+                id: 'ouar-1',
+                title: 'Ouarzazate Kasbah Day',
+                startLocation: 'Ouarzazate',
+                destinationSlug: null,
+                images: ['https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200'],
+            }),
+        ];
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        // Scoped to the first-screen tile row (#942) — the same
+        // photo discipline the coverage showcase carried.
+        const row = screen.getByTestId('home-destination-tiles');
+        const casaTile = row.querySelector('a[href="/search?q=Casablanca"]');
+        expect(casaTile).not.toBeNull();
+        expect(casaTile?.querySelector('img')?.getAttribute('src') ?? '').toContain('casablanca');
+        const ouarzTile = row.querySelector('a[href="/search?q=Ouarzazate"]');
+        expect(ouarzTile).not.toBeNull();
+        expect(ouarzTile?.querySelector('img')).toBeNull();
+        const merzTile = row.querySelector('a[href="/search?q=Merzouga"]');
+        expect(merzTile?.querySelector('img')).not.toBeNull();
+    });
+
+    it('category tiles are photo tiles, with styles under 2 trips suppressed (#898/#903)', () => {
+        const trips = [
+            catalogTrip({ id: 'a1', category: 'ADVENTURE', startLocation: 'Imlil', destinationSlug: null }),
+            catalogTrip({ id: 'a2', category: 'ADVENTURE', startLocation: 'Imlil', destinationSlug: null }),
+            catalogTrip({ id: 'l1', category: 'LUXURY', startLocation: 'Merzouga', destinationSlug: null }),
+        ];
+        const { container } = render(wrap(<HomeClient catalogTrips={trips} />));
+        // The chip rail and the tile share the category href; the
+        // TILE is the one carrying the frozen category photograph.
+        const adventureLinks = [...container.querySelectorAll('a[href="/search?category=ADVENTURE"]')];
+        const photoTile = adventureLinks.find((a) => a.querySelector('img')?.getAttribute('src')?.includes('categories%2Fadventure'));
+        expect(photoTile).toBeTruthy();
+        // Luxury has one trip: no chip, no tile.
+        expect(container.querySelector('a[href="/search?category=LUXURY"]')).toBeNull();
+    });
+
+    it('renders the Why-book trio under its H2 (proposal P1-21)', () => {
+        render(<HomeClient featuredTrips={[]} />);
+        expect(screen.getByText('trust.title')).not.toBeNull();
+        expect(screen.getByText('trust.verifiedTitle')).not.toBeNull();
+        expect(screen.getByText('trust.instantTitle')).not.toBeNull();
     });
 });
 
@@ -135,5 +343,159 @@ describe('HomeClient featured trips (#575)', () => {
 
         expect(screen.getByText('featured.emptyTitle')).not.toBeNull();
         expect(screen.queryByText('featured.loadErrorTitle')).toBeNull();
+    });
+});
+
+describe('HomeClient pure Option B (#929)', () => {
+    function wrap(ui: React.ReactNode) {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        return <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>;
+    }
+
+    function catalogTrip(partial: Record<string, unknown>) {
+        return {
+            title: 'Trip',
+            images: [],
+            sessions: [],
+            agency: { id: 'agency-1' },
+            ...partial,
+        } as any;
+    }
+
+    it('restores "View all trips" beside the Selected rail; no featured-card break', () => {
+        const trips = [
+            catalogTrip({ id: 'c1', title: 'Blue City', destinationSlug: 'chefchaouen', startLocation: 'Chefchaouen' }),
+            catalogTrip({ id: 't1', title: 'Tangier Day', destinationSlug: 'tangier', startLocation: 'Tangier', agency: { id: 'agency-2' } }),
+        ];
+        const { container } = render(wrap(<HomeClient catalogTrips={trips} />));
+        expect(screen.getByText('featured.viewAll')).not.toBeNull();
+        // B's grid is equal — no card wrapper breaks it wide.
+        expect(container.querySelectorAll('.md\\:col-span-2').length).toBe(0);
+    });
+
+    it('carries the honest zero in the first-screen tile row — no coverage section, no "Still growing" segregation', () => {
+        const trips = [
+            catalogTrip({ id: 'm1', title: 'Merzouga Trek', startLocation: 'Merzouga', destinationSlug: null }),
+        ];
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        expect(screen.queryByText('featured.coverage.stillGrowing')).toBeNull();
+        expect(screen.queryByText('featured.coverage.title')).toBeNull();
+        const row = screen.getByTestId('home-destination-tiles');
+        expect(row.textContent).toContain('search.destinationNames.tetouan');
+        expect(row.textContent).toContain('featured.betaRegion.noTripsYet');
+        expect(screen.queryByText('featured.coverage.names.agadir')).toBeNull();
+    });
+
+    it('carries no story strip (a Hybrid/C device, removed)', () => {
+        const desc =
+            'Leave Merzouga in the late afternoon, ride camels to the camp, dinner and music by the fire, a night in a comfort tent, then sunrise over the Erg Chebbi dunes before riding back.';
+        const trips = [
+            catalogTrip({ id: 'c1', title: 'Blue Pearl', destinationSlug: 'chefchaouen', startLocation: 'Chefchaouen', description: desc }),
+        ];
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        expect(screen.queryByText('storyStrip.attribution')).toBeNull();
+    });
+
+    it('renders the agency band in B form: sign-up link and WhatsApp link both present', () => {
+        render(wrap(<HomeClient catalogTrips={[]} />));
+        expect(screen.getByText('agencyBand.title')).not.toBeNull();
+        expect(screen.getByText('agencyBand.relationship')).not.toBeNull();
+        const wa = screen.getByRole('link', { name: 'agencyBand.ctaWhatsapp' });
+        expect(wa.getAttribute('href')).toContain('https://wa.me/212632718980?text=');
+        const signup = screen.getByRole('link', { name: 'agencyBand.ctaSignup' });
+        expect(signup.getAttribute('href')).toContain('/signup');
+    });
+
+    it('renders the How-it-works steps with the bare-form refund note', () => {
+        render(wrap(<HomeClient catalogTrips={[]} />));
+        expect(screen.getByText('howItWorks.title')).not.toBeNull();
+        expect(screen.getByText('howItWorks.step1Title')).not.toBeNull();
+        expect(screen.getByText('howItWorks.step3Title')).not.toBeNull();
+        expect(screen.getByText('howItWorks.refundNote')).not.toBeNull();
+    });
+});
+
+describe('HomeClient One Line hero search (search council #938)', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    function wrap(ui: React.ReactNode) {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        return <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>;
+    }
+
+    function catalogTrip(partial: Record<string, unknown>) {
+        return {
+            title: 'Trip',
+            images: [],
+            sessions: [],
+            agency: { id: 'agency-1' },
+            ...partial,
+        } as any;
+    }
+
+    const trips = [
+        catalogTrip({ id: 'tng-1', title: 'Tangier Kasbah Walk', destinationSlug: 'tangier', startLocation: 'Tangier', durationDays: 1, sessions: [{ price: 400, currency: 'MAD' }], agency: { id: 'ag-1' } }),
+        catalogTrip({ id: 'tng-2', title: 'Tangier Food Tour', destinationSlug: 'tangier', startLocation: 'Tangier', durationDays: 1, sessions: [{ price: 600, currency: 'MAD' }], agency: { id: 'ag-1' } }),
+        catalogTrip({ id: 'merz-1', title: 'Merzouga Camel Trek', destinationSlug: null, startLocation: 'Merzouga', durationDays: 2, sessions: [{ price: 1200, currency: 'MAD' }], agency: { id: 'ag-2' } }),
+    ];
+
+    it('offers the complete destination list; the zero-trip place stays OUT of the listbox (D3)', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        fireEvent.focus(screen.getByLabelText('hero.where'));
+        expect(screen.getByRole('listbox')).not.toBeNull();
+        const options = screen.getAllByRole('option');
+        const optionText = options.map((option) => option.textContent ?? '');
+        expect(optionText.some((text) => text.includes('search.destinationNames.tangier'))).toBe(true);
+        expect(optionText.some((text) => text.includes('Merzouga'))).toBe(true);
+        // Tétouan (0 trips) is disclosed in the headed zero zone —
+        // plain text with a status bridge — never an option.
+        expect(optionText.some((text) => text.includes('tetouan'))).toBe(false);
+        expect(screen.getByText('hero.placesNoTripsYet')).not.toBeNull();
+        // One status bridge per zero place (this fixture leaves
+        // both Tétouan and Chefchaouen at zero trips).
+        const statuses = screen.getAllByRole('status');
+        expect(statuses.length).toBeGreaterThan(0);
+        expect(statuses.every((status) => status.textContent === 'featured.betaRegion.noTripsYet')).toBe(true);
+    });
+
+    it('picking a destination option navigates to its facet', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        fireEvent.focus(screen.getByLabelText('hero.where'));
+        fireEvent.mouseDown(screen.getByRole('option', { name: /destinationNames\.tangier/ }));
+        expect(mockPush).toHaveBeenCalledWith('/search?destination=tangier');
+    });
+
+    it('caps trip suggestions at one per agency', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        fireEvent.change(screen.getByLabelText('hero.where'), { target: { value: 'Tangier' } });
+        expect(screen.getByText('Tangier Kasbah Walk')).not.toBeNull();
+        expect(screen.queryByText('Tangier Food Tour')).toBeNull();
+    });
+
+    it('the footer escape hatch goes to the unfiltered search page', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        fireEvent.focus(screen.getByLabelText('hero.where'));
+        fireEvent.click(screen.getByRole('button', { name: /seeAllTrips/ }));
+        expect(mockPush).toHaveBeenCalledWith('/search');
+    });
+
+    it('Escape closes the panel', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        const input = screen.getByLabelText('hero.where');
+        fireEvent.focus(input);
+        expect(screen.getByRole('listbox')).not.toBeNull();
+        fireEvent.keyDown(input, { key: 'Escape' });
+        expect(screen.queryByRole('listbox')).toBeNull();
+    });
+
+    it('the dates segment shows the flexible label and opens a labelled dialog (#941)', () => {
+        render(wrap(<HomeClient catalogTrips={trips} />));
+        expect(screen.getByText('hero.flexible')).not.toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'hero.addDates' }));
+        expect(screen.getByRole('dialog', { name: 'search.dates' })).not.toBeNull();
+        expect(screen.getByLabelText('search.startDate')).not.toBeNull();
+        expect(screen.getByLabelText('search.endDate')).not.toBeNull();
     });
 });

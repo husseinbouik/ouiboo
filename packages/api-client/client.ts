@@ -162,6 +162,26 @@ export async function setBrowserAccessToken(token: string | null): Promise<void>
   }
 }
 
+/**
+ * Re-establishes the BFF app session from the in-memory access token
+ * (#982). The BFF cookie lives 15 minutes and is otherwise renewed only
+ * when a token is stored (login / refresh), so a caller that is about to
+ * send the user through the proxy gate — e.g. the login page returning a
+ * restored user to the page they were bounced from — can make sure the
+ * gate cookie is actually in place first. Best-effort by contract:
+ * resolves false instead of throwing when there is no token or the BFF
+ * route does not answer OK, so callers never fail on its account.
+ */
+export async function ensureBrowserAppSession(): Promise<boolean> {
+  if (typeof window === 'undefined' || !browserAccessToken) return false
+  try {
+    await establishAppSession(browserAccessToken)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function clearBrowserAccessToken() {
   browserAccessToken = null
   if (typeof window !== 'undefined') {

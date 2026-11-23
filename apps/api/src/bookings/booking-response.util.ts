@@ -9,6 +9,7 @@ import {
   type BookingAttendanceType,
   type BookingStatusType,
   type PaymentMethodType,
+  type ManualPaymentChannelType,
   type RefundStatusType,
   type SessionGroupStatusType,
   type SessionStatusType,
@@ -19,6 +20,7 @@ import { type Prisma } from '@ouiboo/database';
 import { type MoneyInput, toMoneyString } from '../common/money.util';
 import { buildCancellationScaleSnapshot } from '../cancellation/cancellation.util';
 import { resolveTripText } from '../trips/trip-translations.util';
+import { visibleCashPlus } from '../common/cash-plus.util';
 
 /**
  * #422 (Council P0-20): the only ExternalPayment fields booking/payment
@@ -28,6 +30,10 @@ import { resolveTripText } from '../trips/trip-translations.util';
  */
 export const BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT = {
   stage: true,
+  // #988: per-stage manual channel + Cash Plus transaction code, so
+  // traveller/agency/admin histories can show the method per stage.
+  manualChannel: true,
+  transactionCode: true,
   confirmedAmount: true,
   bankReference: true,
   bankConfirmedAt: true,
@@ -53,6 +59,8 @@ export type BankConfirmationDetails = {
 
 type BookingExternalPaymentInput = {
   stage?: string | null;
+  manualChannel?: string | null;
+  transactionCode?: string | null;
   confirmedAmount?: MoneyInput | null;
   bankReference?: string | null;
   bankConfirmedAt?: NullableDate;
@@ -70,6 +78,8 @@ type BookingMapperInput = {
   currency?: string;
   guestsCount: number;
   paymentMethod: string;
+  /** #988: chosen manual channel (null for gateway / legacy rows). */
+  manualPaymentChannel?: string | null;
   paymentStatus: string;
   paymentProofUrl?: string | null;
   paymentProofId?: string | null;
@@ -126,6 +136,8 @@ type BookingMapperInput = {
     uploadedAt: Date | string;
     status: string;
     rejectionReason?: string | null;
+    /** #988: Cash Plus transaction code on the current proof slot. */
+    transactionCode?: string | null;
   } | null;
   /**
    * #422: the booking's per-stage ExternalPayment records. Only the
@@ -200,6 +212,8 @@ type BookingMapperInput = {
          * licence facts are gated client-side by SellerIdentity, the
          * same derivation the public profile endpoint applies. */
         legalName?: string | null;
+        /** #878: test/example supply flag (booking view Example state). */
+        isTestData?: boolean;
         travelLicenceType?: string | null;
         travelLicenceNumber?: string | null;
         travelLicenceStatus?: string | null;
@@ -216,6 +230,13 @@ type BookingMapperInput = {
         businessPhone?: string | null;
         rc?: string | null;
         taxId?: string | null;
+        /** #988: Cash Plus destination facts (gated by visibleCashPlus
+         * at mapping time — raw values never leave the API). */
+        cashPlusBeneficiaryName?: string | null;
+        cashPlusPhone?: string | null;
+        cashPlusEnabled?: boolean | null;
+        cashPlusStatus?: string | null;
+        cashPlusVerifiedAt?: NullableDate;
       } | null;
     };
   };
@@ -325,6 +346,7 @@ export const mapBookingDetails = (
   currency: booking.currency || 'MAD',
   guestsCount: booking.guestsCount,
   paymentMethod: booking.paymentMethod as PaymentMethodType,
+  manualPaymentChannel: (booking.manualPaymentChannel ?? null) as ManualPaymentChannelType | null,
   paymentStatus: booking.paymentStatus as BookingPaymentStatusType,
   paymentProofUrl: booking.paymentProofUrl || undefined,
   paymentProofId: booking.paymentProofId || undefined,
@@ -390,6 +412,14 @@ export const mapBookingDetails = (
         uploadedAt: toIsoString(booking.paymentProof.uploadedAt) || new Date(0).toISOString(),
         status: booking.paymentProof.status as VerificationStatusType,
         rejectionReason: booking.paymentProof.rejectionReason || undefined,
+        // #988: the Cash Plus transaction code on this proof, plus the
+        // per-stage channel/code records for payment histories.
+        transactionCode: booking.paymentProof.transactionCode ?? null,
+        stagePayments: (booking.externalPayments ?? []).map((payment) => ({
+          stage: payment.stage ?? null,
+          manualChannel: (payment.manualChannel ?? null) as ManualPaymentChannelType | null,
+          transactionCode: payment.transactionCode ?? null,
+        })),
         // #422: read-only bank-confirmation state of the stage's
         // ExternalPayment (null until the agency confirms the bank
         // credit). The admin UI renders this via its AdminPaymentProof
@@ -467,6 +497,9 @@ export const mapBookingDetails = (
         // booking response (the booking view is the receipt surface —
         // its seller block and Verification Record link read these).
         legalName: booking.session.template.agency?.legalName ?? null,
+        // #878: test/example supply flag — the booking view renders the
+        // Example state instead of verification claims for these.
+        isTestData: booking.session.template.agency?.isTestData ?? false,
         travelLicenceType: booking.session.template.agency?.travelLicenceType ?? null,
         travelLicenceNumber: booking.session.template.agency?.travelLicenceNumber ?? null,
         travelLicenceStatus: booking.session.template.agency?.travelLicenceStatus ?? null,
@@ -481,6 +514,10 @@ export const mapBookingDetails = (
         insuranceVerifiedAt: toIsoString(booking.session.template.agency?.insuranceVerifiedAt) ?? null,
         businessAddress: booking.session.template.agency?.businessAddress ?? null,
         businessPhone: booking.session.template.agency?.businessPhone ?? null,
+        // #988: verified+enabled Cash Plus infos for the booking's
+        // payment instructions (balance stage re-display); null when
+        // the destination is not verified/enabled.
+        cashPlus: visibleCashPlus(booking.session.template.agency),
         rc: booking.session.template.agency?.rc ?? null,
         taxId: booking.session.template.agency?.taxId ?? null,
         // #419: expose the emergency contact on booking responses only —

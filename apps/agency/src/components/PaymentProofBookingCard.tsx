@@ -47,6 +47,29 @@ export function PaymentProofBookingCard({
           <p className="font-mono text-sm text-foreground">{booking.id}</p>
         </div>
       </div>
+      {/* #988: the manual channel + the traveller's Cash Plus code. */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+            {t('paymentProof.method')}
+          </p>
+          <p className="font-semibold text-foreground">
+            {booking.manualPaymentChannel === 'CASH_PLUS'
+              ? t('paymentProof.methodCashPlus')
+              : booking.manualPaymentChannel === 'BANK_TRANSFER'
+                ? t('paymentProof.methodBankTransfer')
+                : t('paymentProof.methodManual')}
+          </p>
+        </div>
+        {booking.paymentProof?.transactionCode && (
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+              {t('paymentProof.cashPlusCode')}
+            </p>
+            <p className="font-mono text-sm text-foreground">{booking.paymentProof.transactionCode}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

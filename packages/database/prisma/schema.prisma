@@ -53,6 +53,16 @@ enum BankDetailsStatus {
   REJECTED
 }
 
+// #988: the manual payment channel a traveller chose for a booking /
+// stage payment — bank transfer or Cash Plus. Both are MANUAL payments
+// (the traveller pays the agency directly; Ouiboo never touches the
+// money); this records WHICH manual destination was used, per booking
+// and per stage ExternalPayment.
+enum ManualPaymentChannel {
+  BANK_TRANSFER
+  CASH_PLUS
+}
+
 enum AgencyPaymentOnboardingStatus {
   NOT_STARTED
   PENDING_VERIFICATION
@@ -473,6 +483,10 @@ model AgencyProfile {
   patente            String
   rib                String
   verificationStatus VerificationStatus @default(PENDING)
+  // #878 (Council S12 P0): team-created test/example supply flag.
+  // Public surfaces render the Example state instead of verification
+  // claims for these agencies; never set for a real onboarded agency.
+  isTestData         Boolean            @default(false)
   bio                String?
   logo               String?
   templates          TripTemplate[]
@@ -504,6 +518,21 @@ model AgencyProfile {
   bankDetailsVerifiedAt       DateTime?
   bankDetailsVerifiedBy       String?
   bankDetailsRejectionReason String?
+  // #988: Cash Plus manual payment destination — same #421 pattern as
+  // bank details. Live (traveller-visible) beneficiary name + phone are
+  // written ONLY by the admin verify endpoint; agency edits land in the
+  // pending fields and move cashPlusStatus to PENDING_REVIEW, so
+  // unverified Cash Plus infos never render at checkout. The agency
+  // toggle (cashPlusEnabled) must also be on for the method to show.
+  cashPlusBeneficiaryName       String?
+  cashPlusPhone                 String?
+  pendingCashPlusBeneficiaryName String?
+  pendingCashPlusPhone          String?
+  cashPlusEnabled               Boolean           @default(false)
+  cashPlusStatus                BankDetailsStatus @default(UNVERIFIED)
+  cashPlusVerifiedAt            DateTime?
+  cashPlusVerifiedBy            String?
+  cashPlusRejectionReason       String?
   // #324: subscription terms acceptance + pre-renewal reminder marker
   subscriptionTermsVersion    String?
   subscriptionTermsAcceptedAt DateTime?
@@ -824,6 +853,9 @@ model Booking {
   paymentProofId              String?              @unique
   paymentProof                PaymentProof?
   paymentMethod               PaymentMethod        @default(MANUAL)
+  // #988: which manual channel the traveller chose (null for gateway
+  // payments and pre-#988 bookings).
+  manualPaymentChannel        ManualPaymentChannel?
   paymentGatewayTransactionId String?
   paymentGatewayMetadata      Json?
   paymentStatus               BookingPaymentStatus @default(UNPAID)
@@ -1068,6 +1100,9 @@ model PaymentProof {
   // file is a 409. Null when no key was sent.
   idempotencyKey        String?
   idempotencyPayloadHash String?
+  // #988: Cash Plus transaction code submitted with (or instead of) the
+  // receipt image for the current proof slot.
+  transactionCode       String?
 
   // #438: the retention purge scans proofs by upload time.
   @@index([uploadedAt])
@@ -1087,6 +1122,10 @@ model ExternalPayment {
   amount            Decimal               @db.Decimal(18, 2)
   currency          String                @default("MAD")
   method            PaymentMethod         @default(MANUAL)
+  // #988: per-stage manual channel + the Cash Plus transaction code the
+  // traveller supplied as proof (the agency confirms against this code).
+  manualChannel     ManualPaymentChannel?
+  transactionCode   String?
   provider          String?
   externalReference String?
   custodian         PaymentCustodian
@@ -1101,6 +1140,13 @@ model ExternalPayment {
   bankReference     String?
   bankConfirmedAt   DateTime?
   bankConfirmedBy   String?
+  // The proof attached to this immutable payment stage. PaymentProof is
+  // the current review slot; these fields retain the deposit evidence when
+  // that slot is reused for the later balance proof.
+  proofImageUrl      String?
+  proofUploadedAt    DateTime?
+  proofStatus        VerificationStatus?
+  proofRejectionReason String?
   // #369: FULL = the booking's single payment (pre-staged behaviour);
   // staged bookings hold one DEPOSIT and one BALANCE record instead.
   stage             ExternalPaymentStage  @default(FULL)
@@ -1135,6 +1181,9 @@ model BookingPaymentPlan {
   confirmationDeadline  DateTime
   balanceDueAt          DateTime?
   groupConfirmedAt      DateTime?
+  // Idempotency claim for the post-confirmation balance-due notification.
+  // The in-app record is created once even when confirmation is retried.
+  balanceNotifiedAt     DateTime?
   status                BookingPaymentPlanStatus @default(DEPOSIT_DUE)
   paymentPolicyVersion  String
   refundPolicyVersion   String

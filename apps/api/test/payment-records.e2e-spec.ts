@@ -21,7 +21,15 @@ import {
 } from '../src/external-payments/external-payments.module';
 import { ExternalPaymentsService } from '../src/external-payments/external-payments.service';
 import { StagedPaymentsModule } from '../src/staged-payments/staged-payments.module';
+import { StagedPaymentsService } from '../src/staged-payments/staged-payments.service';
 import { PaymentCustodian, PaymentLedgerSource, PaymentMethod } from '@ouiboo/database';
+import {
+    BookingPaymentPlanStatus,
+    ExternalPaymentStage,
+    PaymentLedgerEntryType,
+    SessionGroupStatus,
+    VerificationStatus,
+} from '@ouiboo/database';
 
 jest.setTimeout(60_000);
 
@@ -37,9 +45,13 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
     let app: INestApplication;
     let db: DatabaseService;
     let externalPayments: ExternalPaymentsService;
+    let stagedPayments: StagedPaymentsService;
 
     const auditLogService = { log: jest.fn().mockResolvedValue(null) };
-    const emailService = { sendPaymentConfirmation: jest.fn().mockResolvedValue(true) };
+    const emailService = {
+        sendPaymentConfirmation: jest.fn().mockResolvedValue(true),
+        sendPaymentReminder: jest.fn().mockResolvedValue(true),
+    };
     const paymentsService = { refundBookingById: jest.fn() };
 
     const AGENCY_PROFILE_ID = 'agency-payments-profile';
@@ -57,6 +69,8 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
                 { provide: PaymentsService, useValue: paymentsService },
             ],
         })
+            .overrideProvider(EmailService)
+            .useValue(emailService)
             .overrideGuard(JwtAuthGuard)
             .useValue({
                 canActivate: (context: any) => {
@@ -93,6 +107,7 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
         await app.init();
         db = app.get(DatabaseService);
         externalPayments = app.get(ExternalPaymentsService);
+        stagedPayments = app.get(StagedPaymentsService);
     });
 
     beforeEach(async () => {
@@ -107,6 +122,7 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
     });
 
     async function clearDatabase() {
+        await db.notificationLog.deleteMany({ where: { userId: 'traveler-payments-user' } });
         await db.paymentStatusLedgerEntry.deleteMany({ where: { agencyId: AGENCY_PROFILE_ID } });
         await db.externalPayment.deleteMany({ where: { agencyId: AGENCY_PROFILE_ID } });
         await db.booking.deleteMany({ where: { id: BOOKING_ID } });
@@ -304,6 +320,135 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
                     amount: '780.00',
                 });
             });
+    });
+
+    it('completes deposit to group confirmation to balance with distinct proof evidence (#987)', async () => {
+        const confirmationDeadline = new Date(Date.now() + 3 * 86_400_000);
+        await db.tripSession.update({
+            where: { id: 'session-payments-1' },
+            data: {
+                minBookings: 1,
+                deposit: 200,
+                confirmationDeadline,
+                groupStatus: SessionGroupStatus.PENDING_MINIMUM,
+            },
+        });
+        await db.booking.update({
+            where: { id: BOOKING_ID },
+            data: {
+                status: 'AWAITING_VALIDATION',
+                paymentStatus: 'UNPAID',
+                confirmedAt: null,
+            },
+        });
+        await db.bookingPaymentPlan.create({
+            data: {
+                bookingId: BOOKING_ID,
+                sessionId: 'session-payments-1',
+                agencyId: AGENCY_PROFILE_ID,
+                totalAmount: 780,
+                depositAmount: 200,
+                balanceAmount: 580,
+                currency: 'MAD',
+                minimumParticipants: 1,
+                confirmationDeadline,
+                status: BookingPaymentPlanStatus.DEPOSIT_DUE,
+                paymentPolicyVersion: 'e2e-v1',
+                refundPolicyVersion: 'e2e-v1',
+            },
+        });
+
+        await db.$transaction(async (tx) => {
+            await externalPayments.recordPaymentPendingInTransaction(tx, {
+                bookingId: BOOKING_ID,
+                agencyId: AGENCY_PROFILE_ID,
+                travelerId: 'traveler-payments-user',
+                amount: 200,
+                currency: 'MAD',
+                method: PaymentMethod.MANUAL,
+                externalReference: 'deposit-proof',
+                custodian: PaymentCustodian.AGENCY,
+                source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                stage: ExternalPaymentStage.DEPOSIT,
+                proofEvidence: {
+                    imageUrl: 'private/payment-proofs/deposit.jpg',
+                    uploadedAt: new Date(),
+                    status: VerificationStatus.ACCEPTED,
+                },
+            });
+            const booking = await tx.booking.findUniqueOrThrow({ where: { id: BOOKING_ID } });
+            const plan = await tx.bookingPaymentPlan.findUniqueOrThrow({ where: { bookingId: BOOKING_ID } });
+            await stagedPayments.applyBankConfirmationInTransaction(tx, {
+                booking,
+                plan,
+                source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                externalReference: 'deposit-proof',
+                confirmedAmount: plan.depositAmount,
+                bankReference: 'BANK-DEPOSIT-001',
+                bankConfirmedBy: 'agency-payments-user',
+            });
+        });
+
+        const balanceNotifications = await stagedPayments.notifyBalanceDueForSession('session-payments-1');
+        expect(balanceNotifications).toBe(1);
+        expect(emailService.sendPaymentReminder).toHaveBeenCalledTimes(1);
+
+        await db.booking.update({
+            where: { id: BOOKING_ID },
+            data: { status: 'AWAITING_VALIDATION' },
+        });
+        await db.$transaction(async (tx) => {
+            await externalPayments.recordPaymentPendingInTransaction(tx, {
+                bookingId: BOOKING_ID,
+                agencyId: AGENCY_PROFILE_ID,
+                travelerId: 'traveler-payments-user',
+                amount: 580,
+                currency: 'MAD',
+                method: PaymentMethod.MANUAL,
+                externalReference: 'balance-proof',
+                custodian: PaymentCustodian.AGENCY,
+                source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                stage: ExternalPaymentStage.BALANCE,
+                proofEvidence: {
+                    imageUrl: 'private/payment-proofs/balance.jpg',
+                    uploadedAt: new Date(),
+                    status: VerificationStatus.ACCEPTED,
+                },
+            });
+            const booking = await tx.booking.findUniqueOrThrow({ where: { id: BOOKING_ID } });
+            const plan = await tx.bookingPaymentPlan.findUniqueOrThrow({ where: { bookingId: BOOKING_ID } });
+            await stagedPayments.applyBankConfirmationInTransaction(tx, {
+                booking,
+                plan,
+                source: PaymentLedgerSource.MANUAL_PROOF_REVIEW,
+                externalReference: 'balance-proof',
+                confirmedAmount: plan.balanceAmount,
+                bankReference: 'BANK-BALANCE-001',
+                bankConfirmedBy: 'agency-payments-user',
+            });
+        });
+
+        const [booking, plan, payments, ledger] = await Promise.all([
+            db.booking.findUniqueOrThrow({ where: { id: BOOKING_ID } }),
+            db.bookingPaymentPlan.findUniqueOrThrow({ where: { bookingId: BOOKING_ID } }),
+            db.externalPayment.findMany({ where: { bookingId: BOOKING_ID }, orderBy: { stage: 'asc' } }),
+            db.paymentStatusLedgerEntry.findMany({ where: { bookingId: BOOKING_ID } }),
+        ]);
+        expect(booking).toMatchObject({ status: 'CONFIRMED', paymentStatus: 'PAID' });
+        expect(plan.status).toBe(BookingPaymentPlanStatus.FULLY_PAID);
+        expect(payments).toHaveLength(2);
+        expect(payments.find((payment) => payment.stage === ExternalPaymentStage.DEPOSIT)).toMatchObject({
+            status: 'VERIFIED',
+            proofImageUrl: 'private/payment-proofs/deposit.jpg',
+        });
+        expect(payments.find((payment) => payment.stage === ExternalPaymentStage.BALANCE)).toMatchObject({
+            status: 'VERIFIED',
+            proofImageUrl: 'private/payment-proofs/balance.jpg',
+        });
+        expect(ledger.map((entry) => entry.type)).toEqual(expect.arrayContaining([
+            PaymentLedgerEntryType.DEPOSIT_CAPTURED,
+            PaymentLedgerEntryType.BALANCE_CAPTURED,
+        ]));
     });
 
     it('refuses to record traveller funds with OuiBoo as custodian', async () => {

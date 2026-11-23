@@ -94,8 +94,8 @@ export default async function RootLayout({
   const copy = LOCALE_FILES[initialLanguage] ?? LOCALE_FILES.en;
 
   return (
-    <html lang={initialLanguage} dir={initialLanguage === 'ar' ? 'rtl' : 'ltr'} suppressHydrationWarning>
-      <body className={`${manrope.variable} ${spaceGrotesk.variable} bg-muted/20`} suppressHydrationWarning>
+    <html lang={initialLanguage} dir={initialLanguage === 'ar' ? 'rtl' : 'ltr'} className={`${manrope.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
+      <body className="bg-muted/20" suppressHydrationWarning>
         <Script
           id="language-init"
           strategy="beforeInteractive"

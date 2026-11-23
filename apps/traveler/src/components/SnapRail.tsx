@@ -140,6 +140,15 @@ export interface SnapRailProps {
    * the card rail sits inside a Link, where nested interactive
    * elements would fight navigation. Clones never take focus. */
   slideKeyboardOpen?: boolean;
+  /** #881 (Council S12 P0): defer the off-screen slides' image loads
+   * until first interaction intent. Cards opt in: the home page was
+   * downloading all five slides of every card (≈80% of its image
+   * weight was photos nobody could see). Only the first photo (and
+   * its loop clone — the same URL) renders an image up front; the
+   * rest render a placeholder in the same frame and swap in on
+   * pointer/touch/keyboard intent or arrow/dot interaction. The
+   * trip-page gallery leaves this off — photos are its content. */
+  deferOffscreenSlides?: boolean;
 }
 
 const DRAG_CLICK_SUPPRESS_PX = 6;
@@ -169,6 +178,7 @@ export function SnapRail({
   onSlideClick,
   slideStyle,
   slideKeyboardOpen = false,
+  deferOffscreenSlides = false,
 }: SnapRailProps) {
   const { t, i18n } = useTranslation();
   const railRef = useRef<HTMLDivElement | null>(null);
@@ -190,6 +200,17 @@ export function SnapRail({
 
   const dragRef = useRef<{ pointerId: number; startX: number; startScrollLeft: number; startExtIndex: number; moved: boolean } | null>(null);
   const suppressClickRef = useRef(false);
+
+  // #881: deferred-slide activation. Until the traveller shows any
+  // interaction intent, only logical slide 0 renders its image (at
+  // its real position and its loop clone — the same URL, so the
+  // browser fetches it once). Any pointer, touch or keyboard contact
+  // with the rail, or a host-driven jump, activates the full set.
+  const [slidesActivated, setSlidesActivated] = useState(!deferOffscreenSlides);
+  const activateSlides = () => setSlidesActivated(true);
+  useEffect(() => {
+    if (externalIndex !== undefined) setSlidesActivated(true);
+  }, [externalIndex]);
 
   const setActive = (idx: number) => {
     if (currentRef.current === idx) return;
@@ -288,6 +309,8 @@ export function SnapRail({
   };
 
   const scrollToImage = (realIdx: number) => {
+    // #881: navigating the rail is interaction intent — load the set.
+    setSlidesActivated(true);
     const clamped = Math.max(0, Math.min(imageCount - 1, realIdx));
     scrollToExt(loop ? clamped + 1 : clamped);
   };
@@ -311,6 +334,8 @@ export function SnapRail({
   // photo's clone, which settles and repositions to the real
   // first: a seamless wrap, never a rewind through every slide.
   const step = (dir: 1 | -1) => {
+    // #881: an arrow step is interaction intent — load the set.
+    setSlidesActivated(true);
     normalizeLoop();
     scrollToExt(extRef.current + dir);
   };
@@ -489,6 +514,10 @@ export function SnapRail({
       data-testid={testId}
       onClickCapture={handleClickCapture}
       onDragStart={(event) => event.preventDefault()}
+      onPointerEnter={deferOffscreenSlides ? activateSlides : undefined}
+      onPointerDownCapture={deferOffscreenSlides ? activateSlides : undefined}
+      onTouchStart={deferOffscreenSlides ? activateSlides : undefined}
+      onFocus={deferOffscreenSlides ? activateSlides : undefined}
     >
       <div
         ref={railRef}
@@ -498,6 +527,7 @@ export function SnapRail({
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         role="group"
+        aria-roledescription={imageCount > 1 ? 'carousel' : undefined}
         aria-label={ariaLabel}
         className={cn(
           'flex overflow-x-auto snap-x snap-mandatory scroll-smooth [touch-action:pan-x_pan-y] select-none cursor-grab active:cursor-grabbing [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
@@ -511,10 +541,18 @@ export function SnapRail({
           // slides take focus — a clone is a visual duplicate of a
           // real slide that is itself focusable.
           const keyboardOpenable = slideKeyboardOpen && !isClone && Boolean(onSlideClick);
+          // #881: pre-activation, only logical slide 0 renders its
+          // image (real position + first-photo clone = one URL).
+          const renderImage = slidesActivated || logical === 0;
+          // #882: off-screen slides leave the accessibility tree on
+          // display-only rails (cards). The keyboard-openable gallery
+          // keeps every real slide reachable — hiding focusable
+          // slides would strand keyboard users — so it is exempt.
+          const hideFromTree = isClone || (!slideKeyboardOpen && pos !== extIndex);
           return (
             <div
               key={pos}
-              aria-hidden={isClone || undefined}
+              aria-hidden={hideFromTree || undefined}
               role={keyboardOpenable ? 'button' : undefined}
               tabIndex={keyboardOpenable ? 0 : undefined}
               aria-label={keyboardOpenable ? t('tripCard.viewImage', { count: logical + 1 }) : undefined}
@@ -535,15 +573,30 @@ export function SnapRail({
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sunset-orange',
               )}
             >
-              <SafeImage
-                src={images[logical]}
-                className={imageFit === 'contain' ? 'w-full h-full object-contain' : 'w-full h-full object-cover'}
-                alt={imageAlts?.[logical]?.trim() || captionFallback}
-                fill
-                sizes={sizes}
-                blurDataURL={imageBlurDataURLs?.[logical] ?? undefined}
-                style={slideStyle?.(logical, pos === extIndex)}
-              />
+              {renderImage ? (
+                <SafeImage
+                  src={images[logical]}
+                  className={imageFit === 'contain' ? 'w-full h-full object-contain' : 'w-full h-full object-cover'}
+                  alt={imageAlts?.[logical]?.trim() || captionFallback}
+                  fill
+                  sizes={sizes}
+                  blurDataURL={imageBlurDataURLs?.[logical] ?? undefined}
+                  style={slideStyle?.(logical, pos === extIndex)}
+                />
+              ) : (
+                <div
+                  className="h-full w-full bg-muted"
+                  style={
+                    imageBlurDataURLs?.[logical]
+                      ? {
+                          backgroundImage: `url(${imageBlurDataURLs[logical]})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }
+                      : undefined
+                  }
+                />
+              )}
             </div>
           );
         })}
@@ -602,7 +655,7 @@ export function SnapRail({
               }}
               aria-label={t('tripCard.viewImage', { count: i + 1 })}
               aria-current={currentImage === i || undefined}
-              className="flex items-center justify-center p-1 -m-0.5"
+              className="flex h-6 w-6 items-center justify-center"
             >
               <span
                 className={cn(
@@ -628,6 +681,15 @@ export function SnapRail({
           </span>
         ) : null}
       </div>
+
+      {/* #882: the visible counter is sighted-only punctuation; the
+          position is announced politely to assistive technology as
+          the traveller moves through the rail. */}
+      {imageCount > 1 ? (
+        <span aria-live="polite" className="sr-only">
+          {t('tripCard.imagePosition', { current: currentImage + 1, total: imageCount })}
+        </span>
+      ) : null}
     </div>
   );
 }

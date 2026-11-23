@@ -121,6 +121,18 @@ export default function VerificationRecord({
 }) {
     const { t, i18n } = useTranslation();
     if (!agency) return null;
+    // #878 (Council S12 P0): test/example supply never renders a
+    // verification record — licence numbers, insurer names and check
+    // dates for team-created demo agencies would read as real checks.
+    // Founder decision 2026-11-12 (superseding #878's labelling
+    // requirement): the "Example listing" panel that used to replace
+    // the record is REMOVED with every other Example label — test
+    // supply now renders no record at all, so its TEST licence and
+    // insurance data remains absent, exactly as it was when the
+    // panel stood in its place.
+    if (agency.isTestData) {
+        return null;
+    }
     const record = deriveVerificationRecord(agency);
     if (!record.legalName) return null;
 

@@ -81,6 +81,7 @@ const mockExternalPaymentsService = {
     recordPaymentVerifiedInTransaction: jest.fn(),
     recordPaymentRejectedInTransaction: jest.fn(),
     recordPaymentPendingInTransaction: jest.fn(),
+    updateProofStatusInTransaction: jest.fn(),
 };
 
 // #369: default mock = non-staged sessions; staged tests override these.
@@ -90,6 +91,7 @@ const mockStagedPaymentsService = {
     createPlanInTransaction: jest.fn(),
     applyProofRejectionInTransaction: jest.fn(),
     applyBankConfirmationInTransaction: jest.fn(),
+    notifyBalanceDueForSession: jest.fn(),
 };
 
 describe('BookingsService', () => {
@@ -716,7 +718,7 @@ describe('BookingsService', () => {
             await expect(service.create('user-123', {
                 ...createDto,
                 paymentMethod: 'CARD',
-            } as any)).rejects.toThrow('Only bank transfer payment is available');
+            } as any)).rejects.toThrow('Only manual payment (bank transfer or Cash Plus) is available');
             expect(db.$transaction).not.toHaveBeenCalled();
         });
 
@@ -1473,6 +1475,34 @@ describe('BookingsService', () => {
                 // these fixtures) is passed through for email rendering.
                 undefined,
             );
+        });
+
+        it('keeps a confirmed deposit successful when the post-commit balance notification fails', async () => {
+            const booking = reviewBooking('ACCEPTED');
+            (booking as any).sessionId = 'session-123';
+            (booking as any).paymentPlan = { id: 'plan-1', status: 'DEPOSIT_DUE', depositAmount: '100.00', balanceAmount: '400.00' };
+            db.booking.findUnique.mockResolvedValue(booking);
+            db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-123', status: 'CONFIRMED', paymentStatus: 'PARTIALLY_PAID' });
+            mockStagedPaymentsService.applyBankConfirmationInTransaction.mockResolvedValue({
+                stage: 'DEPOSIT',
+                fullyPaid: false,
+                bookingStatus: 'CONFIRMED',
+                planStatus: 'BALANCE_DUE',
+            });
+            mockStagedPaymentsService.notifyBalanceDueForSession.mockRejectedValueOnce(new Error('notification unavailable'));
+            const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+            await expect(service.confirmBankPayment('booking-123', 'agency-123', 'agency-user-1', {
+                confirmedAmount: 100,
+                bankReference: 'TRX-DEPOSIT',
+            })).resolves.toMatchObject({ status: 'CONFIRMED' });
+
+            expect(mockStagedPaymentsService.notifyBalanceDueForSession).toHaveBeenCalledWith('session-123');
+            expect(errorSpy).toHaveBeenCalledWith(
+                'Failed to create balance-due notifications',
+                expect.any(Error),
+            );
+            errorSpy.mockRestore();
         });
 
         it('uploading a staged deposit proof records the DEPOSIT stage as pending (#422)', async () => {

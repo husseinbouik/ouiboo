@@ -15,6 +15,7 @@ jest.mock('react-i18next', () => ({
             if (key === 'reviews.noReviewsYet') return 'No reviews yet';
             if (key === 'tripCard.days') return `${options?.count} Days`;
             if (key === 'tripCard.spots') return `${options?.count} spots`;
+            if (key === 'tripCard.spotsLeftSession') return `${options?.count} spots left · ${options?.date} session`;
             return key;
         },
         i18n: { language: 'en', dir: () => 'ltr' },
@@ -25,6 +26,13 @@ jest.mock('next/image', () => ({
     __esModule: true,
     // eslint-disable-next-line @next/next/no-img-element
     default: (props: any) => <img {...props} alt={props.alt} />,
+}));
+
+// #882: the card rail no longer sits inside a Link; a genuine photo
+// click navigates through the router instead.
+const mockPush = jest.fn();
+jest.mock('next/navigation', () => ({
+    useRouter: () => ({ push: mockPush }),
 }));
 
 jest.mock('framer-motion', () => ({
@@ -112,6 +120,86 @@ describe('TripCard verification statement (#413, Council B10)', () => {
         expect(screen.queryByText(/RC insurance evidenced/)).toBeNull();
     });
 
+    it('leads the verification paragraph with "<Agency> · Checked before listing" for a licence-verified agency (search-page council item 11, #886)', () => {
+        render(
+            <TripCard
+                trip={makeTrip({
+                    companyName: 'Atlas Adventures SARL',
+                    verificationStatus: 'VERIFIED' as any,
+                    travelLicenceStatus: 'VERIFIED',
+                    licenceVerifiedAt: LICENCE_DATE,
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByText(`Atlas Adventures SARL · tripCard.checkedBeforeListing · Licence checked ${fmt(LICENCE_DATE)}`),
+        ).not.toBeNull();
+    });
+
+    it('prints the checked line for test supply with a VERIFIED licence, while the dated statements stay suppressed (#975: founder removed the Example labels 2026-11-12 — the item-11 line shows as designed; #878 dated gates untouched)', () => {
+        render(
+            <TripCard
+                trip={makeTrip({
+                    companyName: 'Atlas Adventures SARL',
+                    isTestData: true,
+                    verificationStatus: 'VERIFIED' as any,
+                    travelLicenceStatus: 'VERIFIED',
+                    licenceVerifiedAt: LICENCE_DATE,
+                })}
+            />,
+        );
+
+        expect(
+            screen.getByText('Atlas Adventures SARL · tripCard.checkedBeforeListing'),
+        ).not.toBeNull();
+        expect(screen.queryByText(/Licence checked/)).toBeNull();
+    });
+
+    it('search variant (Card A, 2026-11-13): "<amount> <currency> / per person" + next date, no From block, no View Details button, no option pills', () => {
+        const trip = {
+            ...makeTrip({ companyName: 'Atlas Adventures SARL' }),
+            privateTourEnabled: true,
+            payOnArrivalEnabled: true,
+            sessions: [
+                {
+                    id: 's1',
+                    price: 1450,
+                    currency: 'MAD',
+                    status: 'OPEN',
+                    availableSeats: 9,
+                    startDate: '2099-01-01',
+                } as any,
+            ],
+        };
+        render(<TripCard trip={trip} variant="search" />);
+
+        expect(screen.getByText(/1,450 MAD/)).not.toBeNull();
+        expect(screen.getByText(/tripCard\.perPerson/)).not.toBeNull();
+        expect(screen.queryByText('tripCard.from')).toBeNull();
+        expect(screen.queryByText('tripCard.viewDetails')).toBeNull();
+        expect(screen.queryByText('batchF.privateBadge')).toBeNull();
+        expect(screen.queryByText('batchF.payOnArrivalBadge')).toBeNull();
+    });
+
+    it('search variant (Card A): spots badge sits bottom-left on the photo — its own corner, clear of the category pill (top-left) and the heart (top-right)', () => {
+        const future = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+        const trip: TripCardTrip = {
+            id: 'trip-carda',
+            title: 'Atlas Day Trek',
+            startLocation: 'Imlil',
+            durationDays: 1,
+            images: ['https://cdn.example.com/a.jpg'],
+            sessions: [{ id: 's1', status: 'OPEN' as any, availableSeats: 8, price: 450, startDate: future }],
+            agency: null,
+        };
+        const { container } = render(<TripCard trip={trip} variant="search" />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        expect(badge?.parentElement?.className).toContain('bottom-3');
+        expect(badge?.parentElement?.className).toContain('start-3');
+        expect(badge?.parentElement?.className).not.toContain('top-3');
+    });
+
     it('renders no verification line without dated checks (#673: the hedge is retired)', () => {
         render(<TripCard trip={makeTrip({ verificationStatus: 'VERIFIED' as any })} />);
 
@@ -196,22 +284,29 @@ describe('TripCard spots badge + carousel controls (#571/#490 rework)', () => {
         };
     }
 
-    it('renders a solid deep-green badge at 12px when plenty of spots remain', () => {
+    it('renders the K6a-spec badge at 12px when plenty of spots remain (#15803D, white text, 5.02:1)', () => {
         const { container } = render(<TripCard trip={tripWithSeats(20)} />);
         const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
         expect(badge).not.toBeNull();
         expect(badge?.getAttribute('data-state')).toBe('available');
-        expect(badge?.className).toContain('bg-emerald-700');
+        expect(badge?.className).toContain('bg-[#15803D]');
         expect(badge?.className).toContain('text-white');
         expect(badge?.className).toContain('text-xs');
         expect(badge?.className).not.toContain('text-[10px]');
     });
 
-    it('switches to a solid amber badge when fewer than 5 seats remain', () => {
+    it('switches to the frozen warn pair (#B45309 on #FEF3C7) at 5 or fewer seats (K6a threshold)', () => {
         const { container } = render(<TripCard trip={tripWithSeats(3)} />);
         const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
         expect(badge?.getAttribute('data-state')).toBe('low');
-        expect(badge?.className).toContain('bg-amber-600');
+        expect(badge?.className).toContain('bg-[#FEF3C7]');
+        expect(badge?.className).toContain('text-[#B45309]');
+    });
+
+    it('treats exactly 5 seats as the low state (≤5, search-page council K6)', () => {
+        const { container } = render(<TripCard trip={tripWithSeats(5)} />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        expect(badge?.getAttribute('data-state')).toBe('low');
     });
 
     it('renders a visually distinct sold-out badge when no open session remains', () => {
@@ -219,6 +314,34 @@ describe('TripCard spots badge + carousel controls (#571/#490 rework)', () => {
         const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
         expect(badge?.getAttribute('data-state')).toBe('sold-out');
         expect(badge?.className).toContain('bg-rose-800');
+    });
+
+    it('states the badge basis: seats left WITH the next session date (council D6, Pattern S1)', () => {
+        const { container } = render(<TripCard trip={tripWithSeats(20)} />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        const expectedDate = new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short' }).format(new Date(future));
+        expect(badge?.textContent).toContain(`20 spots left · ${expectedDate} session`);
+    });
+
+    it('never promises seats on a session whose day has passed (stale data is suppressed)', () => {
+        const past = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
+        const trip: TripCardTrip = {
+            ...tripWithSeats(null),
+            sessions: [{ id: 's-past', status: 'OPEN' as any, availableSeats: 9, price: 900, startDate: past }],
+        };
+        const { container } = render(<TripCard trip={trip} />);
+        const badge = container.querySelector('[data-testid="trip-card-spots-badge"]');
+        expect(badge?.getAttribute('data-state')).toBe('sold-out');
+        expect(badge?.textContent).not.toContain('spots left');
+    });
+
+    it('staticPhoto renders one static photo and no carousel controls (council item 9, #886)', () => {
+        const { container } = render(<TripCard trip={tripWithSeats(20)} staticPhoto />);
+        expect(screen.queryByLabelText('tripCard.previousImage')).toBeNull();
+        expect(screen.queryByLabelText('tripCard.nextImage')).toBeNull();
+        const imgs = container.querySelectorAll('img');
+        expect(imgs.length).toBe(1);
+        expect(imgs[0].getAttribute('src')).toContain('a.jpg');
     });
 
     it('keeps carousel arrows at a genuine 44px and always visible', () => {
@@ -246,11 +369,15 @@ describe('TripCard photo tap (founder decision 2026-10-29: link to the trip page
         };
     }
 
-    it('wraps the photo in a link to the trip page', () => {
+    it('a genuine photo tap navigates to the trip page (#882: no anchor wraps the rail)', () => {
         const { container } = render(<TripCard trip={photoTrip()} />);
         const img = container.querySelector('img[src="https://cdn.example.com/a.jpg"]');
         expect(img).not.toBeNull();
-        expect(img?.closest('a')?.getAttribute('href')).toBe('/trip/trip-3');
+        // #882: interactive rail content must not sit inside an anchor —
+        // the photo's genuine click routes via router.push instead.
+        expect(img?.closest('a')).toBeNull();
+        fireEvent.click(img as Element);
+        expect(mockPush).toHaveBeenCalledWith('/trip/trip-3');
     });
 
     it('never opens the full-screen photo viewer from a card photo or arrow tap', () => {

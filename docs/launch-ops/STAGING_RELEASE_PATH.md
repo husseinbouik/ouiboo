@@ -20,14 +20,15 @@ canonical description of how a commit becomes a staging release.
      budget) until the required push checks for that *exact* SHA
      complete, and verifies they all succeeded (`build (20.x)`,
      `browser-e2e`, `Secret scanning (Gitleaks)`, `SAST (Semgrep)`,
-     `SAST (CodeQL)`, `CodeQL`). A failed required check blocks the
+     `SAST (CodeQL)`). A failed required check blocks the
      release loudly; a gate still pending after the budget fails the
      run without attesting (re-run manually once checks complete).
      (`review` and `smoke` are PR-only contexts — they gated the merge
-     in step 1.) One nuance: the default-setup `CodeQL` context is
-     accepted on `neutral` as well as `success` — on pushes it reports
-     `neutral` when it has nothing new to analyze; the workflow
-     `SAST (CodeQL)` job remains success-only. A *cancelled* check
+     in step 1.) The default-setup `CodeQL` context is a PR/branch-
+     protection context where configured; it is not emitted for every
+     push and therefore is not a candidate-SHA release requirement. The
+     repository-owned `SAST (CodeQL)` push job remains success-only and
+     is the blocking CodeQL analysis at this stage. A *cancelled* check
      (e.g. superseded by a newer merge's runs) counts as not-verified:
      that SHA is simply never attested, and the settled head can be
      attested via manual dispatch.

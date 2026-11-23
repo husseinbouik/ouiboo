@@ -1,10 +1,11 @@
-import { BookingStatus } from '@ouiboo/types';
+import { BookingPaymentPlanStatus, BookingStatus } from '@ouiboo/types';
 import {
   canCancelTravelerBooking,
   canMarkAttendance,
   getAgencyBookingStatusMeta,
   getTravelerBookingStatusTone,
   isReviewEligibleBooking,
+  shouldShowUploadAction,
 } from './booking-status';
 
 describe('#434 NO_SHOW / attendance helpers', () => {
@@ -32,5 +33,16 @@ describe('#434 NO_SHOW / attendance helpers', () => {
     expect(canCancelTravelerBooking(BookingStatus.NoShow)).toBe(false);
     expect(getTravelerBookingStatusTone(BookingStatus.NoShow)).toContain('rose');
     expect(getAgencyBookingStatusMeta(BookingStatus.NoShow).icon).toBe('no-show');
+  });
+});
+
+describe('staged payment upload action', () => {
+  it('opens for a confirmed balance and closes while its proof is reviewed', () => {
+    expect(
+      shouldShowUploadAction(BookingStatus.Confirmed, true, BookingPaymentPlanStatus.BalanceDue),
+    ).toBe(true);
+    expect(
+      shouldShowUploadAction(BookingStatus.AwaitingValidation, true, BookingPaymentPlanStatus.BalanceDue),
+    ).toBe(false);
   });
 });

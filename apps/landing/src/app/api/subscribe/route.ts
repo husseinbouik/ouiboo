@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Too many requests' }, { status: 429 });
   }
   return NextResponse.json(
-    { message: 'Waitlist signups are paused while we prepare the closed beta.' },
+    { message: 'Waitlist signups are paused for now.' },
     { status: 410 },
   );
 }

@@ -13,7 +13,8 @@ Do not start production release until all are true:
 - [ ] DB backup procedure is ready
 - [ ] rollback owner is assigned
 - [ ] launch payment method remains `bank transfer + manual proof`
-- [ ] `CMI` and `CashPlus` are hidden if not approved and live-tested
+- [ ] `CMI` and `CashPlus` are hidden unless separately approved and live-tested
+- [ ] `ENABLE_GATEWAY_PAYMENTS=false` and `GATEWAY_PAYMENTS_LAUNCH_APPROVED=false` unless a separately approved provider rollout exists
 
 ## 2. Production Environment Setup
 
@@ -70,7 +71,7 @@ Follow this exact order:
 3. take production database backup
 4. confirm backup is restorable
 5. trigger production workflow
-6. watch build and migration step
+6. watch the single GitHub Actions migration step; application builds must not migrate
 7. watch smoke checks
 8. run manual post-deploy validation
 9. get business signoff
@@ -87,6 +88,8 @@ The production workflow currently does:
 6. invoke the configured deployment orchestrator
 7. smoke deployed production services
 
+The GitHub workflow is the only migration owner. `apps/api/vercel.json`, API containers, worker containers and frontend builds must not execute `prisma migrate deploy`. A migration failure stops the release before the deployment hook is called. The database owner then follows the backup/rehearsal decision; no application instance retries the migration.
+
 The deployment endpoint must follow
 [DEPLOYMENT_ORCHESTRATOR_CONTRACT.md](./DEPLOYMENT_ORCHESTRATOR_CONTRACT.md).
 
@@ -97,7 +100,8 @@ For launch:
 - traveler checkout must show only bank transfer instructions
 - proof upload must work before go-live
 - admin proof review must be verified after deploy
-- do not expose `CMI` or `CashPlus` in production until approved and tested
+- do not expose `CMI` or `CashPlus` in production until separately approved and tested
+- keep both gateway activation flags false for the manual-payment MVP
 
 ## 7. Go / No-Go Before Public Traffic
 
@@ -109,7 +113,7 @@ Do not open public traffic until all are true:
 - [ ] proof upload works
 - [ ] admin proof review works
 - [ ] agency dashboard loads
-- [ ] wallet and payout surfaces load
+- [ ] external payment records and manual bank-confirmation review load
 - [ ] email delivery works
 
 ## 8. Release Log

@@ -55,7 +55,9 @@ concurrency:
 
 jobs:
   lighthouse-a11y:
-    runs-on: ubuntu-latest
+    # Match the browser-E2E runner so Playwright's OS dependencies are
+    # installed and exercised on the same supported Ubuntu image.
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     # continue-on-error is on the Lighthouse step only (not job level) so
     # the blocking axe/keyboard steps still run if budgets are exceeded.
@@ -99,10 +101,10 @@ jobs:
 
       - name: Start apps
         run: |
-          npm run start --workspace apps/traveler &
-          npm run start --workspace apps/agency &
-          npm run start --workspace apps/admin &
-          PORT=3004 npm run start --workspace apps/landing &
+          node scripts/start-next-standalone.mjs traveler 3001 &
+          node scripts/start-next-standalone.mjs agency 3002 &
+          node scripts/start-next-standalone.mjs admin 3003 &
+          node scripts/start-next-standalone.mjs landing 3004 &
           npx --yes wait-on http://localhost:3001/login http://localhost:3002/login http://localhost:3003/login http://localhost:3004/ --timeout 180000
 
       - name: Run Lighthouse CI
@@ -121,12 +123,12 @@ jobs:
           configPath: ./.github/lighthouse/lighthouserc.json
           budgetPath: ./.github/lighthouse/budget.json
 
-      - name: Install axe-core (CI-only, not saved to package.json)
-        # @axe-core/playwright is intentionally NOT a repo dependency yet;
-        # install it transiently so package.json/package-lock.json stay untouched.
-        run: |
-          npm install --no-save @axe-core/playwright
-          npx playwright install chromium
+      - name: Install Playwright Chromium
+        # @axe-core/playwright is pinned in the lockfile so accessibility
+        # checks run against the same immutable dependency set as npm ci.
+        # Reuse the browser-E2E installation command, including the Linux
+        # system dependencies required by GitHub-hosted runners.
+        run: npm run test:e2e:install
 
       - name: Run axe accessibility checks (desktop)
         run: |

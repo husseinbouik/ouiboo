@@ -42,6 +42,18 @@ Escalate before rollback when:
 4. verify signup, booking, proof upload, and admin review manually
 5. document incident and release status
 
+### Worker and environment rollback
+
+Roll API and worker back to the same last-known-good immutable SHA. Do not leave a newer worker consuming jobs against an older API/schema. Restore environment variables from the approved versioned secret-store revision, never from shell history or an ad-hoc local file. Re-run API readiness and the worker heartbeat/Redis probe before resuming scheduled jobs.
+
+### Database migration boundary
+
+Do not automatically run a down migration or restore a database over a live environment. If the applied migration is additive and the previous application remains schema-compatible, prefer application/worker rollback while keeping the schema. If compatibility is uncertain or data was rewritten, stop processing, preserve evidence, and require the database owner and rollback approver to choose a forward fix or isolated backup restore. Migration `20260915133000_add_currency_status_enums_and_indexes` converts status columns and backfills booking currency; its synthetic rehearsal is not permission to reverse it in place.
+
+### Rehearsal evidence required
+
+Record the failed SHA, restored SHA, configuration revision, API/worker health results, smoke result, database decision, start/end time, and approver. Documentation without this execution record is `PARTIAL`, not verified rollback readiness.
+
 ## 4. Post-Deploy Validation Checklist
 
 Run these immediately after a successful deployment:

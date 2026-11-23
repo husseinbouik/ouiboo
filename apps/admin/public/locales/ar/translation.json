@@ -177,7 +177,9 @@
       "verifyInsurance": "التحقق من التأمين",
       "rejectInsurance": "رفض التأمين",
       "verifyBankDetails": "التحقق من المعلومات البنكية",
-      "rejectBankDetails": "رفض المعلومات البنكية"
+      "rejectBankDetails": "رفض المعلومات البنكية",
+      "verifyCashPlus": "التحقق من كاش بلوس",
+      "rejectCashPlus": "رفض كاش بلوس"
     },
     "labels": {
       "ice": "ICE",
@@ -241,7 +243,18 @@
       "bankHolderMismatch": "صاحب الحساب ليس الوكالة — حساب طرف ثالث",
       "overrideReason": "سبب التجاوز",
       "overrideReasonPlaceholder": "لماذا هذا صاحب الحساب مقبول (مثال: حساب باسم تجاري)",
-      "verificationPaused": "التحقق موقوف"
+      "verificationPaused": "التحقق موقوف",
+      "cashPlusReview": "مراجعة كاش بلوس",
+      "cashPlusEnabled": "مفعّل",
+      "yes": "نعم",
+      "no": "لا",
+      "pendingCashPlus": "معلومات كاش بلوس قيد الانتظار",
+      "currentCashPlus": "معلومات كاش بلوس الحالية",
+      "cashPlusBeneficiary": "المستفيد",
+      "cashPlusPhone": "رقم كاش بلوس",
+      "cashPlusPending": "كاش بلوس: قيد المراجعة",
+      "methodCashPlus": "كاش بلوس",
+      "methodBankTransfer": "تحويل بنكي"
     },
     "messages": {
       "noBankDetails": "لا توجد بيانات بنكية محفوظة.",
@@ -255,7 +268,8 @@
       "noPhone": "لا يوجد رقم هاتف",
       "noAddress": "لا يوجد عنوان.",
       "unknown": "غير معروف",
-      "loading": "جار التحميل"
+      "loading": "جار التحميل",
+      "noCashPlus": "لا توجد معلومات كاش بلوس مقدمة."
     },
     "prompts": {
       "paymentProofRejection": "أضف سبب رفض إثبات الدفع.",
@@ -284,7 +298,10 @@
       "bankDetailsVerified": "تم التحقق من المعلومات البنكية",
       "bankDetailsRejected": "تم رفض المعلومات البنكية",
       "bankDetailsUpdateError": "تعذّر تحديث المعلومات البنكية",
-      "documentLoadError": "تعذّر تحميل الوثيقة."
+      "documentLoadError": "تعذّر تحميل الوثيقة.",
+      "cashPlusVerified": "تم التحقق من معلومات كاش بلوس وهي ظاهرة للمسافرين.",
+      "cashPlusRejected": "تم رفض معلومات كاش بلوس.",
+      "cashPlusUpdateError": "تعذر تحديث مراجعة كاش بلوس."
     },
     "aria": {
       "mainNavigation": "التنقل الرئيسي",
