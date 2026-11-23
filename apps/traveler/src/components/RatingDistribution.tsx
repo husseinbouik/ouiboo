@@ -29,6 +29,7 @@ export function RatingDistribution({
           <div key={rating} className="flex items-center gap-2">
             <span
               className="flex w-6 items-center gap-0.5 text-xs font-bold text-muted-foreground"
+              role="img"
               aria-label={t('tripDetails.distributionRating', { count: rating })}
             >
               <span aria-hidden="true">{rating}</span>

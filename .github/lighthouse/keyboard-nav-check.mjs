@@ -28,7 +28,9 @@ import {
 const { baseUrl, pages, role, mockUnauthenticated: forceUnauth } = parseTargetArgs();
 const MAX_TABS = 40;
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(
+  process.platform === 'win32' ? { channel: 'chrome' } : {},
+);
 const context = await browser.newContext();
 if (role) await addSessionCookies(context, baseUrl, role);
 const page = await context.newPage();

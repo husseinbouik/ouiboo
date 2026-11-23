@@ -311,7 +311,7 @@ export function CheckoutPayment({
       <p className="flex items-center gap-2 text-sm text-muted-foreground">
         <LifeBuoy className="h-4 w-4 text-sunset-orange" />
         {t('checkout.helpQuestion')}{' '}
-        <Link href="/support" className="font-semibold text-sunset-orange hover:text-orange-600">
+        <Link href="/support" className="font-semibold text-sunset-orange-dark hover:text-orange-800">
           {t('support.fullSupportPage')}
         </Link>
       </p>

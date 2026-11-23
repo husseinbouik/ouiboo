@@ -71,7 +71,7 @@ export default function SellerBlock({
             {missing && <p className="mt-2 text-xs text-muted-foreground">{t('sellerBlock.incompleteNote')}</p>}
             {showRecordLink && agency.id && (
                 <p className="mt-2 text-xs">
-                    <Link href={`/agency/${agency.id}#verification-record`} className="font-semibold text-sunset-orange hover:underline">
+                    <Link href={`/agency/${agency.id}#verification-record`} className="font-semibold text-sunset-orange-dark hover:underline">
                         {t('sellerBlock.verificationRecordLink')}
                     </Link>
                 </p>
