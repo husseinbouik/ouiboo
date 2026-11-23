@@ -24,6 +24,7 @@ import { CookiePreferencesButton } from './AnalyticsConsent'
 const NAVY = '#0A192F'
 const DEEP = '#060D1A'
 const ORANGE = '#FF6B35'
+const ORANGE_ACTION = '#B93E0C'
 
 // The founder's own number — the same one already published as the
 // staging traveller support contact; the /agences CTA is a personal
@@ -121,7 +122,7 @@ export default function AgencesPage() {
       rel="noreferrer"
       onClick={() => trackEvent('whatsapp_click', { source: 'agences', placement, lang: currentLang })}
       className={className}
-      style={{ backgroundColor: ORANGE }}
+      style={{ backgroundColor: ORANGE_ACTION }}
     >
       <WhatsAppGlyph />
       {t('hw.agencesPage.hero.ctaWhatsapp')}
@@ -234,7 +235,7 @@ export default function AgencesPage() {
                 <div key={step} className="relative">
                   <span
                     className="flex h-[46px] w-[46px] items-center justify-center rounded-full font-display text-[19px] font-extrabold text-white shadow-[0_8px_18px_-6px_rgba(255,107,53,.5)]"
-                    style={{ backgroundColor: ORANGE }}
+                    style={{ backgroundColor: ORANGE_ACTION }}
                     aria-hidden="true"
                   >
                     {i + 1}
@@ -570,7 +571,7 @@ export default function AgencesPage() {
           --hw-ink: #14263f;
           --hw-heading: #0a192f;
           --hw-muted: #5b6b82;
-          --hw-accent: #e04e1a;
+          --hw-accent: #b93e0c;
           --hw-chip: #0a192f;
         }
         .dark .hw-root {

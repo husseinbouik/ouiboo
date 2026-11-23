@@ -78,7 +78,9 @@ async function tabUntil(page, stage, predicate, { maxTabs = MAX_TABS_PER_LEG, re
   return null;
 }
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(
+  process.platform === 'win32' ? { channel: 'chrome' } : {},
+);
 const page = await browser.newPage();
 
 try {

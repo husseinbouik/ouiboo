@@ -17,7 +17,9 @@ import { parseTargetArgs, addSessionCookies, scrollThroughPage, mockUnauthentica
 
 const { baseUrl, pages, role, mockUnauthenticated: forceUnauth } = parseTargetArgs();
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(
+  process.platform === 'win32' ? { channel: 'chrome' } : {},
+);
 const context = await browser.newContext();
 if (role) await addSessionCookies(context, baseUrl, role);
 const page = await context.newPage();

@@ -28,7 +28,9 @@ import {
 const { baseUrl, pages, role, mockUnauthenticated: forceUnauth } = parseTargetArgs();
 const MAX_TABS = 40;
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(
+  process.platform === 'win32' ? { channel: 'chrome' } : {},
+);
 const context = await browser.newContext();
 if (role) await addSessionCookies(context, baseUrl, role);
 const page = await context.newPage();
@@ -67,7 +69,7 @@ for (const path of pages) {
       }
 
       focusCount++;
-      const key = `${info.tag}#${info.id}@${info.ariaLabel}`;
+      const key = `${info.domIndex}:${info.tag}#${info.id}@${info.ariaLabel}`;
       if (key === lastKey) {
         stuckCount++;
         // Native date/time inputs are a special case (#332): Chromium keeps
