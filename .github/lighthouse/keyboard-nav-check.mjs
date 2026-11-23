@@ -69,7 +69,7 @@ for (const path of pages) {
       }
 
       focusCount++;
-      const key = `${info.tag}#${info.id}@${info.ariaLabel}`;
+      const key = `${info.domIndex}:${info.tag}#${info.id}@${info.ariaLabel}`;
       if (key === lastKey) {
         stuckCount++;
         // Native date/time inputs are a special case (#332): Chromium keeps

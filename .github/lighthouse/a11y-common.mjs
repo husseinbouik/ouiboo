@@ -119,6 +119,11 @@ export function readFocusInPage() {
   const rect = el.getBoundingClientRect();
   const style = window.getComputedStyle(el);
   return {
+    // Some native controls (notably checkbox/radio inputs) share the same
+    // fallback value ("on") and may not have an id. Keep a stable per-page
+    // DOM identity so the keyboard smoke test does not mistake focus moving
+    // between distinct controls for a trap on one control.
+    domIndex: Array.prototype.indexOf.call(document.querySelectorAll('*'), el),
     tag: el.tagName.toLowerCase(),
     type: (el.getAttribute('type') || '').toLowerCase(),
     id: el.id || '',
