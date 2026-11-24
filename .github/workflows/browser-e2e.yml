@@ -9,6 +9,13 @@ on:
 permissions:
   contents: read
 
+# Cancel superseded runs on PRs to save minutes (#1021). Push runs are
+# NOT cancelled: the staging-release gate polls the push check-runs for
+# the exact staging SHA.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   browser-e2e:
     runs-on: ubuntu-24.04
@@ -23,20 +30,64 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # This job carries the required `browser-e2e` context, so it must
+      # ALWAYS run and report — path filtering happens at step level
+      # (#1021): a change that touches no browser-tested app skips the
+      # heavy steps below and the job still succeeds.
+      - name: Detect change areas
+        id: changes
+        uses: ./.github/actions/detect-changes
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+      - name: Note skipped heavy steps
+        if: steps.changes.outputs.frontend != 'true'
+        run: echo "No browser-tested app changed — build/e2e steps skipped (#1021). The required browser-e2e context still reports success from this job."
 
       - name: Use Node.js 20
+        if: steps.changes.outputs.frontend == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - name: Install dependencies
+        if: steps.changes.outputs.frontend == 'true'
         run: npm ci
 
+      - name: Cache Playwright browsers
+        if: steps.changes.outputs.frontend == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Cache Next.js build caches
+        if: steps.changes.outputs.frontend == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/traveler/.next/cache
+            apps/agency/.next/cache
+            apps/admin/.next/cache
+          key: ${{ runner.os }}-buildcache-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildcache-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-buildcache-
+
       - name: Install Playwright browser
+        if: steps.changes.outputs.frontend == 'true'
+        # With a warm browser cache this skips the Chromium download and
+        # only ensures the OS dependencies are present.
         run: npm run test:e2e:install
 
       - name: Build Next.js apps
+        if: steps.changes.outputs.frontend == 'true'
         # Build separately so failures are visible; the webServer entries only serve.
         run: |
           npm run build --workspace apps/traveler
@@ -44,6 +95,7 @@ jobs:
           npm run build --workspace apps/admin
 
       - name: Run browser launch suite
+        if: steps.changes.outputs.frontend == 'true'
         # Local mock-backed projects only. The production-smoke project
         # targets LIVE deployments (SMOKE_* URLs, canonical prod domains
         # by default in the spec) — in this PR gate it would test the
@@ -56,7 +108,7 @@ jobs:
         run: npm run test:e2e -- --project=traveler --project=traveler-mobile --project=agency --project=admin
 
       - name: Upload Playwright report
-        if: always()
+        if: always() && steps.changes.outputs.frontend == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report

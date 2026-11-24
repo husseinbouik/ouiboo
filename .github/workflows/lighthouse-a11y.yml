@@ -74,17 +74,36 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Path filtering at step level (#1021): the axe/keyboard steps in
+      # this job are blocking-by-design, so the job always runs and
+      # reports; a change touching no audited app skips the heavy steps
+      # and the job succeeds without scanning.
+      - name: Detect change areas
+        id: changes
+        uses: ./.github/actions/detect-changes
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+      - name: Note skipped scans
+        if: github.event_name == 'pull_request' && steps.changes.outputs.frontend != 'true'
+        run: echo "No audited app changed — Lighthouse/axe/keyboard scans skipped (#1021)."
 
       - name: Use Node.js 20
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - name: Install dependencies
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         run: npm ci
 
       - name: Start mock API server
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         # Serves the e2e fixtures (trip-1 etc.) for SSR + browser fetches,
         # so trip detail and checkout render real content during the scans.
         run: |
@@ -92,6 +111,7 @@ jobs:
           npx --yes wait-on http://localhost:3000/api/trips --timeout 60000
 
       - name: Build apps
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         # Build separately so failures are visible per app.
         run: |
           npm run build --workspace apps/traveler
@@ -100,6 +120,7 @@ jobs:
           npm run build --workspace apps/landing
 
       - name: Start apps
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         run: |
           node scripts/start-next-standalone.mjs traveler 3001 &
           node scripts/start-next-standalone.mjs agency 3002 &
@@ -108,6 +129,7 @@ jobs:
           npx --yes wait-on http://localhost:3001/login http://localhost:3002/login http://localhost:3003/login http://localhost:3004/ --timeout 180000
 
       - name: Run Lighthouse CI
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         continue-on-error: true
         uses: treosh/lighthouse-ci-action@v12
         with:
@@ -123,14 +145,26 @@ jobs:
           configPath: ./.github/lighthouse/lighthouserc.json
           budgetPath: ./.github/lighthouse/budget.json
 
+      - name: Cache Playwright browsers
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright Chromium
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         # @axe-core/playwright is pinned in the lockfile so accessibility
         # checks run against the same immutable dependency set as npm ci.
         # Reuse the browser-E2E installation command, including the Linux
-        # system dependencies required by GitHub-hosted runners.
+        # system dependencies required by GitHub-hosted runners. With a
+        # warm browser cache only the OS dependencies are ensured.
         run: npm run test:e2e:install
 
       - name: Run axe accessibility checks (desktop)
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         run: |
           node .github/lighthouse/axe-check.mjs http://localhost:3001 "/,/search,/login,/signup,/trip/trip-1,/checkout/trip-1"
           node .github/lighthouse/axe-check.mjs http://localhost:3004 "/"
@@ -144,6 +178,7 @@ jobs:
           node .github/lighthouse/axe-check.mjs http://localhost:3003 "/" --role=ADMIN
 
       - name: Run axe accessibility checks (mobile viewport)
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         # Blocking since the #332 contrast fix landed (see header).
         run: |
           node .github/lighthouse/axe-check-mobile.mjs http://localhost:3001 "/,/search,/login,/signup,/trip/trip-1,/checkout/trip-1"
@@ -155,6 +190,7 @@ jobs:
           node .github/lighthouse/axe-check-mobile.mjs http://localhost:3003 "/login" --mock-unauthenticated
 
       - name: Run keyboard navigation checks
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         # #213: basic keyboard-navigation regression coverage (tab order,
         # visible focus, no keyboard traps). Blocking since #332.
         run: |
@@ -166,6 +202,7 @@ jobs:
           node .github/lighthouse/keyboard-nav-check.mjs http://localhost:3003 "/" --role=ADMIN
 
       - name: Run keyboard-only checkout walkthrough
+        if: github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true'
         # #332: the money flow completed with Tab/Enter/typing alone —
         # zero traps, focus visible at every stop, booking submitted.
         env:
@@ -173,7 +210,7 @@ jobs:
         run: node .github/lighthouse/keyboard-checkout-walkthrough.mjs http://localhost:3001
 
       - name: Upload Lighthouse + walkthrough results
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || steps.changes.outputs.frontend == 'true')
         uses: actions/upload-artifact@v4
         with:
           # Not "lighthouse-results": lhci uploads its own artifact under

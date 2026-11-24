@@ -1,0 +1,66 @@
+name: Detect change areas
+description: >
+  Classifies the files changed by a push or pull request so heavy CI
+  steps can be skipped when an area is untouched (#1021, finding C5).
+  Required-check jobs still always run and report success — only their
+  heavy steps are gated on these outputs — so branch protection and the
+  staging-release gate can never deadlock waiting for a context that a
+  path filter suppressed. Classification is deliberately conservative:
+  anything that is not clearly documentation counts as code, and an
+  unresolvable base SHA classifies everything as changed.
+inputs:
+  base-sha:
+    description: 'Base SHA to diff against (PR base SHA or push "before" SHA)'
+    required: true
+outputs:
+  code:
+    description: 'true when any non-documentation file changed'
+    value: ${{ steps.detect.outputs.code }}
+  frontend:
+    description: 'true when browser-tested apps, shared packages or e2e files changed'
+    value: ${{ steps.detect.outputs.frontend }}
+  api:
+    description: 'true when API or shared package files changed'
+    value: ${{ steps.detect.outputs.api }}
+runs:
+  using: composite
+  steps:
+    - id: detect
+      shell: bash
+      run: |
+        set -euo pipefail
+        base="${{ inputs.base-sha }}"
+        if [ -z "$base" ] \
+           || [ "$base" = "0000000000000000000000000000000000000000" ] \
+           || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+          echo "Base '${base}' unavailable — treating everything as changed."
+          echo "code=true" >> "$GITHUB_OUTPUT"
+          echo "frontend=true" >> "$GITHUB_OUTPUT"
+          echo "api=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        files="$(git diff --name-only "$base" HEAD)"
+        echo "Changed files:"
+        echo "$files"
+        code=false; frontend=false; api=false
+        while IFS= read -r f; do
+          [ -z "$f" ] && continue
+          case "$f" in
+            *.md|docs/*|.gitignore|LICENSE|LICENSE.*) ;;
+            *) code=true ;;
+          esac
+          case "$f" in
+            apps/traveler/*|apps/agency/*|apps/admin/*|apps/landing/*|packages/*|e2e/*|playwright.config.*|package.json|package-lock.json|.github/workflows/browser-e2e.yml|.github/workflows/lighthouse-a11y.yml|.github/lighthouse/*)
+              frontend=true ;;
+          esac
+          case "$f" in
+            apps/api/*|packages/*|scripts/check-api-coverage-floors.mjs|package.json|package-lock.json)
+              api=true ;;
+          esac
+        done <<< "$files"
+        {
+          echo "code=$code"
+          echo "frontend=$frontend"
+          echo "api=$api"
+        } >> "$GITHUB_OUTPUT"
+        echo "Classification: code=$code frontend=$frontend api=$api"

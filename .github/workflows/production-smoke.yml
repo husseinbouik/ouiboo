@@ -33,21 +33,53 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Path filtering at step level (#1021): these tests exercise the
+      # LIVE staging deployments, not the PR's code, so a docs-only PR
+      # gains nothing from a run. The job still always runs and reports
+      # the `smoke` context — deliberately, so that re-adding `smoke`
+      # to branch protection (planned 2026-12-24) can never deadlock a
+      # docs-only PR on a suppressed context. Scheduled and manual runs
+      # always execute the full suite.
+      - name: Detect change areas
+        id: changes
+        uses: ./.github/actions/detect-changes
+        with:
+          base-sha: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+      - name: Note skipped smoke run
+        if: github.event_name == 'pull_request' && steps.changes.outputs.code != 'true'
+        run: echo "Docs-only PR — live smoke suite skipped (#1021). The smoke context still reports success from this job."
 
       - name: Set up Node.js
+        if: github.event_name != 'pull_request' || steps.changes.outputs.code == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
 
       - name: Install dependencies
+        if: github.event_name != 'pull_request' || steps.changes.outputs.code == 'true'
         run: npm ci --include=dev
         working-directory: .
 
+      - name: Cache Playwright browsers
+        if: github.event_name != 'pull_request' || steps.changes.outputs.code == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
+        if: github.event_name != 'pull_request' || steps.changes.outputs.code == 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Run production smoke tests
+        if: github.event_name != 'pull_request' || steps.changes.outputs.code == 'true'
         id: smoke
         run: mkdir -p test-results && npx playwright test --config playwright.smoke.config.ts
         env:

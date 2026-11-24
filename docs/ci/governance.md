@@ -37,7 +37,7 @@ the `Staging Release` gate/migration jobs (they block a staging
 | Check | Where | Why advisory |
 | --- | --- | --- |
 | Lighthouse CI budgets step | `lighthouse-a11y.yml`, `continue-on-error: true` on the step only | Budgets bundle runner-dependent performance timings with accessibility; the a11y gate itself is the blocking axe/keyboard steps in the same job. |
-| SonarCloud scan + coverage prep | `sonarcloud.yml` (coverage steps `continue-on-error: true`) | Reporting/trend surface. Enforced coverage lives in the API coverage floor (`docs/ci/coverage.md`), not here; this workflow overrides thresholds to `{}` on purpose for reporting. |
+| SonarCloud scan + coverage prep | `sonarcloud.yml` (coverage steps `continue-on-error: true`) | Reporting/trend surface. Enforced coverage lives in the API coverage floor (`docs/ci/coverage.md`), not here; this workflow overrides thresholds to `{}` on purpose for reporting. Since #1021 it runs on pushes to staging/master + manual dispatch only, not on PRs. |
 | PR size warning | `pr-hygiene.yml` `size` job | Not a required context; an oversized PR fails that job but does not block merge. It is a prompt to split, not a gate. |
 | `lighthouse-a11y`, `SonarCloud Scan` job outcomes as a whole | — | Neither job name is a required context. |
 
@@ -46,6 +46,17 @@ the `Staging Release` gate/migration jobs (they block a staging
 - A required check must never gain `continue-on-error: true` (job or
   step level). Reviewers: treat any such diff as a governance change
   requiring explicit justification on the PR.
+- Path filtering (#1021) must never suppress a required context: jobs
+  carrying required contexts (ci, browser-e2e, security-scan,
+  production-smoke) always run and report; only their heavy steps may
+  be gated on `.github/actions/detect-changes` classifications, and the
+  classification is conservative (anything not clearly documentation
+  counts as code; an unresolvable base SHA means "everything changed").
+  Trigger-level `paths:` filters are only allowed on workflows whose
+  contexts are NOT required (e.g. `api-coverage.yml`). Gitleaks is
+  never path-gated — a secret can be committed in a Markdown file.
+  SonarCloud runs on pushes to staging/master and manual dispatch
+  only, not on pull requests (#1021, finding C3).
 - An advisory check may only become blocking by (1) removing its
   `continue-on-error`, (2) adding its exact context name to branch
   protection, and (3) updating this document — in the same PR.
