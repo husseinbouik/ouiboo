@@ -155,6 +155,18 @@ export default function AgencyDashboard() {
     (booking) => booking.status === BookingStatus.AwaitingValidation || booking.status === BookingStatus.Pending,
   ).length;
   const latestBookings = recentBookings.slice(0, 5);
+  // Phase 4 — Dashboard B (Action inbox): proofs awaiting review lead
+  // the page, ahead of bookings to confirm; KPIs move below the queue.
+  const proofInbox = recentBookings.filter(
+    (booking) =>
+      booking.paymentProof?.status === VerificationStatus.Pending ||
+      booking.paymentProof?.status === VerificationStatus.Accepted,
+  );
+  const bookingInbox = recentBookings.filter(
+    (booking) =>
+      (booking.status === BookingStatus.AwaitingValidation || booking.status === BookingStatus.Pending) &&
+      !proofInbox.includes(booking),
+  );
   // #415: headline verification state comes from the shared activation
   // derivation (identity + licence + RC insurance), never the legacy
   // identity field alone — the API gate would still block this agency.
@@ -273,6 +285,61 @@ export default function AgencyDashboard() {
         </div>
       </div>
 
+      <section data-testid="action-inbox" aria-label={t('dashboard.actionInbox.title')} className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-black font-display tracking-tight">{t('dashboard.actionInbox.title')}</h2>
+          <p className="text-muted-foreground font-medium mt-1">{t('dashboard.actionInbox.subtitle')}</p>
+        </div>
+        {proofInbox.length === 0 && bookingInbox.length === 0 ? (
+          <Card className="border border-border shadow-sm rounded-3xl">
+            <CardContent className="p-6 flex items-center gap-3 text-sm font-medium text-muted-foreground">
+              <CheckCircle2 className="h-5 w-5 text-success" aria-hidden="true" />
+              {t('dashboard.actionInbox.empty')}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {proofInbox.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t('dashboard.actionInbox.proofsHeading')} · {stats.payments.pendingVerificationCount || proofInbox.length}</h3>
+                {proofInbox.map((booking) => (
+                  <Card key={booking.id} className="border border-warning/40 shadow-sm rounded-2xl">
+                    <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="font-bold text-foreground">{booking.session.template.title}</p>
+                        <p className="text-xs text-muted-foreground">{booking.traveler.name || booking.fullName || booking.traveler.email} · {formatCurrency(Number(booking.totalAmount))} {t('dashboard.currency')}</p>
+                      </div>
+                      <Button asChild className="rounded-xl font-bold">
+                        <Link href="/dashboard/bookings">{t('dashboard.actionInbox.reviewProof')}</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+            {bookingInbox.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">{t('dashboard.actionInbox.bookingsHeading')}</h3>
+                {bookingInbox.map((booking) => (
+                  <Card key={booking.id} className="border border-border shadow-sm rounded-2xl">
+                    <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="font-bold text-foreground">{booking.session.template.title}</p>
+                        <p className="text-xs text-muted-foreground">{booking.traveler.name || booking.fullName || booking.traveler.email}</p>
+                      </div>
+                      <Button asChild variant="outline" className="rounded-xl font-bold">
+                        <Link href="/dashboard/bookings">{t('dashboard.actionInbox.openBooking')}</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      <h2 className="sr-only">{t('dashboard.actionInbox.kpisHeading')}</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {summaryCards.map((stat, i) => (
           <motion.div
@@ -435,7 +502,7 @@ export default function AgencyDashboard() {
             {t('dashboard.growTrips', { count: stats.activeTrips })} {t('dashboard.growTravelers', { count: stats.totalCustomers })} {t('dashboard.growCta')}
           </p>
         </div>
-        <Button asChild className="h-20 px-12 rounded-3xl bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:scale-105 active:scale-95">
+        <Button asChild className="h-20 px-12 rounded-3xl bg-white text-primary hover:bg-slate-100 font-black text-xl border-none shadow-2xl transition-all hover:bg-slate-100 active:scale-[0.98]">
               <Link href="/dashboard/trips/create">{t('dashboard.createNewTrip')}</Link>
             </Button>
       </div>

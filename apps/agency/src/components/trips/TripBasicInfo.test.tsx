@@ -48,7 +48,8 @@ describe('TripBasicInfo language tabs (#546)', () => {
 
     // French tab shows the canonical title value.
     const titleInput = screen.getByDisplayValue('Titre français');
-    expect(titleInput.getAttribute('dir')).toBe('ltr');
+    // Phase 4: title fields use dir="auto" (no forced LTR) so Arabic titles enter correctly.
+    expect(titleInput.getAttribute('dir')).toBe('auto');
   });
 
   it('names the missing encouraged languages in the completeness hint', () => {

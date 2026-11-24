@@ -77,7 +77,7 @@ export function DeleteConfirmation({
                 <Button
                   onClick={onConfirm}
                   disabled={isLoading}
-                  className="flex-1 h-12 bg-danger text-danger-foreground hover:bg-danger/90 border-none rounded-xl font-bold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-danger/20"
+                  className="flex-1 h-12 bg-danger text-danger-foreground hover:bg-danger/90 border-none rounded-xl font-bold transition-colors shadow-lg shadow-danger/20"
                 >
                   {isLoading ? t('deleteConfirmation.deleting') : resolvedConfirmText}
                 </Button>

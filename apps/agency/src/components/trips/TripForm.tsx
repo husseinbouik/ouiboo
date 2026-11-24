@@ -1,7 +1,8 @@
 import React, { type ReactNode } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Save } from 'lucide-react';
-import { Button } from '@ouiboo/ui';
+import { Button, MissingRequirementsHint } from '@ouiboo/ui';
+import { CalendarDays } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
 import type { TFunction } from 'i18next';
 import type { CreateTripInput } from '@ouiboo/schemas';
@@ -12,6 +13,7 @@ import { hasProhibitedCommercialTerms } from './commercial-terms';
 import { TripMediaUpload } from './TripMediaUpload';
 import { TripExtras } from './TripExtras';
 import { TripLivePreview } from './TripLivePreview';
+import { hasMeaningfulDraft, loadTripDraft, saveTripDraft, tripDraftKey } from '@/lib/trip-draft';
 
 export type TripFormProps = {
   mode: 'create' | 'edit';
@@ -30,6 +32,8 @@ export type TripFormProps = {
   showSaveIcon?: boolean;
   /** Create page disables Continue while step validation runs. */
   disableContinueWhileValidating?: boolean;
+  /** Edit mode: trip id — keys the local draft and links the session manager. */
+  tripId?: string;
 };
 
 /**
@@ -51,6 +55,7 @@ export function TripForm({
   submitPendingLabel,
   showSaveIcon = false,
   disableContinueWhileValidating = false,
+  tripId,
 }: TripFormProps) {
   const {
     handleSubmit,
@@ -73,6 +78,47 @@ export function TripForm({
     setSubmissionError('');
     onSubmit(data);
   };
+
+  // Phase 4 (Create trip A): local draft autosave. The API has no
+  // in-progress draft endpoint, so the draft lives in localStorage on
+  // this device (labelled as such in the UI) and is restored on return;
+  // it is cleared once the trip is submitted successfully.
+  const draftKey = tripDraftKey(mode, tripId);
+  const [draftSavedAt, setDraftSavedAt] = React.useState<number | null>(null);
+  const [draftRestored, setDraftRestored] = React.useState(false);
+  const restoredRef = React.useRef(false);
+  React.useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    const draft = loadTripDraft<CreateTripInput>(draftKey);
+    if (draft && hasMeaningfulDraft(draft.values) && !hasMeaningfulDraft(form.watch())) {
+      form.reset(draft.values);
+      setDraftRestored(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+  const watchedValues = form.watch();
+  const lastSavedJsonRef = React.useRef('');
+  React.useEffect(() => {
+    if (!hasMeaningfulDraft(watchedValues)) return;
+    const json = JSON.stringify(watchedValues);
+    if (json === lastSavedJsonRef.current) return;
+    const timer = window.setTimeout(() => {
+      lastSavedJsonRef.current = json;
+      if (saveTripDraft(draftKey, watchedValues)) setDraftSavedAt(Date.now());
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [draftKey, watchedValues]);
+
+  // Phase 4: per-step missing requirements at the final submit (shared
+  // MissingRequirementsHint) instead of a silently disabled button.
+  const missingRequirements: string[] = [];
+  if (step === 4) {
+    if (!form.watch('title')?.trim()) missingRequirements.push(t('trips.create.title'));
+    if (!form.watch('description')?.trim()) missingRequirements.push(t('trips.create.description'));
+    if (!(form.watch('images') ?? []).length) missingRequirements.push(t('trips.completenessPhotos'));
+    if (!(form.watch('inclusions') ?? []).some((item: string) => item?.trim())) missingRequirements.push(t('trips.completenessInclusions'));
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in slide-in-from-bottom duration-500 pb-12">
@@ -105,6 +151,12 @@ export function TripForm({
             {title}
           </h1>
           <p className="text-muted-foreground mt-2">{subtitle}</p>
+          {(draftRestored || draftSavedAt) && (
+            <p role="status" data-testid="trip-draft-status" className="mt-2 text-xs font-semibold text-muted-foreground">
+              {draftRestored ? t('trips.create.draftRestored') : t('trips.create.draftSaved')}
+              {draftSavedAt ? ` · ${new Date(draftSavedAt).toLocaleTimeString()}` : ''}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -113,12 +165,26 @@ export function TripForm({
             {step === 2 && <TripItinerary t={t} form={form} />}
             {step === 3 && <TripMediaUpload t={t} form={form} mode={mode} />}
             {step === 4 && <TripExtras t={t} form={form} mode={mode} />}
+            {step === 4 && (
+              <section data-testid="wizard-sessions-section" className="rounded-2xl border border-border bg-card p-6 space-y-2">
+                <h3 className="flex items-center gap-2 font-bold text-foreground"><CalendarDays className="h-5 w-5 text-accent" aria-hidden="true" />{t('trips.create.sessionsInsideTitle')}</h3>
+                <p className="text-sm text-muted-foreground">{mode === 'create' ? t('trips.create.sessionsInsideBodyCreate') : t('trips.create.sessionsInsideBodyEdit')}</p>
+                <p className="text-sm text-muted-foreground">{t('trips.create.honestyPrice')}</p>
+                {mode === 'edit' && tripId ? (
+                  <Link href={`/dashboard/trips/${tripId}`} className="inline-flex text-sm font-bold text-primary hover:underline">{t('trips.create.sessionsOpenDetail')}</Link>
+                ) : null}
+              </section>
+            )}
 
             {submissionError ? (
               <p role="alert" className="rounded-xl bg-danger/10 border border-danger/30 p-4 text-sm font-medium text-danger">
                 {submissionError}
               </p>
             ) : null}
+
+            {step === 4 && (
+              <MissingRequirementsHint missing={missingRequirements} title={t('trips.create.missingTitle')} />
+            )}
 
             <div className="pt-8 border-t border-border flex items-center justify-between">
               <Button

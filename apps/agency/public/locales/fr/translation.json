@@ -75,7 +75,14 @@
     "refunds": "Remboursements",
     "support": "Assistance",
     "crm": "Clients et pipeline",
-    "messages": "Messages"
+    "messages": "Messages",
+    "groups": {
+      "operate": "Exploiter",
+      "money": "Argent",
+      "grow": "Développer",
+      "account": "Compte"
+    },
+    "proofsToReview": "{{count}} justificatifs de paiement à examiner"
   },
   "login": {
     "title": "Portail agence",
@@ -507,8 +514,26 @@
       "completenessDay": "Jour {{day}} : pensez à ajouter {{missing}} (facultatif — une suggestion, pas un blocage).",
       "nudgeDriveTime": "le temps de route",
       "nudgeAccommodation": "l'hébergement",
-      "nudgeMeals": "les repas"
-    }
+      "nudgeMeals": "les repas",
+      "draftSaved": "Brouillon enregistré sur cet appareil",
+      "draftRestored": "Brouillon restauré depuis cet appareil",
+      "honestyPhotos": "Utilisez vos propres photos — les voyageurs voient exactement ces images. N’utilisez pas les photos d’une autre agence.",
+      "honestyPrice": "Indiquez le prix réel par personne. L’acompte montré aux voyageurs est plafonné à 30 % et vous est payé directement.",
+      "sessionsInsideTitle": "Sessions",
+      "sessionsInsideBodyCreate": "Les sessions sont les dates réservables de ce voyage. Vous les ajoutez à l’étape finale juste après l’enregistrement — un voyage ne peut pas être publié sans session future.",
+      "sessionsInsideBodyEdit": "Les sessions sont les dates réservables de ce voyage, avec les places et l’heure de rendez-vous. Gérez-les depuis la page du voyage après l’enregistrement.",
+      "sessionsOpenDetail": "Ouvrir le gestionnaire de sessions",
+      "missingTitle": "Pour publier, il vous manque encore :",
+      "missingTitleSave": "Pour enregistrer, il vous manque encore :",
+      "checkedBeforeListing": "Vérifié avant publication",
+      "directPaymentNote": "Les voyageurs paient l’agence directement — Ouiboo ne touche jamais l’argent."
+    },
+    "completeness": "Complétude de l’annonce",
+    "completenessPhotos": "Photos",
+    "completenessInclusions": "Prestations incluses",
+    "completenessSessions": "Sessions",
+    "completenessPricing": "Tarification",
+    "viewAsTraveller": "Voir comme un voyageur"
   },
   "payments": {
     "title": "Paiements",
@@ -833,7 +858,17 @@
     "paymentsPending": "Paiements à vérifier",
     "paymentsPendingCaption": "Justificatifs envoyés par les voyageurs, en attente de votre confirmation bancaire",
     "grossBookedValueCaption": "Valeur totale des réservations confirmées et terminées — pas encore de l'argent reçu",
-    "viewPayments": "Voir les paiements"
+    "viewPayments": "Voir les paiements",
+    "actionInbox": {
+      "title": "Boîte d’actions",
+      "subtitle": "Les justificatifs à examiner d’abord, puis les réservations en attente.",
+      "proofsHeading": "Justificatifs de paiement en attente d’examen",
+      "bookingsHeading": "Réservations à confirmer",
+      "empty": "Rien ne nécessite votre action pour le moment.",
+      "reviewProof": "Examiner le justificatif",
+      "openBooking": "Ouvrir la réservation",
+      "kpisHeading": "Aperçu"
+    }
   },
   "status": {
     "bookingPending": "En attente",
@@ -1015,7 +1050,11 @@
     "cashPlusBeneficiaryNameHint": "Le nom que les voyageurs verront au paiement — ce doit être votre agence.",
     "cashPlusPhone": "Numéro de téléphone Cash Plus",
     "cashPlusPhonePlaceholder": "+212 6 00 00 00 00",
-    "cashPlusPhoneHint": "Le numéro auquel les voyageurs envoient l’argent au point Cash Plus."
+    "cashPlusPhoneHint": "Le numéro auquel les voyageurs envoient l’argent au point Cash Plus.",
+    "saveBankDetails": "Enregistrer les coordonnées bancaires",
+    "saveCashPlusDetails": "Enregistrer les coordonnées Cash Plus",
+    "reReviewNote": "Modifier ces coordonnées les soumet à un nouvel examen par l’administration. Les voyageurs continuent de voir les coordonnées précédemment vérifiées jusqu’à l’approbation des nouvelles.",
+    "paymentDirectNote": "Les voyageurs vous paient directement. Ouiboo ne touche jamais l’argent des voyageurs."
   },
   "analytics": {
     "dashboardTitle": "Tableau de bord analytique",
@@ -1153,7 +1192,10 @@
     "methodCashPlus": "Cash Plus",
     "methodBankTransfer": "Virement bancaire",
     "methodManual": "Paiement manuel",
-    "cashPlusCode": "Code de transaction"
+    "cashPlusCode": "Code de transaction",
+    "feedbackAccepted": "Justificatif accepté — pas encore réglé. Confirmez le crédit bancaire pour régler ce paiement.",
+    "feedbackRejected": "Justificatif refusé. Le voyageur a été invité à téléverser un nouveau justificatif.",
+    "feedbackConfirmed": "Crédit bancaire confirmé — ce paiement est réglé."
   },
   "bulkSession": {
     "helper": "Complétez les dates, le prix et le nombre de places de chaque session.",
@@ -1521,5 +1563,14 @@
     "emptyThread": "Aucun message pour le moment. Dites bonjour pour commencer.",
     "noMessagesYet": "Aucun message pour le moment",
     "blockedByTravelerNotice": "Ce voyageur a mis en pause les nouveaux messages avec votre agence. Les conversations liées à une réservation existante restent disponibles."
+  },
+  "authPanel": {
+    "paidDirectlyTitle": "Vous êtes payé directement — toujours.",
+    "paidDirectlyBody": "Les voyageurs paient votre compte bancaire ou Cash Plus. Ouiboo ne touche jamais votre argent. Les frais de plateforme, le cas échéant, ne sont facturés que par facture mensuelle écrite — jamais déduits d’un paiement de voyageur.",
+    "verifyTitle": "Avant de pouvoir publier des voyages, nous vérifions :",
+    "verifyLicence": "Licence / enregistrement de l’agence",
+    "verifyPayment": "Coordonnées de paiement au nom de l’agence",
+    "verifyTrip": "Un premier voyage avec vos propres photos",
+    "verifyTiming": "La vérification est manuelle. La plupart des agences sont vérifiées sous 2 jours ouvrés."
   }
 }

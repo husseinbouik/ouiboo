@@ -1,4 +1,4 @@
-import { MapPin, Clock, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Clock, Image as ImageIcon, BadgeCheck } from 'lucide-react';
 import { Card, CardContent, SafeImage } from '@ouiboo/ui';
 import { cn } from '@ouiboo/ui/utils';
 import type { TFunction } from 'i18next';
@@ -72,6 +72,10 @@ export function TripLivePreview({ t, form, mode }: Props) {
                 {watch('description') || t('trips.create.noDescription')}
               </p>
             </div>
+            <p className="flex items-center gap-1.5 text-xs font-bold text-success-dark">
+              <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+              {t('trips.create.checkedBeforeListing')}
+            </p>
             <div className="flex items-center gap-4 py-4 border-y border-border">
               <div className="flex items-center gap-1.5 min-w-0">
                 <Clock className="h-4 w-4 text-accent" />
@@ -92,6 +96,7 @@ export function TripLivePreview({ t, form, mode }: Props) {
                 <span className="text-lg font-black text-foreground">{t('trips.create.pricePreview', { currency: watch('currency') || 'MAD' })}</span>
               </div>
             )}
+            <p className="text-[11px] text-muted-foreground">{t('trips.create.directPaymentNote')}</p>
           </CardContent>
         </Card>
       </div>

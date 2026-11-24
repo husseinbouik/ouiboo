@@ -62,7 +62,7 @@ export default function SettingsPage() {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
-  const { register, handleSubmit, reset } = useForm<SettingsFormValues>({
+  const { register, handleSubmit, reset, getValues } = useForm<SettingsFormValues>({
     defaultValues: {
       name: user?.name || '',
       email: user?.email || '',
@@ -170,6 +170,49 @@ export default function SettingsPage() {
       toast({ title: t('settings.updateError'), variant: 'error' });
     } finally {
       setIsRemovingLogo(false);
+    }
+  };
+
+  // Phase 4 (Payment profile A): each destination card saves on its
+  // own — a bank edit can no longer touch Cash Plus state and vice
+  // versa. Both go through the same reviewed PATCH /agency/profile.
+  const [savingSection, setSavingSection] = React.useState<'bank' | 'cashPlus' | null>(null);
+  const saveBankDetails = async () => {
+    const data = getValues();
+    try {
+      setSavingSection('bank');
+      await apiClient.patch('/agency/profile', {
+        bankDetails: data.bankDetails,
+        bankAccountHolderName: data.bankAccountHolderName,
+        bankAttestationUrl: data.bankAttestationUrl,
+      });
+      toast({ title: t('settings.updateSuccess'), variant: 'success' });
+      refetch();
+    } catch {
+      toast({ title: t('settings.updateError'), variant: 'error' });
+    } finally {
+      setSavingSection(null);
+    }
+  };
+  const saveCashPlusDetails = async () => {
+    const data = getValues();
+    try {
+      setSavingSection('cashPlus');
+      await apiClient.patch('/agency/profile', {
+        cashPlusEnabled: cashPlusEnabledValue,
+        ...(data.cashPlusBeneficiaryName.trim() || data.cashPlusPhone.trim()
+          ? {
+              ...(data.cashPlusBeneficiaryName.trim() ? { cashPlusBeneficiaryName: data.cashPlusBeneficiaryName } : {}),
+              ...(data.cashPlusPhone.trim() ? { cashPlusPhone: data.cashPlusPhone } : {}),
+            }
+          : {}),
+      });
+      toast({ title: t('settings.updateSuccess'), variant: 'success' });
+      refetch();
+    } catch {
+      toast({ title: t('settings.updateError'), variant: 'error' });
+    } finally {
+      setSavingSection(null);
     }
   };
 
@@ -376,7 +419,7 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border border-border bg-card shadow-sm">
+            <Card className="border border-border bg-card shadow-sm" data-testid="bank-card">
               <CardHeader>
                 <CardTitle className="text-xl">{t('settings.paymentTitle')}</CardTitle>
                 <CardDescription>{t('settings.paymentSubtitle')}</CardDescription>
@@ -384,7 +427,7 @@ export default function SettingsPage() {
               <CardContent className="space-y-4">
                 <div
                   role="status"
-                  className={`rounded-lg border px-3 py-2 text-sm ${bankStatusMeta.className}`}
+                  data-testid="bank-status-pill" className={`rounded-lg border px-3 py-2 text-sm ${bankStatusMeta.className}`}
                 >
                   <p className="font-semibold">{t('settings.bankStatusLabel')}</p>
                   <p className="mt-0.5">{t(bankStatusMeta.textKey)}</p>
@@ -413,6 +456,36 @@ export default function SettingsPage() {
                   />
                   <p className="text-xs text-muted-foreground">{t('settings.bankHolderNameHint')}</p>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="settings-bank-attestation">{t('settings.bankAttestationUrl')}</Label>
+                  <Input
+                    id="settings-bank-attestation"
+                    type="url"
+                    {...register('bankAttestationUrl')}
+                    placeholder={t('settings.bankAttestationUrlPlaceholder')}
+                  />
+                  <p className="text-xs text-muted-foreground">{t('settings.bankAttestationUrlHint')}</p>
+                </div>
+                <p className="text-xs text-muted-foreground" role="note">{t('settings.reReviewNote')}</p>
+                <div className="flex justify-end">
+                  <Button type="button" onClick={saveBankDetails} disabled={savingSection !== null} className="gap-2">
+                    <Save className="h-4 w-4" /> {t('settings.saveBankDetails')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-border bg-card shadow-sm" data-testid="cashplus-card">
+              <CardHeader>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <CardTitle className="text-xl">{t('settings.cashPlusTitle')}</CardTitle>
+                    <CardDescription>{t('settings.paymentDirectNote')}</CardDescription>
+                  </div>
+                  <span role="status" className={`rounded-full border px-3 py-1 text-xs font-bold ${cashPlusStatusMeta.className}`}>{t(cashPlusStatusMeta.textKey)}</span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div className="space-y-4 border-t border-border pt-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -432,7 +505,7 @@ export default function SettingsPage() {
                   </div>
                   <div
                     role="status"
-                    className={`rounded-lg border px-3 py-2 text-sm ${cashPlusStatusMeta.className}`}
+                    data-testid="cashplus-status" className={`rounded-lg border px-3 py-2 text-sm ${cashPlusStatusMeta.className}`}
                   >
                     <p className="font-semibold">{t('settings.cashPlusStatusLabel')}</p>
                     <p className="mt-0.5">{t(cashPlusStatusMeta.textKey)}</p>
@@ -462,15 +535,11 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground">{t('settings.cashPlusPhoneHint')}</p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="settings-bank-attestation">{t('settings.bankAttestationUrl')}</Label>
-                  <Input
-                    id="settings-bank-attestation"
-                    type="url"
-                    {...register('bankAttestationUrl')}
-                    placeholder={t('settings.bankAttestationUrlPlaceholder')}
-                  />
-                  <p className="text-xs text-muted-foreground">{t('settings.bankAttestationUrlHint')}</p>
+                <p className="text-xs text-muted-foreground" role="note">{t('settings.reReviewNote')}</p>
+                <div className="flex justify-end">
+                  <Button type="button" onClick={saveCashPlusDetails} disabled={savingSection !== null} className="gap-2">
+                    <Save className="h-4 w-4" /> {t('settings.saveCashPlusDetails')}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
