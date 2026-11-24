@@ -9,8 +9,24 @@ import {
   type LicenceStatusType,
   type VerificationStatusType,
 } from '@ouiboo/types';
+import { getStatusTone, type StatusTone } from '@ouiboo/utils';
 
 type Translate = (key: string) => string;
+
+/**
+ * #1029 (D4): the tone of every status is decided once, in the
+ * shared `@ouiboo/utils` registry (status-meta). This module keeps
+ * only the admin surface's two presentation layers on top of it:
+ * the badge classes below (admin's `/15` token style) and the i18n
+ * label keys further down (admin's per-audience wording).
+ */
+const ADMIN_TONE_BADGE_CLASS: Record<StatusTone, string> = {
+  success: 'bg-success/15 text-success',
+  warning: 'bg-warning/15 text-warning',
+  danger: 'bg-danger/15 text-danger',
+  info: 'bg-info/15 text-info',
+  neutral: 'bg-muted text-muted-foreground',
+};
 
 const VERIFICATION_STATUS_KEYS: Record<string, string> = {
   [VerificationStatus.Pending]: 'dashboard.status.verificationPending',
@@ -76,17 +92,10 @@ const statusLabel = (status: string | undefined, keys: Record<string, string>, f
   return status || fallback;
 };
 
-export const getAdminVerificationBadgeClass = (status?: VerificationStatusType) => {
-  if (status === VerificationStatus.Verified) {
-    return 'bg-success/15 text-success';
-  }
-
-  if (status === VerificationStatus.Rejected) {
-    return 'bg-danger/15 text-danger';
-  }
-
-  return 'bg-warning/15 text-warning';
-};
+export const getAdminVerificationBadgeClass = (status?: VerificationStatusType) =>
+  // Historical default preserved: every non-verified/rejected state
+  // (pending, accepted, missing) read as a warning in admin.
+  ADMIN_TONE_BADGE_CLASS[getStatusTone('verification', status, 'warning')];
 
 export const getAdminVerificationBadgeLabel = (status?: VerificationStatusType, t?: Translate) => {
   return statusLabel(status, VERIFICATION_STATUS_KEYS, t ? t('dashboard.status.verificationPending') : 'Pending', t);
@@ -102,7 +111,7 @@ export const getAdminProofBankConfirmationMeta = (status?: VerificationStatusTyp
     return {
       state: 'AWAITING_BANK_CONFIRMATION' as const,
       label: t ? t('dashboard.status.proofAwaitingBankConfirmation') : 'Awaiting agency bank confirmation',
-      className: 'bg-warning/15 text-warning',
+      className: ADMIN_TONE_BADGE_CLASS[getStatusTone('verification', status)],
     };
   }
 
@@ -110,7 +119,7 @@ export const getAdminProofBankConfirmationMeta = (status?: VerificationStatusTyp
     return {
       state: 'BANK_CONFIRMED' as const,
       label: t ? t('dashboard.status.proofBankConfirmed') : 'Bank confirmation recorded',
-      className: 'bg-success/15 text-success',
+      className: ADMIN_TONE_BADGE_CLASS[getStatusTone('verification', status)],
     };
   }
 
@@ -134,21 +143,8 @@ export const getEffectiveLicenceStatus = (agency: {
   return status;
 };
 
-export const getAdminLicenceBadgeClass = (status?: LicenceStatusType) => {
-  if (status === LicenceStatus.Verified) {
-    return 'bg-success/15 text-success';
-  }
-
-  if (status === LicenceStatus.Rejected || status === LicenceStatus.Expired) {
-    return 'bg-danger/15 text-danger';
-  }
-
-  if (status === LicenceStatus.PendingReview) {
-    return 'bg-warning/15 text-warning';
-  }
-
-  return 'bg-muted text-muted-foreground';
-};
+export const getAdminLicenceBadgeClass = (status?: LicenceStatusType) =>
+  ADMIN_TONE_BADGE_CLASS[getStatusTone('licence', status)];
 
 export const getAdminLicenceBadgeLabel = (status?: LicenceStatusType, t?: Translate) => {
   return statusLabel(status, LICENCE_STATUS_KEYS, t ? t('dashboard.status.licenceNotSubmitted') : 'Not submitted', t);
@@ -172,7 +168,8 @@ export const getEffectiveInsuranceStatus = (agency: {
   return status;
 };
 
-export const getAdminInsuranceBadgeClass = (status?: LicenceStatusType) => getAdminLicenceBadgeClass(status);
+export const getAdminInsuranceBadgeClass = (status?: LicenceStatusType) =>
+  ADMIN_TONE_BADGE_CLASS[getStatusTone('insurance', status)];
 
 export const getAdminInsuranceBadgeLabel = (status?: LicenceStatusType, t?: Translate) => {
   return statusLabel(status, INSURANCE_STATUS_KEYS, t ? t('dashboard.status.insuranceNotSubmitted') : 'Not submitted', t);
@@ -180,21 +177,8 @@ export const getAdminInsuranceBadgeLabel = (status?: LicenceStatusType, t?: Tran
 
 // #421: bank-details badge — verified destination is the only state a
 // traveller may ever see, so it is the only green one.
-export const getAdminBankDetailsBadgeClass = (status?: string | null) => {
-  if (status === 'VERIFIED') {
-    return 'bg-success/15 text-success';
-  }
-
-  if (status === 'REJECTED') {
-    return 'bg-danger/15 text-danger';
-  }
-
-  if (status === 'PENDING_REVIEW') {
-    return 'bg-warning/15 text-warning';
-  }
-
-  return 'bg-muted text-muted-foreground';
-};
+export const getAdminBankDetailsBadgeClass = (status?: string | null) =>
+  ADMIN_TONE_BADGE_CLASS[getStatusTone('bankDetails', status)];
 
 export const getAdminBankDetailsBadgeLabel = (status?: string | null, t?: Translate) => {
   return statusLabel(status ?? undefined, BANK_DETAILS_STATUS_KEYS, t ? t('dashboard.status.bankUnverified') : 'Unverified', t);

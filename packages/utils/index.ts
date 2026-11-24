@@ -1,5 +1,6 @@
 export * from './src/beta-badge'
 export * from './src/booking-status'
+export * from './src/status-meta'
 export * from './src/pagination'
 export * from './src/otp'
 export * from './src/share'
