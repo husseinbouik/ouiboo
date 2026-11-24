@@ -433,6 +433,9 @@ model User {
   termsVersion            String?
   createdAt               DateTime                @default(now())
   updatedAt               DateTime                @updatedAt
+
+  // #1028 (F11): referral lookups join on referredById; it was unindexed.
+  @@index([referredById])
 }
 
 model RefreshToken {
@@ -630,6 +633,11 @@ model AgencyProfile {
   emergencyContactName        String?
   emergencyContactPhone       String?
 
+  // #1028 (F11): AgencyProfile is filtered by status on nearly every
+  // catalogue read (publicBookableAgencyWhere) and by the renewal /
+  // compliance jobs, but had no secondary indexes at all.
+  @@index([verificationStatus])
+  @@index([subscriptionStatus, subscriptionEndsAt])
 }
 
 model TripTemplate {
