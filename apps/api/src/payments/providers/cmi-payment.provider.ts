@@ -1,215 +1,63 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   PaymentSession,
   PaymentVerificationResult,
   PaymentProvider,
 } from '../interfaces/payment-provider.interface';
-import axios, { AxiosInstance } from 'axios';
-import * as crypto from 'crypto';
-import { MoneyInput, toMinorUnits } from '../../common/money.util';
-
-type CmiApiResponse = {
-  errorMessage?: string;
-  redirectUrl?: string;
-  refundId?: string;
-  sessionId?: string;
-  status?: string;
-  transactionId?: string;
-} & Record<string, unknown>;
-
-const getResponseString = (
-  response: CmiApiResponse,
-  key: keyof CmiApiResponse,
-  fallback = '',
-): string => {
-  const value = response[key];
-  return typeof value === 'string' ? value : fallback;
-};
 
 /**
- * CMI Payment Gateway Provider
- * Implements CMI (Crédit Mutuel Irland) payment integration for Morocco
+ * B3: explicit failure raised whenever the CMI provider is selected or
+ * invoked. The CMI integration is unfinished (initiate / verify / refund
+ * / webhook were TODO placeholders) and card payments via CMI are a
+ * parked partner decision (#362). Until the integration is implemented
+ * and contract-tested, every path that reaches CMI must fail closed
+ * with this error instead of silently running placeholder code that
+ * builds and signs payloads against a guessed API shape.
+ */
+export class CmiProviderNotImplementedError extends Error {
+  constructor() {
+    super(
+      'CMI payment provider is not implemented and is disabled. ' +
+        'Card payments via CMI are parked (see #362); use a manual payment method instead.',
+    );
+    this.name = 'CmiProviderNotImplementedError';
+  }
+}
+
+/**
+ * CMI Payment Gateway Provider — LOCKED STUB (B3).
+ *
+ * This class intentionally contains no CMI API client, and it is
+ * deliberately NOT registered in the payments module, so it cannot be
+ * injected anywhere. If it is ever constructed directly, every
+ * operation still fails explicitly with
+ * {@link CmiProviderNotImplementedError}. Selection is blocked
+ * upstream as well: `PaymentProviderFactory.getProvider('CMI')` throws
+ * the same error, and `PaymentProviderDto` no longer accepts 'CMI', so
+ * no checkout or webhook path can reach CMI in normal flow.
+ *
+ * Do NOT re-add implementation here without completing the CMI
+ * integration and its contract tests (parked decision #362).
  */
 @Injectable()
 export class CMIPaymentProvider implements PaymentProvider {
-  private merchantId: string;
-  private apiKey: string;
-  private baseUrl: string;
-  private callbackUrl: string;
-  private http: AxiosInstance;
-  private readonly logger = new Logger(CMIPaymentProvider.name);
-
-  constructor() {
-    this.merchantId = process.env.CMI_MERCHANT_ID || '';
-    this.apiKey = process.env.CMI_API_KEY || '';
-    this.baseUrl = process.env.CMI_BASE_URL || 'https://api.cmipay.com';
-    this.callbackUrl = process.env.CMI_CALLBACK_URL || '';
-    this.http = axios.create({ baseURL: this.baseUrl, timeout: 10000 });
+  async initiatePayment(): Promise<PaymentSession> {
+    throw new CmiProviderNotImplementedError();
   }
 
-  async initiatePayment(
-    amount: MoneyInput,
-    bookingId: string,
-    travelerEmail: string,
-    travelerName: string,
-  ): Promise<PaymentSession> {
-    try {
-      // Implementation for CMI payment initiation
-      // This would call the CMI API to create a payment session
-      const paymentData = {
-        merchantId: this.merchantId,
-        amount: toMinorUnits(amount),
-        currency: 'MAD',
-        orderId: bookingId,
-        description: `Trip Booking - ${bookingId}`,
-        customerEmail: travelerEmail,
-        customerName: travelerName,
-        returnUrl: this.buildTravelerReturnUrl('success', bookingId, bookingId),
-        cancelUrl: this.buildTravelerReturnUrl('cancelled', bookingId, bookingId),
-        notifyUrl: `${this.getApiCallbackBaseUrl()}/payments/webhook/cmi`,
-      };
-
-      // TODO: Implement actual CMI API call
-      const response = await this.callCMIAPI('/payments/initiate', paymentData);
-
-      return {
-        sessionId: getResponseString(response, 'sessionId'),
-        redirectUrl: getResponseString(response, 'redirectUrl'),
-        expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
-        metadata: { provider: 'CMI', ...response },
-      };
-    } catch (error) {
-      throw new Error(`CMI payment initiation failed: ${error.message}`);
-    }
+  async verifyPayment(): Promise<PaymentVerificationResult> {
+    throw new CmiProviderNotImplementedError();
   }
 
-  async verifyPayment(
-    transactionId: string,
-    bookingId: string,
-  ): Promise<PaymentVerificationResult> {
-    try {
-      // TODO: Implement actual CMI API call to verify payment
-      const response = await this.callCMIAPI('/payments/verify', {
-        transactionId,
-        orderId: bookingId,
-        merchantId: this.merchantId,
-      });
-
-      if (response.status === 'SUCCESS') {
-        return {
-          status: 'success',
-          transactionId: getResponseString(response, 'transactionId'),
-          // #496: surface the provider's order reference and currency so
-          // the service can bind the result to the authoritative local
-          // transaction for this booking before confirming anything.
-          bookingId: getResponseString(response, 'orderId') || undefined,
-          currency: getResponseString(response, 'currency') || undefined,
-          metadata: response,
-        };
-      } else if (response.status === 'PENDING') {
-        return {
-          status: 'pending',
-          metadata: response,
-        };
-      } else {
-        return {
-          status: 'failure',
-          errorMessage: getResponseString(response, 'errorMessage', 'Payment verification failed'),
-          metadata: response,
-        };
-      }
-    } catch (error) {
-      return {
-        status: 'failure',
-        errorMessage: error.message,
-      };
-    }
+  async processRefund(): Promise<{
+    success: boolean;
+    refundId?: string;
+    error?: string;
+  }> {
+    throw new CmiProviderNotImplementedError();
   }
 
-  async processRefund(
-    transactionId: string,
-    amount: MoneyInput,
-    idempotencyKey?: string,
-  ): Promise<{ success: boolean; refundId?: string; error?: string }> {
-    try {
-      // TODO: Implement actual CMI API call for refund
-      const response = await this.callCMIAPI('/payments/refund', {
-        transactionId,
-        amount: toMinorUnits(amount),
-        merchantId: this.merchantId,
-        // #497: deterministic key so a retried refund replays one
-        // provider operation instead of creating a second refund.
-        ...(idempotencyKey ? { idempotencyKey } : {}),
-      });
-
-      return {
-        success: response.status === 'SUCCESS',
-        refundId: getResponseString(response, 'refundId') || undefined,
-        error: getResponseString(response, 'errorMessage') || undefined,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-  }
-
-  validateWebhookSignature(payload: string, signature: string): boolean {
-    // TODO: Implement CMI webhook signature validation
-    // Typically involves HMAC-SHA256 signing with the API key
-    const expectedSignature = crypto
-      .createHmac('sha256', this.apiKey)
-      .update(payload)
-      .digest('hex');
-
-    return expectedSignature === signature;
-  }
-
-  private async callCMIAPI(endpoint: string, data: unknown): Promise<CmiApiResponse> {
-    try {
-      const url = `${this.baseUrl}${endpoint}`;
-
-      // Build payload and signature (HMAC-SHA256 of payload using apiKey)
-      const payload = typeof data === 'string' ? data : JSON.stringify(data || {});
-      const signature = this.apiKey
-        ? crypto.createHmac('sha256', this.apiKey).update(payload).digest('hex')
-        : '';
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-
-      if (this.merchantId) headers['X-Merchant-Id'] = this.merchantId;
-      if (this.apiKey) headers['X-Api-Key'] = this.apiKey;
-      if (signature) headers['X-Signature'] = signature;
-
-      this.logger.debug(`Calling CMI ${url}`);
-
-      const res = await this.http.post(endpoint, data, { headers });
-
-      if (!res || !res.data) {
-        throw new Error('Empty response from CMI');
-      }
-
-      const body = res.data as CmiApiResponse;
-
-      return body;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.error('CMI API error', message);
-      throw error;
-    }
-  }
-
-  private buildTravelerReturnUrl(status: 'success' | 'cancelled', bookingId: string, transactionId: string) {
-    const fallbackBaseUrl = process.env.TRAVELER_APP_URL || process.env.FRONTEND_URL || 'http://localhost:3002';
-    const returnBaseUrl = this.callbackUrl || `${fallbackBaseUrl.replace(/\/$/, '')}/checkout/confirmation`;
-    const separator = returnBaseUrl.includes('?') ? '&' : '?';
-    return `${returnBaseUrl}${separator}bookingId=${encodeURIComponent(bookingId)}&provider=CMI&transactionId=${encodeURIComponent(transactionId)}&gatewayStatus=${status}`;
-  }
-
-  private getApiCallbackBaseUrl() {
-    return (this.callbackUrl || process.env.API_URL || 'http://localhost:3000/api/v1').replace(/\/$/, '');
+  validateWebhookSignature(): boolean {
+    throw new CmiProviderNotImplementedError();
   }
 }
