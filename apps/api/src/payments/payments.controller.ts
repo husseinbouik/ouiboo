@@ -15,6 +15,7 @@ import {
 import { PaymentsService } from './payments.service';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
 import { Request } from 'express';
+import { AuthenticatedRequest } from '../auth/authenticated-request';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -36,8 +37,8 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @RateLimit({ points: 12, windowMs: 60_000, keyPrefix: 'payments:initiate' })
   @HttpCode(HttpStatus.CREATED)
-  async initiatePayment(@Req() req: Request & { user?: any }, @Body() dto: InitiatePaymentDto) {
-    return this.paymentsService.initiatePayment(dto, req.user?.userId);
+  async initiatePayment(@Req() req: AuthenticatedRequest, @Body() dto: InitiatePaymentDto) {
+    return this.paymentsService.initiatePayment(dto, req.user.userId);
   }
 
   /**
@@ -47,8 +48,8 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   @RateLimit({ points: 20, windowMs: 60_000, keyPrefix: 'payments:verify' })
   @HttpCode(HttpStatus.OK)
-  async verifyPayment(@Req() req: Request & { user?: any }, @Body() dto: VerifyPaymentDto) {
-    return this.paymentsService.verifyPayment(dto, req.user?.userId);
+  async verifyPayment(@Req() req: AuthenticatedRequest, @Body() dto: VerifyPaymentDto) {
+    return this.paymentsService.verifyPayment(dto, req.user.userId);
   }
 
   /**

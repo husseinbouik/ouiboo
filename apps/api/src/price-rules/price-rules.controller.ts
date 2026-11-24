@@ -8,6 +8,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { SubscriptionGuard } from '../auth/subscription.guard';
 import { PriceRulesService } from './price-rules.service';
 import { CreateSessionPriceRuleDto, SetSessionPriceRuleActiveDto } from './dto/price-rule.dto';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 /**
  * #755: campaign/session pricing. Agency-owned only (TenantGuard +
@@ -25,19 +26,19 @@ export class PriceRulesController {
 
     @Get()
     @ApiOperation({ summary: 'List my agency session price rules (#755)' })
-    list(@Request() req) {
-        return this.priceRulesService.list(req.tenantId);
+    list(@Request() req: AuthenticatedRequest) {
+        return this.priceRulesService.list(req.tenantId!);
     }
 
     @Post()
     @ApiOperation({ summary: 'Create an agency-funded session price rule (#755)' })
-    create(@Request() req, @Body() dto: CreateSessionPriceRuleDto) {
-        return this.priceRulesService.create(req.tenantId, req.user.userId ?? req.user.id, dto);
+    create(@Request() req: AuthenticatedRequest, @Body() dto: CreateSessionPriceRuleDto) {
+        return this.priceRulesService.create(req.tenantId!, req.user.userId ?? req.user.id, dto);
     }
 
     @Patch(':id/active')
     @ApiOperation({ summary: 'Activate or deactivate one of my price rules (#755)' })
-    setActive(@Request() req, @Param('id') id: string, @Body() dto: SetSessionPriceRuleActiveDto) {
-        return this.priceRulesService.setActive(req.tenantId, req.user.userId ?? req.user.id, id, dto.isActive);
+    setActive(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: SetSessionPriceRuleActiveDto) {
+        return this.priceRulesService.setActive(req.tenantId!, req.user.userId ?? req.user.id, id, dto.isActive);
     }
 }

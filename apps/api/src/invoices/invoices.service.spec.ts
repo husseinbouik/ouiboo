@@ -49,7 +49,7 @@ describe('InvoicesService (#359, fiscal rebuild #426)', () => {
     let originalLine: Record<string, unknown> | null = null;
     const updatedInvoices: Array<Record<string, unknown>> = [];
 
-    const db = {
+    const db: Record<string, any> = {
         invoice: {
             findUnique: jest.fn(async () => existingInvoice),
             findFirst: jest.fn(async () => existingInvoice),

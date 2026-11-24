@@ -26,6 +26,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../auth/decorators/public.decorator';
 import { ALL_UPLOAD_MIME_TYPES_REGEX, MAX_REVIEW_VIDEO_SIZE_BYTES, MAX_UPLOAD_SIZE_BYTES, REVIEW_VIDEO_MIME_TYPES, type UploadIntent } from './upload.constants';
 import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-limit.guard';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 @ApiTags('Upload')
 @Controller('upload')
@@ -84,7 +85,7 @@ export class UploadController {
         )
         file: Express.Multer.File,
         @Body() dto: UploadFileDto,
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
     ) {
         // #665: every generic upload is bound to a declared purpose and
         // an entity the caller owns. An omitted intent resolves by role
@@ -171,10 +172,10 @@ export class UploadController {
     @ApiOperation({ summary: 'Get a short-lived signed URL for a private file' })
     @ApiResponse({ status: 200, description: 'Signed URL and expiry' })
     @ApiResponse({ status: 403, description: 'Not the file owner' })
-    async getSignedUrl(@Query() query: SignedUrlQueryDto, @Request() req) {
+    async getSignedUrl(@Query() query: SignedUrlQueryDto, @Request() req: AuthenticatedRequest) {
         return this.uploadService.createSignedFileUrl(query.key, {
             userId: req.user.userId,
-            role: req.user.role,
+            role: req.user.role ?? '',
         });
     }
 

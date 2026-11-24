@@ -8,6 +8,7 @@ import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { InvoicesService } from './invoices.service';
 import { InvoicePdfService } from './invoice-pdf.service';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 @ApiTags('AgencyInvoices')
 @Controller('agency/invoices')
@@ -23,23 +24,23 @@ export class AgencyInvoicesController {
     @Get()
     @ApiOperation({ summary: 'List the agency\'s platform service fee invoices (#359)' })
     list(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Query('page') page?: string,
         @Query('limit') limit?: string,
     ) {
-        return this.invoicesService.listAgencyInvoices(req.tenantId, page, limit);
+        return this.invoicesService.listAgencyInvoices(req.tenantId!, page, limit);
     }
 
     @Get(':id')
     @ApiOperation({ summary: 'Get one of the agency\'s platform service fee invoices with line items (#359)' })
-    get(@Request() req, @Param('id') id: string) {
-        return this.invoicesService.getAgencyInvoice(req.tenantId, id);
+    get(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        return this.invoicesService.getAgencyInvoice(req.tenantId!, id);
     }
 
     @Get(':id/pdf')
     @ApiOperation({ summary: 'Download the invoice PDF (#359)' })
-    async pdf(@Request() req, @Param('id') id: string, @Res() res: Response) {
-        const invoice = await this.invoicesService.getAgencyInvoice(req.tenantId, id);
+    async pdf(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Res() res: Response) {
+        const invoice = await this.invoicesService.getAgencyInvoice(req.tenantId!, id);
         const buffer = await this.invoicePdfService.render(invoice);
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="${invoice.number}.pdf"`);

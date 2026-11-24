@@ -2,10 +2,10 @@ import { Injectable, BadRequestException, Logger, Optional, ServiceUnavailableEx
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { PushNotificationsService } from '../notifications/push-notifications.service';
-import { PaymentProviderFactory } from './providers/payment-provider.factory';
+import { PaymentProviderFactory, PaymentProviderType } from './providers/payment-provider.factory';
 import { InitiatePaymentDto, VerifyPaymentDto, ProcessRefundDto } from './dto/payment.dto';
 import { PaymentVerificationResult } from './interfaces/payment-provider.interface';
-import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus, PaymentCustodian, PaymentLedgerEntryType, PaymentLedgerSource } from '@ouiboo/database';
+import { PaymentMethod, BookingStatus, BookingPaymentStatus, RefundStatus, PaymentCustodian, PaymentLedgerEntryType, PaymentLedgerSource, Prisma } from '@ouiboo/database';
 import { MoneyInput, decimalEqualsMoney, multiplyMoney, toMoneyDecimal, toMoneyString } from '../common/money.util';
 import { ExternalPaymentsService } from '../external-payments/external-payments.service';
 import { GATEWAY_ENABLEMENT_KEY } from './gateway-enablement.service';
@@ -63,7 +63,7 @@ export class PaymentsService {
 
     // Get payment provider
     const provider = this.paymentProviderFactory.getProvider(
-      dto.provider as any,
+      dto.provider as PaymentProviderType,
     );
 
     // Initiate payment using validated expectedAmount (not client-provided dto.amount)
@@ -161,7 +161,7 @@ export class PaymentsService {
       return {
         status: 'success' as const,
         transactionId: dto.transactionId,
-        metadata: (localTransaction.providerData as Record<string, any>) ?? undefined,
+        metadata: (localTransaction.providerData as Record<string, unknown>) ?? undefined,
       };
     }
 
@@ -176,7 +176,7 @@ export class PaymentsService {
     }
 
     const provider = this.paymentProviderFactory.getProvider(
-      dto.provider as any,
+      dto.provider as PaymentProviderType,
     );
 
     const result = await provider.verifyPayment(
@@ -285,11 +285,11 @@ export class PaymentsService {
     // #497: prove the caller-supplied reference IS the booking's successful
     // payment, from the local ledger — not merely a plausible identifier.
     const transactions =
-      (booking as any).paymentTransactions ??
+      booking.paymentTransactions ??
       (await this.prisma.paymentTransaction.findMany({
         where: { bookingId: dto.bookingId },
       }));
-    const successfulMatches = (transactions as any[]).filter(
+    const successfulMatches = transactions.filter(
       (transaction) =>
         transaction.status === 'SUCCESS' &&
         transaction.transactionId === dto.transactionId &&
@@ -348,7 +348,7 @@ export class PaymentsService {
     }
 
     const provider = this.paymentProviderFactory.getProvider(
-      dto.provider as any,
+      dto.provider as PaymentProviderType,
     );
 
     // Deterministic: the same (booking, transaction, cumulative total)
@@ -358,7 +358,7 @@ export class PaymentsService {
     let refundResult: { success: boolean; refundId?: string; error?: string };
     try {
       refundResult = await provider.processRefund(
-        transaction.transactionId,
+        dto.transactionId,
         requestedAmount,
         idempotencyKey,
       );
@@ -554,8 +554,9 @@ export class PaymentsService {
    * a booking on an unmatched payment. Log lines on this path carry
    * no payment identifiers or payload data.
    */
-  private providerIdAliases(record: any): string[] {
+  private providerIdAliases(record: unknown): string[] {
     if (!record || typeof record !== 'object') return [];
+    const fields = record as Record<string, unknown>;
     const keys = [
       'id',
       'transactionId',
@@ -570,16 +571,16 @@ export class PaymentsService {
     ];
     const ids: string[] = [];
     for (const key of keys) {
-      const value = record[key];
+      const value = fields[key];
       if (typeof value === 'string' && value) ids.push(value);
     }
-    if (record.metadata && typeof record.metadata === 'object') {
-      ids.push(...this.providerIdAliases(record.metadata));
+    if (fields.metadata && typeof fields.metadata === 'object') {
+      ids.push(...this.providerIdAliases(fields.metadata));
     }
     return ids;
   }
 
-  private webhookCandidateIds(event: any): string[] {
+  private webhookCandidateIds(event: unknown): string[] {
     return [...new Set(this.providerIdAliases(event))];
   }
 
@@ -594,7 +595,7 @@ export class PaymentsService {
       where: { bookingId },
     });
 
-    const matches = (rows ?? []).filter((transaction: any) => {
+    const matches = (rows ?? []).filter((transaction) => {
       if (
         transaction.provider &&
         transaction.provider.toUpperCase() !== provider.toUpperCase()
@@ -602,7 +603,7 @@ export class PaymentsService {
         return false;
       }
       const aliases = new Set<string>([
-        transaction.transactionId,
+        ...(transaction.transactionId ? [transaction.transactionId] : []),
         ...this.providerIdAliases(transaction.providerData),
         ...this.providerIdAliases(transaction.metadata),
       ]);
@@ -634,7 +635,7 @@ export class PaymentsService {
     bookingId: string,
     provider: string,
     candidateIds: string[],
-    providerData: any,
+    providerData: Prisma.InputJsonValue | undefined,
   ) {
     const transaction = await this.resolveWebhookTransaction(
       bookingId,
@@ -679,7 +680,7 @@ export class PaymentsService {
         where: { bookingId },
       });
       const current = (rows ?? []).find(
-        (row: any) => row.id === transaction.id,
+        (row) => row.id === transaction.id,
       );
       if (current?.status === 'SUCCESS') {
         return current;
@@ -698,14 +699,18 @@ export class PaymentsService {
   private providerAssertedBookingId(
     result: PaymentVerificationResult,
   ): string | undefined {
-    const metadata: any = result.metadata ?? {};
-    return (
+    const metadata: Record<string, unknown> = result.metadata ?? {};
+    const nestedMetadata: Record<string, unknown> =
+      typeof metadata.metadata === 'object' && metadata.metadata !== null
+        ? (metadata.metadata as Record<string, unknown>)
+        : {};
+    const candidate =
       result.bookingId ??
       metadata.bookingId ??
       metadata.orderId ??
-      metadata.metadata?.bookingId ??
-      undefined
-    );
+      nestedMetadata.bookingId ??
+      undefined;
+    return typeof candidate === 'string' ? candidate : undefined;
   }
 
   /**
@@ -717,8 +722,12 @@ export class PaymentsService {
     localTransaction: { amount: MoneyInput },
     booking: { currency?: string | null },
   ) {
-    const metadata: any = result.metadata ?? {};
-    const reportedAmount = result.amount ?? metadata.amount ?? undefined;
+    const metadata: Record<string, unknown> = result.metadata ?? {};
+    const metadataAmount =
+      typeof metadata.amount === 'number' || typeof metadata.amount === 'string'
+        ? metadata.amount
+        : undefined;
+    const reportedAmount = result.amount ?? metadataAmount ?? undefined;
 
     if (reportedAmount !== undefined && reportedAmount !== null) {
       if (!decimalEqualsMoney(reportedAmount, localTransaction.amount)) {
@@ -764,7 +773,7 @@ export class PaymentsService {
     this.logger.log(`Processing webhook from ${provider}`);
 
     const paymentProvider = this.paymentProviderFactory.getProvider(
-      provider as any,
+      provider as PaymentProviderType,
     );
 
     // Validate webhook signature
@@ -796,8 +805,9 @@ export class PaymentsService {
       this.logger.log(`Webhook processed successfully from ${provider}`);
       return { received: true, processed: true };
     } catch (error) {
-      this.logger.error(`Error processing webhook from ${provider}: ${error.message}`);
-      throw new BadRequestException(`Webhook processing failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error processing webhook from ${provider}: ${message}`);
+      throw new BadRequestException(`Webhook processing failed: ${message}`);
     }
   }
 
@@ -1215,7 +1225,7 @@ export class PaymentsService {
       travelerId: string;
     },
     provider: string,
-    providerData: any,
+    providerData: Prisma.InputJsonValue | undefined,
     transactionId: string | undefined,
     reason: string,
   ) {
@@ -1360,7 +1370,7 @@ export class PaymentsService {
       );
       this.logger.log(`Payment confirmation email sent to ${booking.traveler.email}`);
     } catch (error) {
-      this.logger.error(`Failed to send payment confirmation email: ${error.message}`);
+      this.logger.error(`Failed to send payment confirmation email: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     // Update notification log

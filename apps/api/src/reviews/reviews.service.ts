@@ -360,7 +360,7 @@ export class ReviewsService {
    * Get review statistics for a trip
    */
   async getReviewStats(tripId: string) {
-    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     const where = { tripTemplateId: tripId, status: 'VISIBLE' as const };
     const [aggregate, groupedRatings] = await Promise.all([
       this.prisma.review.aggregate({

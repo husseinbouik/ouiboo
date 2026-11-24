@@ -29,7 +29,12 @@ export class WishlistService {
 
       return wishlist;
     } catch (error) {
-      if (error.code === 'P2002') {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error as { code?: unknown }).code === 'P2002'
+      ) {
         throw new BadRequestException('Trip already in wishlist');
       }
       throw error;

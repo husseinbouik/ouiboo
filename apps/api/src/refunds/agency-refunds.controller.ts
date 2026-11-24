@@ -15,6 +15,7 @@ import {
     InitiateRefundDto,
     RejectRefundDto,
 } from './dto/refund-actions.dto';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 @ApiTags('AgencyRefunds')
 @Controller('agency/refunds')
@@ -24,31 +25,31 @@ import {
 export class AgencyRefundsController {
     constructor(private readonly refundsService: RefundsService) { }
 
-    private actor(req): { id: string; email?: string | null } {
+    private actor(req: AuthenticatedRequest): { id: string; email?: string | null } {
         return { id: req.user.userId, email: req.user.email ?? null };
     }
 
     @Get()
     @ApiOperation({ summary: 'List the agency\'s refund cases (#370)' })
     list(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Query('page') page?: string,
         @Query('limit') limit?: string,
         @Query('status') status?: string,
     ) {
-        return this.refundsService.listAgencyCases(req.tenantId, { page, limit, status });
+        return this.refundsService.listAgencyCases(req.tenantId!, { page, limit, status });
     }
 
     @Get('action-required-count')
     @ApiOperation({ summary: 'Count of refund cases waiting on the agency (#370)' })
-    actionRequiredCount(@Request() req) {
-        return this.refundsService.countAgencyActionRequired(req.tenantId);
+    actionRequiredCount(@Request() req: AuthenticatedRequest) {
+        return this.refundsService.countAgencyActionRequired(req.tenantId!);
     }
 
     @Get(':id')
     @ApiOperation({ summary: 'Get one of the agency\'s refund cases (#370)' })
-    get(@Request() req, @Param('id') id: string) {
-        return this.refundsService.getCaseForActor(id, 'AGENCY', req.tenantId);
+    get(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        return this.refundsService.getCaseForActor(id, 'AGENCY', req.tenantId!);
     }
 
     @Post()
@@ -57,32 +58,32 @@ export class AgencyRefundsController {
         description:
             'Used when the agency cancels a paid booking. The case starts in AGENCY_ACTION_REQUIRED with the refund SLA clock running.',
     })
-    create(@Request() req, @Body() dto: CreateRefundCaseDto) {
-        return this.refundsService.createCase(this.actor(req), 'AGENCY', req.tenantId, dto);
+    create(@Request() req: AuthenticatedRequest, @Body() dto: CreateRefundCaseDto) {
+        return this.refundsService.createCase(this.actor(req), 'AGENCY', req.tenantId!, dto);
     }
 
     @Post(':id/review')
     @ApiOperation({ summary: 'Begin eligibility review of a refund case (#370)' })
-    review(@Request() req, @Param('id') id: string) {
-        return this.refundsService.beginReview(this.actor(req), 'AGENCY', req.tenantId, id);
+    review(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        return this.refundsService.beginReview(this.actor(req), 'AGENCY', req.tenantId!, id);
     }
 
     @Post(':id/approve')
     @ApiOperation({ summary: 'Approve a refund case (#370)' })
-    approve(@Request() req, @Param('id') id: string, @Body() dto: ApproveRefundDto) {
-        return this.refundsService.approve(this.actor(req), 'AGENCY', req.tenantId, id, dto);
+    approve(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: ApproveRefundDto) {
+        return this.refundsService.approve(this.actor(req), 'AGENCY', req.tenantId!, id, dto);
     }
 
     @Post(':id/reject')
     @ApiOperation({ summary: 'Reject a refund case with a reason (#370)' })
-    reject(@Request() req, @Param('id') id: string, @Body() dto: RejectRefundDto) {
-        return this.refundsService.reject(this.actor(req), 'AGENCY', req.tenantId, id, dto);
+    reject(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: RejectRefundDto) {
+        return this.refundsService.reject(this.actor(req), 'AGENCY', req.tenantId!, id, dto);
     }
 
     @Post(':id/initiate')
     @ApiOperation({ summary: 'Mark a refund as initiated with the payment provider / bank (#370)' })
-    initiate(@Request() req, @Param('id') id: string, @Body() dto: InitiateRefundDto) {
-        return this.refundsService.initiate(this.actor(req), 'AGENCY', req.tenantId, id, dto);
+    initiate(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: InitiateRefundDto) {
+        return this.refundsService.initiate(this.actor(req), 'AGENCY', req.tenantId!, id, dto);
     }
 
     @Post(':id/evidence')
@@ -91,19 +92,19 @@ export class AgencyRefundsController {
         description:
             'Tier 2/3 submission (one shape): the bank reference and the retained confirmation document (private upload key) are both mandatory. The case can only be completed once qualifying evidence is attached.',
     })
-    addEvidence(@Request() req, @Param('id') id: string, @Body() dto: AddRefundEvidenceDto) {
-        return this.refundsService.addEvidence(this.actor(req), 'AGENCY', req.tenantId, id, dto);
+    addEvidence(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: AddRefundEvidenceDto) {
+        return this.refundsService.addEvidence(this.actor(req), 'AGENCY', req.tenantId!, id, dto);
     }
 
     @Post(':id/complete')
     @ApiOperation({ summary: 'Complete a refund case — requires qualifying completion evidence (#370, #416)' })
-    complete(@Request() req, @Param('id') id: string, @Body() dto: CompleteRefundDto) {
-        return this.refundsService.complete(this.actor(req), 'AGENCY', req.tenantId, id, dto);
+    complete(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: CompleteRefundDto) {
+        return this.refundsService.complete(this.actor(req), 'AGENCY', req.tenantId!, id, dto);
     }
 
     @Post(':id/fail')
     @ApiOperation({ summary: 'Report a refund attempt as failed (#370)' })
-    fail(@Request() req, @Param('id') id: string, @Body() dto: FailRefundDto) {
-        return this.refundsService.fail(this.actor(req), 'AGENCY', req.tenantId, id, dto);
+    fail(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: FailRefundDto) {
+        return this.refundsService.fail(this.actor(req), 'AGENCY', req.tenantId!, id, dto);
     }
 }

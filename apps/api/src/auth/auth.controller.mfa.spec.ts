@@ -26,7 +26,9 @@ describe('AuthController #418 endpoints', () => {
     const controller = new AuthController(service as never);
     const mockRes = () => ({ cookie: jest.fn(), clearCookie: jest.fn() }) as any;
     const adminReq = (viaChallenge = false) =>
-        ({ user: { id: 'admin-1' }, mfaEnrollmentViaChallenge: viaChallenge }) as any;
+        // Mirrors the guard-populated request user: JwtStrategy and
+        // MfaEnrollmentGuard both set `id` and `userId` to the same value.
+        ({ user: { id: 'admin-1', userId: 'admin-1' }, mfaEnrollmentViaChallenge: viaChallenge }) as any;
 
     beforeEach(() => jest.clearAllMocks());
 
