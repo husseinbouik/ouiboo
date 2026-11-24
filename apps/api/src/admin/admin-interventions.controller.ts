@@ -10,6 +10,7 @@ import {
     InterventionReasonDto,
     RepairBookingDto,
 } from './dto/admin-interventions.dto';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 /**
  * #423 — admin stuck-state interventions (Council P0-21). Every action
@@ -25,7 +26,7 @@ import {
 export class AdminInterventionsController {
     constructor(private readonly interventionsService: AdminInterventionsService) { }
 
-    private actor(req): { id: string; email?: string | null } {
+    private actor(req: AuthenticatedRequest): { id: string; email?: string | null } {
         return { id: req.user.userId, email: req.user.email ?? null };
     }
 
@@ -42,7 +43,7 @@ export class AdminInterventionsController {
     @Post('sessions/:sessionId/force-confirm-group')
     @ApiOperation({ summary: 'Force-confirm a pending-minimum group, ignoring the minimum and the deadline (#423)' })
     forceConfirmGroup(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('sessionId') sessionId: string,
         @Body() dto: InterventionReasonDto,
     ) {
@@ -52,7 +53,7 @@ export class AdminInterventionsController {
     @Post('sessions/:sessionId/close-group')
     @ApiOperation({ summary: 'Close a pending-minimum group as not confirmed; deposits become refund-due cases immediately (#423)' })
     closeGroup(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('sessionId') sessionId: string,
         @Body() dto: InterventionReasonDto,
     ) {
@@ -62,7 +63,7 @@ export class AdminInterventionsController {
     @Post('sessions/:sessionId/extend-deadline')
     @ApiOperation({ summary: 'Extend a pending group confirmation deadline (session and plan snapshots) (#423)' })
     extendDeadline(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('sessionId') sessionId: string,
         @Body() dto: ExtendDeadlineDto,
     ) {
@@ -77,7 +78,7 @@ export class AdminInterventionsController {
     @Post('bookings/:bookingId/repair')
     @ApiOperation({ summary: 'Run a named repair on a stuck booking: resync-payment-state, requeue-proof-review, or open-refund-case (#423)' })
     repairBooking(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('bookingId') bookingId: string,
         @Body() dto: RepairBookingDto,
     ) {

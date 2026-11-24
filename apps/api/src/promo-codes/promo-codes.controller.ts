@@ -8,6 +8,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { SubscriptionGuard } from '../auth/subscription.guard';
 import { PromoCodesService } from './promo-codes.service';
 import { CreatePromoCodeDto, SetPromoCodeActiveDto } from './dto/promo-code.dto';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 /**
  * #778 (Council S6 Phase 3): agency-funded promo codes. Agency-owned
@@ -25,19 +26,19 @@ export class PromoCodesController {
 
     @Get()
     @ApiOperation({ summary: 'List my agency promo codes (#778)' })
-    list(@Request() req) {
-        return this.promoCodesService.list(req.tenantId);
+    list(@Request() req: AuthenticatedRequest) {
+        return this.promoCodesService.list(req.tenantId!);
     }
 
     @Post()
     @ApiOperation({ summary: 'Create an agency-funded promo code (#778)' })
-    create(@Request() req, @Body() dto: CreatePromoCodeDto) {
-        return this.promoCodesService.create(req.tenantId, dto);
+    create(@Request() req: AuthenticatedRequest, @Body() dto: CreatePromoCodeDto) {
+        return this.promoCodesService.create(req.tenantId!, dto);
     }
 
     @Patch(':id/active')
     @ApiOperation({ summary: 'Activate or deactivate one of my promo codes (#778)' })
-    setActive(@Request() req, @Param('id') id: string, @Body() dto: SetPromoCodeActiveDto) {
-        return this.promoCodesService.setActive(req.tenantId, id, dto.isActive);
+    setActive(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: SetPromoCodeActiveDto) {
+        return this.promoCodesService.setActive(req.tenantId!, id, dto.isActive);
     }
 }

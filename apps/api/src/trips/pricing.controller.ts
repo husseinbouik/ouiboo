@@ -8,6 +8,7 @@ import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 import { SubscriptionGuard } from '../auth/subscription.guard';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 /**
  * #695 (Council S6): agency-priced variants + paid add-ons on a trip.
@@ -25,43 +26,43 @@ export class TripPricingController {
 
     @Get(':id/pricing')
     @ApiOperation({ summary: 'List a trip\'s pricing variants and add-ons (agency view, incl. inactive)' })
-    list(@Request() req, @Param('id') id: string) {
-        return this.tripsService.listTripPricing(req.tenantId, id);
+    list(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        return this.tripsService.listTripPricing(req.tenantId!, id);
     }
 
     @Post(':id/variants')
     @ApiOperation({ summary: 'Create a pricing variant (option tier) on a trip' })
-    createVariant(@Request() req, @Param('id') id: string, @Body() dto: UpsertPricingVariantDto) {
-        return this.tripsService.createPricingVariant(req.tenantId, id, dto);
+    createVariant(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: UpsertPricingVariantDto) {
+        return this.tripsService.createPricingVariant(req.tenantId!, id, dto);
     }
 
     @Patch(':id/variants/:variantId')
     @ApiOperation({ summary: 'Update a pricing variant on a trip' })
-    updateVariant(@Request() req, @Param('id') id: string, @Param('variantId') variantId: string, @Body() dto: UpsertPricingVariantDto) {
-        return this.tripsService.updatePricingVariant(req.tenantId, id, variantId, dto);
+    updateVariant(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Param('variantId') variantId: string, @Body() dto: UpsertPricingVariantDto) {
+        return this.tripsService.updatePricingVariant(req.tenantId!, id, variantId, dto);
     }
 
     @Delete(':id/variants/:variantId')
     @ApiOperation({ summary: 'Delete a pricing variant from a trip' })
-    deleteVariant(@Request() req, @Param('id') id: string, @Param('variantId') variantId: string) {
-        return this.tripsService.deletePricingVariant(req.tenantId, id, variantId);
+    deleteVariant(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Param('variantId') variantId: string) {
+        return this.tripsService.deletePricingVariant(req.tenantId!, id, variantId);
     }
 
     @Post(':id/add-ons')
     @ApiOperation({ summary: 'Create a paid add-on on a trip' })
-    createAddOn(@Request() req, @Param('id') id: string, @Body() dto: UpsertAddOnDto) {
-        return this.tripsService.createAddOn(req.tenantId, id, dto);
+    createAddOn(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: UpsertAddOnDto) {
+        return this.tripsService.createAddOn(req.tenantId!, id, dto);
     }
 
     @Patch(':id/add-ons/:addOnId')
     @ApiOperation({ summary: 'Update a paid add-on on a trip' })
-    updateAddOn(@Request() req, @Param('id') id: string, @Param('addOnId') addOnId: string, @Body() dto: UpsertAddOnDto) {
-        return this.tripsService.updateAddOn(req.tenantId, id, addOnId, dto);
+    updateAddOn(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Param('addOnId') addOnId: string, @Body() dto: UpsertAddOnDto) {
+        return this.tripsService.updateAddOn(req.tenantId!, id, addOnId, dto);
     }
 
     @Delete(':id/add-ons/:addOnId')
     @ApiOperation({ summary: 'Delete a paid add-on from a trip' })
-    deleteAddOn(@Request() req, @Param('id') id: string, @Param('addOnId') addOnId: string) {
-        return this.tripsService.deleteAddOn(req.tenantId, id, addOnId);
+    deleteAddOn(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Param('addOnId') addOnId: string) {
+        return this.tripsService.deleteAddOn(req.tenantId!, id, addOnId);
     }
 }

@@ -24,7 +24,7 @@ describe('E2E: booking + payment approval flow', () => {
         uploadPaymentProof: jest.fn(),
     };
 
-    const dbMock = {
+    const dbMock: Record<string, any> = {
         paymentProof: {
             findUnique: jest.fn(),
             update: jest.fn(),

@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GatewayEnablementService } from './gateway-enablement.service';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 class SetGatewayEnablementDto {
     @IsBoolean()
@@ -38,7 +39,7 @@ export class GatewayEnablementController {
 
     @Post()
     @ApiOperation({ summary: 'Set the gateway.enablement platform setting (admin + MFA step-up, audit-logged) (#635)' })
-    setEnabled(@Request() req, @Body() dto: SetGatewayEnablementDto) {
+    setEnabled(@Request() req: AuthenticatedRequest, @Body() dto: SetGatewayEnablementDto) {
         return this.enablement.setEnabled(
             { id: req.user.userId, email: req.user.email ?? null },
             dto.enabled,

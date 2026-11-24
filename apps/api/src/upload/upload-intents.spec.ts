@@ -1,4 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
+import { UserRole } from '@ouiboo/types';
 import { UploadController } from './upload.controller';
 
 /**
@@ -24,7 +25,7 @@ describe('UploadController intents (#665)', () => {
   it('rejects a traveller declaring the public trip-asset purpose through the generic endpoint', async () => {
     const { controller, calls } = makeController();
     await expect(
-      controller.uploadFile(file, { intent: 'trip-asset' } as any, { user: { userId: 'traveler-1', role: 'TRAVELER' } }),
+      controller.uploadFile(file, { intent: 'trip-asset' } as any, { user: { userId: 'traveler-1', role: UserRole.Traveler } }),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(calls).toHaveLength(0);
   });
@@ -32,7 +33,7 @@ describe('UploadController intents (#665)', () => {
   it('binds an omitted intent for a traveller to their own avatar folder — the default is not a loophole', async () => {
     const { controller, calls } = makeController();
     await controller.uploadFile(file, { intent: undefined } as any, {
-      user: { userId: 'traveler-1', role: 'TRAVELER' },
+      user: { userId: 'traveler-1', role: UserRole.Traveler },
     });
     expect(calls).toEqual([{ folder: 'avatars/traveler-1' }]);
   });
@@ -40,7 +41,7 @@ describe('UploadController intents (#665)', () => {
   it('binds an explicit avatar intent to the caller profile for any role', async () => {
     const { controller, calls } = makeController();
     await controller.uploadFile(file, { intent: 'avatar' } as any, {
-      user: { userId: 'agency-user-1', role: 'AGENCY', agencyId: 'agency-1' },
+      user: { userId: 'agency-user-1', role: UserRole.Agency, agencyId: 'agency-1' },
     });
     expect(calls).toEqual([{ folder: 'avatars/agency-user-1' }]);
   });
@@ -48,7 +49,7 @@ describe('UploadController intents (#665)', () => {
   it('stores a payment proof privately under the caller segment (signed-URL ownership keeps working)', async () => {
     const { controller, calls } = makeController();
     await controller.uploadFile(file, { intent: 'payment-proof' } as any, {
-      user: { userId: 'traveler-1', role: 'TRAVELER' },
+      user: { userId: 'traveler-1', role: UserRole.Traveler },
     });
     expect(calls).toEqual([{ folder: 'private/traveler-1/payment-proofs' }]);
   });
@@ -56,7 +57,7 @@ describe('UploadController intents (#665)', () => {
   it('stores a review photo privately under the caller review-photos segment (#776)', async () => {
     const { controller, calls } = makeController();
     await controller.uploadFile(file, { intent: 'review-photo' } as any, {
-      user: { userId: 'traveler-1', role: 'TRAVELER' },
+      user: { userId: 'traveler-1', role: UserRole.Traveler },
     });
     expect(calls).toEqual([{ folder: 'private/traveler-1/review-photos' }]);
   });
@@ -64,10 +65,10 @@ describe('UploadController intents (#665)', () => {
   it('keeps identity documents private and trip assets agency-scoped', async () => {
     const { controller, calls } = makeController();
     await controller.uploadFile(file, { intent: 'identity-document' } as any, {
-      user: { userId: 'agency-user-1', role: 'AGENCY', agencyId: 'agency-1' },
+      user: { userId: 'agency-user-1', role: UserRole.Agency, agencyId: 'agency-1' },
     });
     await controller.uploadFile(file, { intent: 'trip-asset' } as any, {
-      user: { userId: 'agency-user-1', role: 'AGENCY', agencyId: 'agency-1' },
+      user: { userId: 'agency-user-1', role: UserRole.Agency, agencyId: 'agency-1' },
     });
     expect(calls).toEqual([{ folder: 'private/agency-user-1' }, { folder: 'trips/agency-1' }]);
   });
