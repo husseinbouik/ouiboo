@@ -5,7 +5,18 @@ import ar from '../../public/locales/ar/translation.json';
 
 type Dictionary = Record<string, unknown>;
 
-const DICTIONARIES: Record<SupportedLanguage, Dictionary> = { en, fr, ar };
+/**
+ * F1: the full per-language dictionaries, statically imported on the
+ * server. The root layout hands the ACTIVE language's dictionary to
+ * <Providers> so the client i18n instance initialises synchronously
+ * with embedded resources (see lib/i18n.ts) instead of gating the
+ * whole page on an HTTP fetch of the locale file.
+ */
+export const DICTIONARIES: Record<SupportedLanguage, Dictionary> = { en, fr, ar };
+
+export function getDictionary(language: SupportedLanguage): Dictionary {
+  return DICTIONARIES[language] ?? DICTIONARIES.en;
+}
 
 function lookup(dictionary: Dictionary, key: string): string | undefined {
   const value = key.split('.').reduce<unknown>((acc, part) => {

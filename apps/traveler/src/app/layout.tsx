@@ -67,7 +67,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 import { getInitialLanguage, languageInitScript, type SupportedLanguage } from '@ouiboo/i18n/server';
-import { SkipLink } from '@/components/SkipLink';
+import { getDictionary } from '@/lib/server-translations';
 import { WebVitals } from '@/components/WebVitals';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 
@@ -86,9 +86,18 @@ export default async function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: languageInitScript }}
         />
-        <SkipLink />
         <ServiceWorkerRegister />
-        <Providers>
+        {/* F1: hand Providers the server-resolved language AND its
+            dictionary (statically imported in lib/server-translations)
+            so the client i18n instance initialises synchronously with
+            embedded resources and SSR ships real, translated page
+            content — no mount gate, no locale HTTP fetch on first
+            paint. SkipLink now renders inside <Providers> (first
+            focusable element, inside the I18nextProvider). */}
+        <Providers
+          initialLanguage={initialLanguage}
+          initialResources={getDictionary(initialLanguage)}
+        >
           <Navbar />
           <main id="main-content" className="min-h-screen" tabIndex={-1}>
             {children}
