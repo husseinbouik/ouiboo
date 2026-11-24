@@ -239,7 +239,7 @@ export default function ProfilePage() {
                 <Button
                   type="submit"
                   disabled={updateProfileMutation.isPending || !isDirty}
-                  className="h-14 px-8 bg-sunset-orange hover:bg-orange-600 text-white font-black rounded-2xl border-none active:scale-95 transition-all text-sm uppercase tracking-widest"
+                  className="h-14 px-8 bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white font-black rounded-2xl border-none active:scale-95 transition-all text-sm uppercase tracking-widest"
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {updateProfileMutation.isPending ? t('profilePage.saving') : t('profilePage.save')}

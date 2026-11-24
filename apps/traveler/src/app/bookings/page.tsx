@@ -464,7 +464,7 @@ export default function MyBookingsPage() {
                                                             {booking.status === BookingStatus.Confirmed && (
                                                                 <label className="cursor-pointer inline-block">
                                                                     <input type="file" className="sr-only" onChange={(e) => handleFileUpload(e, booking.id)} disabled={!!uploadingId} />
-                                                                    <Button disabled={!!uploadingId} className="h-11 px-6 bg-sunset-orange hover:bg-orange-600 border-none rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-orange-900/10 active:scale-95 transition-all">
+                                                                    <Button disabled={!!uploadingId} className="h-11 px-6 bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white border-none rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-orange-900/10 active:scale-95 transition-all">
                                                                         {uploadingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> {t('paymentPlan.uploadBalanceReceipt')}</>}
                                                                     </Button>
                                                                 </label>
@@ -559,7 +559,7 @@ export default function MyBookingsPage() {
                                                     {shouldShowUploadAction(booking.status, hasPaymentProof, booking.paymentPlan?.status) && (
                                                         <label className="cursor-pointer">
                                                             <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, booking.id)} disabled={!!uploadingId} />
-                                                            <Button disabled={!!uploadingId} className="h-12 px-8 bg-sunset-orange hover:bg-orange-600 border-none rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-orange-900/10 active:scale-95 transition-all">
+                                                            <Button disabled={!!uploadingId} className="h-12 px-8 bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white border-none rounded-xl text-xs font-black uppercase tracking-widest shadow-xl shadow-orange-900/10 active:scale-95 transition-all">
                                                                 {uploadingId === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> {t('bookingDetail.uploadReceipt')}</>}
                                                             </Button>
                                                         </label>

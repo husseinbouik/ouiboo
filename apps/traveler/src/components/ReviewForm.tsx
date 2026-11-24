@@ -408,7 +408,7 @@ export function ReviewForm({ bookingId, onSuccess }: ReviewFormProps) {
           <Button
             type="submit"
             disabled={submitReviewMutation.isPending}
-            className="h-12 px-8 bg-sunset-orange hover:bg-orange-600 border-none rounded-xl text-sm font-bold uppercase tracking-widest shadow-xl shadow-orange-900/10 disabled:opacity-70"
+            className="h-12 px-8 bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white border-none rounded-xl text-sm font-bold uppercase tracking-widest shadow-xl shadow-orange-900/10 disabled:opacity-70"
           >
             {submitReviewMutation.isPending ? (
               <>

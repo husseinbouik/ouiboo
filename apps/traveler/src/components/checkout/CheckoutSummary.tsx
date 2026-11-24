@@ -3,7 +3,7 @@
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import Image from 'next/image';
-import { Card, CardContent, Button } from '@ouiboo/ui';
+import { Card, CardContent, Button, MissingRequirementsHint } from '@ouiboo/ui';
 import { MapPin, Calendar, Users, Banknote, CheckCircle2 } from 'lucide-react';
 import { formatCurrency, normalizeCurrency } from '@ouiboo/utils';
 import type { CheckoutTrip } from './checkout-types';
@@ -23,6 +23,10 @@ type CheckoutSummaryProps = {
   errorMessage: string | null;
   isSubmitting: boolean;
   canSubmit: boolean;
+  /** Design Council Phase 1: unmet requirements shown next to the
+   * disabled submit (shared MissingRequirementsHint) instead of a
+   * silent dead end. Empty/undefined = nothing missing. */
+  missingRequirements?: string[];
   onSubmit: () => void;
   /** #369: staged amounts when the session is a minimum-group trip. */
   stagedAmounts?: { depositDue: number; balanceDue: number; total: number } | null;
@@ -44,6 +48,7 @@ export function CheckoutSummary({
   errorMessage,
   isSubmitting,
   canSubmit,
+  missingRequirements,
   onSubmit,
   stagedAmounts,
   promoInfo,
@@ -194,8 +199,17 @@ export function CheckoutSummary({
         </div>
       )}
 
+      {!canSubmit && !isSubmitting ? (
+        <MissingRequirementsHint
+          id="checkout-missing-requirements"
+          title={t('checkout.missingTitle')}
+          missing={missingRequirements ?? []}
+        />
+      ) : null}
+
       <Button
         disabled={!canSubmit || isSubmitting}
+        aria-describedby={!canSubmit ? 'checkout-missing-requirements' : undefined}
         onClick={onSubmit}
         className="w-full h-20 rounded-3xl text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 border-none group px-10"
       >

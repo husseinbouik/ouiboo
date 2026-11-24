@@ -15,7 +15,7 @@ const buttonVariants = cva(
         ghost: "bg-transparent hover:bg-muted hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         orange: "bg-sunset-orange-dark text-white hover:bg-[#b03d11] shadow-md shadow-orange-900/10",
-        ocean: "bg-ocean-500 text-white hover:bg-ocean-700 shadow-md shadow-cyan-900/10",
+        ocean: "bg-ocean-500 text-deep-blue hover:bg-ocean-400 shadow-md shadow-teal-900/10",
       },
       size: {
         default: "h-11 px-5",

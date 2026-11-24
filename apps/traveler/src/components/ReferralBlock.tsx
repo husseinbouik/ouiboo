@@ -77,7 +77,7 @@ export function ReferralBlock() {
           <button
             type="button"
             onClick={() => void handleCopy()}
-            className="inline-flex h-12 items-center gap-2 rounded-2xl bg-sunset-orange px-5 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-orange-600 active:scale-95"
+            className="inline-flex h-12 items-center gap-2 rounded-2xl bg-sunset-orange px-5 text-sm font-black uppercase tracking-widest text-deep-blue transition-all hover:bg-sunset-orange-dark hover:text-white active:scale-95"
           >
             {copied ? <Check className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
             {copied ? t('share.copied') : t('share.copyLink')}

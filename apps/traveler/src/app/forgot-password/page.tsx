@@ -113,7 +113,7 @@ export default function TravelerForgotPasswordPage() {
                   {errors.email && <span className="text-danger text-sm">{errors.email.message}</span>}
                 </div>
 
-                <Button type="submit" disabled={isSubmitting} className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors duration-200">
+                <Button type="submit" disabled={isSubmitting} className="w-full h-12 bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white font-semibold rounded-lg transition-colors duration-200">
                   {isSubmitting ? 'Sending...' : t('forgotPassword.sendReset')}
                 </Button>
                 {errorMessage && (
@@ -127,7 +127,7 @@ export default function TravelerForgotPasswordPage() {
               <h2 className="mt-4 text-2xl font-bold text-foreground">{t('forgotPassword.successTitle')}</h2>
               <p className="mt-2 text-muted-foreground">{t('forgotPassword.successMessage')}</p>
               <div className="mt-6 flex flex-col gap-3">
-                <Button asChild className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg">
+                <Button asChild className="w-full h-12 bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white font-semibold rounded-lg">
                   <Link href={`/login?lang=${i18n.language}`}>{t('forgotPassword.backToLogin')}</Link>
                 </Button>
                 <button

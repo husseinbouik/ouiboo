@@ -68,7 +68,7 @@ export function QuoteRequestRow({ request, onAccept, accepting }: {
                 <Button
                     onClick={() => onAccept(request.id)}
                     disabled={accepting}
-                    className="h-11 px-5 rounded-xl bg-sunset-orange hover:bg-orange-600 border-none text-xs font-black uppercase tracking-widest"
+                    className="h-11 px-5 rounded-xl bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white border-none text-xs font-black uppercase tracking-widest"
                 >
                     {t('quotes.accept')}
                 </Button>
@@ -140,7 +140,7 @@ export function QuoteRequestPanel({ templateId }: { templateId: string }) {
             {!user ? (
                 <Button
                     onClick={() => setShowLoginModal(true)}
-                    className="w-full h-12 rounded-xl font-bold bg-deep-blue dark:bg-sunset-orange text-white"
+                    className="w-full h-12 rounded-xl font-bold bg-deep-blue dark:bg-sunset-orange text-white dark:text-deep-blue"
                 >
                     {t('quotes.signIn')}
                 </Button>
@@ -191,7 +191,7 @@ export function QuoteRequestPanel({ templateId }: { templateId: string }) {
                     <Button
                         disabled={!startDate || submitMutation.isPending}
                         onClick={() => submitMutation.mutate()}
-                        className="w-full h-12 rounded-xl font-bold bg-deep-blue dark:bg-sunset-orange text-white disabled:opacity-50"
+                        className="w-full h-12 rounded-xl font-bold bg-deep-blue dark:bg-sunset-orange text-white dark:text-deep-blue disabled:opacity-50"
                     >
                         {t('quotes.submit')}
                     </Button>

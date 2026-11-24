@@ -537,7 +537,7 @@ export default function BookingDetailsPage() {
                     <Button
                       onClick={handleSubmitCashPlusCode}
                       disabled={!cashPlusCode.trim() || codeSubmitting}
-                      className="h-12 px-6 rounded-xl bg-sunset-orange hover:bg-orange-600 border-none text-xs font-black uppercase tracking-widest"
+                      className="h-12 px-6 rounded-xl bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white border-none text-xs font-black uppercase tracking-widest"
                     >
                       {codeSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('bookingDetail.cashPlusSubmitCode')}
                     </Button>
@@ -550,7 +550,7 @@ export default function BookingDetailsPage() {
                 {showUploadAction && (
                   <label className="cursor-pointer">
                     <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
-                    <Button disabled={uploading} className="h-12 px-6 rounded-xl bg-sunset-orange hover:bg-orange-600 border-none text-xs font-black uppercase tracking-widest">
+                    <Button disabled={uploading} className="h-12 px-6 rounded-xl bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white border-none text-xs font-black uppercase tracking-widest">
                       {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4 mr-2" /> {t('bookingDetail.uploadReceipt')}</>}
                     </Button>
                   </label>

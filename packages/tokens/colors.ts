@@ -7,6 +7,7 @@ export const brandColors = {
   sunsetOrange: '#FF6B35',
   sand: '#F7E1C3',
   ocean: '#2EC4B6',
+  /* Sky accent for charts only - NOT the ocean brand colour (#2EC4B6). */
   cyan500: '#0EA5E9',
   offWhite: '#F9FAFB',
 } as const;
@@ -32,10 +33,14 @@ export const navyScale = {
 } as const;
 
 export const oceanScale = {
-  50: '#ECFEFF',
-  100: '#CFFAFE',
-  300: '#67E8F9',
-  500: '#06B6D4',
-  700: '#0E7490',
-  900: '#164E63',
+  50: '#E6FAF7',
+  100: '#C8F3EE',
+  200: '#92E7DD',
+  300: '#5ED6C9',
+  400: '#3ACBBC',
+  500: '#2EC4B6',
+  600: '#1FA396',
+  700: '#178276',
+  800: '#14665E',
+  900: '#0F4F49',
 } as const;

@@ -161,7 +161,7 @@ export function AgencySupportPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full rounded-xl bg-sunset-orange px-6 py-3.5 font-semibold text-white transition-all hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-sunset-orange-dark px-6 py-3.5 font-semibold text-white transition-all hover:bg-[#b03d11] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting ? t('support.form.submitting') : t('support.form.submit')}
               </button>

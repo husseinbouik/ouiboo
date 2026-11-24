@@ -150,7 +150,7 @@ export default function TravelerResetPasswordPage() {
                   {errors.confirmPassword && <span className="text-danger text-sm">{errors.confirmPassword.message}</span>}
                 </div>
 
-                <Button type="submit" disabled={isSubmitting} className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors duration-200">
+                <Button type="submit" disabled={isSubmitting} className="w-full h-12 bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white font-semibold rounded-lg transition-colors duration-200">
                   {isSubmitting ? 'Saving...' : t('resetPassword.saveButton', 'Update password')}
                 </Button>
                 {errorMessage && (
@@ -164,7 +164,7 @@ export default function TravelerResetPasswordPage() {
               <h2 className="mt-4 text-2xl font-bold text-foreground">{t('resetPassword.successTitle', 'Password updated')}</h2>
               <p className="mt-2 text-muted-foreground">{t('resetPassword.successMessage', 'Your password has been updated. You can now log in with your new credentials.')}</p>
               <div className="mt-6 flex flex-col gap-3">
-                <Button asChild className="w-full h-12 bg-sunset-orange hover:bg-orange-600 text-white font-semibold rounded-lg">
+                <Button asChild className="w-full h-12 bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white font-semibold rounded-lg">
                   <Link href={`/login?lang=${i18n.language}`}>{t('resetPassword.backToLogin', 'Back to login')}</Link>
                 </Button>
               </div>

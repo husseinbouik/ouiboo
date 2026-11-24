@@ -22,7 +22,7 @@
     "helper": "Utilisez les identifiants administrateur configurés pour cet environnement.",
     "brand": "Ouiboo Admin",
     "heroTitle": "Centre de commandement admin",
-    "heroSubtitle": "Approuvez les agences, confirmez les paiements et maintenez la place de marché saine.",
+    "heroSubtitle": "Approuvez les agences, examinez les justificatifs de paiement et maintenez la place de marché saine. Accepter un justificatif ne vaut pas règlement - les paiements vont directement aux agences.",
     "heroNote": "La journalisation des audits et l'accès par rôles sont activés.",
     "loginFailed": "Échec de la connexion. Veuillez réessayer.",
     "usernamePlaceholder": "admin@example.com",
