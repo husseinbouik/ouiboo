@@ -243,6 +243,8 @@
     "totalToPay": "المجموع الواجب دفعه",
     "submitting": "جارٍ إرسال الحجز...",
     "completeBooking": "إتمام الحجز",
+    "missingTitle": "لإتمام حجزك، ما زال ينقصك:",
+    "missingPaymentDestination": "بيانات الدفع الخاصة بالوكالة (تحويل بنكي أو Cash Plus)",
     "directPaymentNote": "الدفع مباشرة إلى الوكالة — Ouiboo لا يحتفظ أبداً بأموالك",
     "displayCurrencyNote": "يُعرض بـ<display>{{display}}</display> للاطّلاع فقط — ستدفع بـ<charged>{{charged}}</charged>.",
     "depositReferenceOnly": "للاطّلاع فقط، يعادل ذلك حوالي <amount>{{amount}}</amount>.",

@@ -125,7 +125,7 @@ export default function AnalyticsConsent() {
             </button>
             <button
               type="button"
-              className="rounded-lg bg-deep-blue px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:bg-sunset-orange"
+              className="rounded-lg bg-deep-blue px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:bg-sunset-orange dark:text-deep-blue"
               onClick={() => saveConsent('accepted')}
             >
               {t('analyticsConsent.allowAnalytics')}

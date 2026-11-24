@@ -233,7 +233,7 @@ export default function CheckoutConfirmationPage() {
 
               <div className="flex flex-col sm:flex-row gap-4">
               {isCancelled && retryCheckoutHref && (
-                <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-sunset-orange hover:bg-orange-600 text-white font-black border-none">
+                <Button asChild className="w-full sm:w-auto h-14 px-8 rounded-2xl bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white font-black border-none">
                   <Link href={retryCheckoutHref} className="w-full sm:w-auto">
                     {t('checkout.confirmation.retryPayment')}
                   </Link>

@@ -16,7 +16,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
         <p className="text-sm font-bold uppercase tracking-[0.24em] text-orange-400">Ouiboo</p>
         <h1 className="mt-4 text-3xl font-bold">{t('error.title')}</h1>
         <p className="mt-3 text-slate-300">{t('error.description')}</p>
-        <button type="button" onClick={reset} className="mt-7 rounded-xl bg-orange-500 px-6 py-3 font-bold text-white transition hover:bg-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300">
+        <button type="button" onClick={reset} className="mt-7 rounded-xl bg-sunset-orange-dark px-6 py-3 font-bold text-white transition hover:bg-[#b03d11] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sunset-orange-dark">
           {t('error.tryAgain')}
         </button>
       </div>

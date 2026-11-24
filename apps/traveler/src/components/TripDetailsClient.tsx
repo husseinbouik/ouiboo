@@ -279,7 +279,7 @@ export default function TripDetailsClient({
           <MapPin className="h-10 w-10 text-muted-foreground" />
         </div>
         <h1 className="text-3xl font-black text-foreground font-display">{t('tripDetails.notFoundTitle')}</h1>
-        <Button onClick={() => router.push('/')} className="bg-sunset-orange hover:bg-orange-600 px-8 py-6 rounded-2xl font-bold">
+        <Button onClick={() => router.push('/')} className="bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white px-8 py-6 rounded-2xl font-bold">
             {t('tripDetails.exploreOtherTrips')}
         </Button>
     </div>
@@ -1041,7 +1041,7 @@ export default function TripDetailsClient({
                                     router.push(`/checkout/${tripId}?${params.toString()}`);
                                 }
                             }}
-                            className="w-full h-14 rounded-xl text-lg font-bold bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-orange-600 text-white shadow-lg shadow-blue-900/20 dark:shadow-orange-900/20 transition-all active:scale-95 disabled:opacity-50"
+                            className="w-full h-14 rounded-xl text-lg font-bold bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-sunset-orange-dark text-white dark:text-deep-blue dark:hover:text-white shadow-lg shadow-blue-900/20 dark:shadow-orange-900/20 transition-all active:scale-95 disabled:opacity-50"
                         >
                             {t('tripDetails.bookNow')}
                         </Button>

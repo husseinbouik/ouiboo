@@ -12,7 +12,7 @@ export default function NotFoundPage() {
         <p className="text-sm font-bold uppercase tracking-[0.24em] text-orange-400">404 · Ouiboo</p>
         <h1 className="mt-4 text-3xl font-bold">{t('notFound.title')}</h1>
         <p className="mt-3 text-slate-300">{t('notFound.description')}</p>
-        <Link href="/" className="mt-7 inline-flex rounded-xl bg-orange-500 px-6 py-3 font-bold text-white transition hover:bg-orange-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300">
+        <Link href="/" className="mt-7 inline-flex rounded-xl bg-sunset-orange-dark px-6 py-3 font-bold text-white transition hover:bg-[#b03d11] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sunset-orange-dark">
           {t('notFound.returnHome')}
         </Link>
       </div>

@@ -74,7 +74,7 @@ export default async function FeaturedTripsPage() {
               {t('featuredPage.emptySubtitle')}
             </p>
             <div className="mt-6">
-              <Button asChild className="bg-sunset-orange hover:bg-orange-600 border-none">
+              <Button asChild className="bg-sunset-orange text-deep-blue hover:bg-sunset-orange-dark hover:text-white border-none">
               <Link href="/search">{t('featuredPage.explore')}</Link>
             </Button>
             </div>

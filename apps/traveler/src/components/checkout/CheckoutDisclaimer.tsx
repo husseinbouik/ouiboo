@@ -9,7 +9,7 @@ export function CheckoutDisclaimer() {
 
   return (
     <div className="p-8 bg-ocean-500/10 rounded-4xl border border-ocean-500/20 flex gap-6">
-      <div className="w-12 h-12 rounded-2xl bg-ocean-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-ocean-500/20"><Info className="h-6 w-6" /></div>
+      <div className="w-12 h-12 rounded-2xl bg-ocean-500 text-deep-blue flex items-center justify-center shrink-0 shadow-lg shadow-ocean-500/20"><Info className="h-6 w-6" /></div>
       <div className="space-y-1">
         <h4 className="font-black text-blue-900 dark:text-blue-200 uppercase text-[10px] tracking-widest">{t('checkout.disclaimerTitle')}</h4>
         <p className="text-sm text-ocean-700 dark:text-ocean-300 dark:text-blue-300 font-medium leading-relaxed">{t('checkout.disclaimerBody')}</p>

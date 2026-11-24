@@ -243,6 +243,8 @@
     "totalToPay": "Total to pay",
     "submitting": "Submitting booking...",
     "completeBooking": "Complete Booking",
+    "missingTitle": "To complete your booking, you still need:",
+    "missingPaymentDestination": "Payment details for the agency (bank transfer or Cash Plus)",
     "directPaymentNote": "Direct payment to the agency — Ouiboo never holds your money",
     "displayCurrencyNote": "Shown in <display>{{display}}</display> for reference — you will pay in <charged>{{charged}}</charged>.",
     "depositReferenceOnly": "For reference only, that is about <amount>{{amount}}</amount>.",

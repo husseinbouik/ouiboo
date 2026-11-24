@@ -204,7 +204,7 @@ export default function AgencesPage() {
             <div>
               {whatsappCta(
                 'hero',
-                'inline-flex items-center gap-2.5 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)] max-sm:px-5 max-sm:text-[14.5px]',
+                'inline-flex items-center gap-2.5 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-deep-blue shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)] max-sm:px-5 max-sm:text-[14.5px]',
               )}
               <span className="mt-3 block text-[14px] font-medium text-white/[0.75]">
                 {t('hw.agencesPage.hero.ctaNote')}
@@ -233,7 +233,7 @@ export default function AgencesPage() {
               {(['step1', 'step2', 'step3'] as const).map((step, i) => (
                 <div key={step} className="relative">
                   <span
-                    className="flex h-[46px] w-[46px] items-center justify-center rounded-full font-display text-[19px] font-extrabold text-white shadow-[0_8px_18px_-6px_rgba(255,107,53,.5)]"
+                    className="flex h-[46px] w-[46px] items-center justify-center rounded-full font-display text-[19px] font-extrabold text-deep-blue shadow-[0_8px_18px_-6px_rgba(255,107,53,.5)]"
                     style={{ backgroundColor: ORANGE }}
                     aria-hidden="true"
                   >
@@ -471,7 +471,7 @@ export default function AgencesPage() {
                 </p>
                 {whatsappCta(
                   'final',
-                  'inline-flex items-center gap-2.5 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)] max-sm:px-5 max-sm:text-[14.5px]',
+                  'inline-flex items-center gap-2.5 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-deep-blue shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)] max-sm:px-5 max-sm:text-[14.5px]',
                 )}
                 <div className="mt-6 flex flex-col gap-2 text-[14.5px]" style={{ color: 'var(--hw-muted)' }}>
                   <span>
@@ -548,7 +548,7 @@ export default function AgencesPage() {
       >
         {whatsappCta(
           'sticky',
-          'flex items-center justify-center gap-2.5 rounded-full px-5 py-[13px] text-[15px] font-semibold text-white',
+          'flex items-center justify-center gap-2.5 rounded-full px-5 py-[13px] text-[15px] font-semibold text-deep-blue',
         )}
       </div>
 
@@ -556,44 +556,34 @@ export default function AgencesPage() {
         /* Shared with the homepage (#735): the --hw-* theme variables so
            .dark (next-themes, system preference) renders a true dark
            page here too. Light values = the approved design. */
+        /* Design Council Phase 1: --hw-* are aliases of the shared
+           @ouiboo/tokens variables only - no forked palette values.
+           The shared tokens carry the light/dark values, so one alias
+           set serves both themes. */
         .hw-root {
-          --hw-page: #ffffff;
-          --hw-sand: #f6f1e6;
-          --hw-card: #ffffff;
-          --hw-panel: #f3f7fc;
-          --hw-panel-border: #dce6f2;
-          --hw-record: #ffffff;
-          --hw-record-border: #b9c9de;
-          --hw-checkline: #fbf8f1;
-          --hw-line: #e3dac4;
-          --hw-divider: #f0eadb;
-          --hw-ink: #14263f;
-          --hw-heading: #0a192f;
-          --hw-muted: #5b6b82;
-          --hw-accent: #e04e1a;
-          --hw-chip: #0a192f;
+          --hw-page: var(--background);
+          --hw-sand: var(--secondary);
+          --hw-card: var(--popover);
+          --hw-panel: var(--muted);
+          --hw-panel-border: var(--border);
+          --hw-record: var(--popover);
+          --hw-record-border: var(--border);
+          --hw-checkline: var(--paper);
+          --hw-line: var(--border);
+          --hw-divider: var(--border);
+          --hw-ink: var(--foreground);
+          --hw-heading: var(--deep-blue);
+          --hw-muted: var(--muted-foreground);
+          --hw-accent: var(--accent);
+          --hw-chip: var(--lead);
         }
         .dark .hw-root {
-          --hw-page: #060d1a;
-          --hw-sand: #0e2447;
-          --hw-card: #142c50;
-          --hw-panel: #0c2142;
-          --hw-panel-border: #24405f;
-          --hw-record: #091830;
-          --hw-record-border: #33537e;
-          --hw-checkline: #0c2142;
-          --hw-line: #31507a;
-          --hw-divider: #24405f;
-          --hw-ink: #d9e3f0;
-          --hw-heading: #ffffff;
-          --hw-muted: #a3b5cc;
-          --hw-accent: #ff8c5a;
-          --hw-chip: #ff6b35;
+          --hw-heading: var(--foreground);
         }
         .hw-faq[open ] .hw-faq-plus {
           background-color: ${ORANGE};
           border-color: ${ORANGE};
-          color: #fff;
+          color: #0a192f;
           transform: rotate(45deg);
         }
         .hw-faq .hw-faq-plus {

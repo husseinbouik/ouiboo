@@ -1125,7 +1125,7 @@ export default function SearchClient({
                     <button
                       onClick={c.onRemove}
                       aria-label={`Remove filter ${c.accessibleLabel ?? (typeof c.label === 'string' ? c.label : '')}`}
-                      className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-sunset-orange text-white transition-transform hover:scale-110"
+                      className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-sunset-orange text-deep-blue transition-transform hover:scale-110"
                     >
                       <X className="h-3 w-3" strokeWidth={3} />
                     </button>

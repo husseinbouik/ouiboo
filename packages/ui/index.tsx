@@ -39,6 +39,7 @@ export * from './blur-placeholder';
 export * from './Logo';
 export * from './SafeImage';
 export * from './MobileFilterDrawer';
+export * from './MissingRequirementsHint';
 export * from './OtpCodeInput';
 export * from './Pagination';
 export * from './StatusBadge';

@@ -127,12 +127,16 @@
   --color-brand-800: #9a3412;
   --color-brand-900: #7c2d12;
 
-  --color-ocean-50: #ecfeff;
-  --color-ocean-100: #cffafe;
-  --color-ocean-300: #67e8f9;
-  --color-ocean-500: #06b6d4;
-  --color-ocean-700: #0e7490;
-  --color-ocean-900: #164e63;
+  --color-ocean-50: #e6faf7;
+  --color-ocean-100: #c8f3ee;
+  --color-ocean-200: #92e7dd;
+  --color-ocean-300: #5ed6c9;
+  --color-ocean-400: #3acbbc;
+  --color-ocean-500: #2ec4b6;
+  --color-ocean-600: #1fa396;
+  --color-ocean-700: #178276;
+  --color-ocean-800: #14665e;
+  --color-ocean-900: #0f4f49;
 
   --color-navy-50: #eff6ff;
   --color-navy-500: #0a192f;

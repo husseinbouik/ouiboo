@@ -22,7 +22,7 @@
     "helper": "Use the administrator credentials configured for this environment.",
     "brand": "Ouiboo Admin",
     "heroTitle": "Admin command center",
-    "heroSubtitle": "Approve agencies, confirm payments, and keep the marketplace healthy.",
+    "heroSubtitle": "Approve agencies, review payment proofs, and keep the marketplace healthy. Accepting a proof is not settlement - payments go directly to agencies.",
     "heroNote": "Audit logging and role-based access are enabled.",
     "loginFailed": "Login failed. Please try again.",
     "usernamePlaceholder": "admin@example.com",

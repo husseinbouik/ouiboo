@@ -243,6 +243,8 @@
     "totalToPay": "Total à payer",
     "submitting": "Envoi de la réservation...",
     "completeBooking": "Finaliser la réservation",
+    "missingTitle": "Pour finaliser votre réservation, il vous manque :",
+    "missingPaymentDestination": "Les coordonnées de paiement de l’agence (virement bancaire ou Cash Plus)",
     "directPaymentNote": "Paiement direct à l'agence — Ouiboo ne détient jamais votre argent",
     "displayCurrencyNote": "Affiché en <display>{{display}}</display> à titre indicatif — vous paierez en <charged>{{charged}}</charged>.",
     "depositReferenceOnly": "À titre indicatif uniquement, cela représente environ <amount>{{amount}}</amount>.",

@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuth } from '@/components/AuthContext';
-import { type BookingDetails } from '@ouiboo/types';
+import { type BookingDetails, CURRENT_BOOKING_TERMS_VERSION } from '@ouiboo/types';
 import { Card, CardContent } from '@ouiboo/ui';
 import { CheckoutSkeleton } from '@/components/Skeletons';
 import { useTranslation } from 'react-i18next';
@@ -286,6 +286,17 @@ export default function CheckoutPage() {
     (retryBookingId || termsAccepted)
   );
 
+  // Design Council Phase 1: name what is missing next to the disabled
+  // submit (shared MissingRequirementsHint via CheckoutSummary).
+  const missingRequirements: string[] = [];
+  if (!selectedSessionId) missingRequirements.push(t('checkout.selectSession'));
+  if (!hasSelectedDestination) missingRequirements.push(t('checkout.missingPaymentDestination'));
+  if (!fullName.trim()) missingRequirements.push(t('checkout.fullName'));
+  if (!phoneNumber.trim()) missingRequirements.push(t('checkout.phoneNumber'));
+  if (!retryBookingId && !termsAccepted) {
+    missingRequirements.push(t('checkout.termsAccept', { version: CURRENT_BOOKING_TERMS_VERSION }));
+  }
+
   return (
     <div className="min-h-screen bg-muted/20 pb-40">
       <div className="max-w-7xl mx-auto px-6 pt-32">
@@ -391,6 +402,7 @@ export default function CheckoutPage() {
               errorMessage={errorMessage}
               isSubmitting={createBookingMutation.isPending}
               canSubmit={canSubmit}
+              missingRequirements={missingRequirements}
               onSubmit={() => createBookingMutation.mutate()}
               stagedAmounts={stagedAmounts}
               promoInfo={appliedPromo?.code ? {

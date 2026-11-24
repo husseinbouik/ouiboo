@@ -185,7 +185,7 @@ export default function LandingPage({
             </a>
             <a
               href={`${travelerUrl}/signup?lang=${currentLang}`}
-              className="whitespace-nowrap rounded-full px-[18px] py-[9px] text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(255,107,53,.6)] transition-colors"
+              className="whitespace-nowrap rounded-full px-[18px] py-[9px] text-sm font-semibold text-deep-blue shadow-[0_8px_20px_-8px_rgba(255,107,53,.6)] transition-colors"
               style={{ backgroundColor: ORANGE }}
             >
               {t('hw.nav.signup')}
@@ -246,7 +246,7 @@ export default function LandingPage({
               <div className="mb-[14px] mt-6 flex flex-wrap gap-[14px]">
                 <a
                   href={`${travelerUrl}/signup?lang=${currentLang}`}
-                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)] transition-colors max-sm:px-5 max-sm:py-[13px] max-sm:text-[14.5px]"
+                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-deep-blue shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)] transition-colors max-sm:px-5 max-sm:py-[13px] max-sm:text-[14.5px]"
                   style={{ backgroundColor: ORANGE }}
                 >
                   {t('hw.hero.ctaSignup')}
@@ -483,7 +483,7 @@ export default function LandingPage({
                 {(['step1', 'step2', 'step3'] as const).map((step, i) => (
                   <div key={step} className="flex gap-5">
                     <span
-                      className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full font-display text-[19px] font-extrabold text-white shadow-[0_8px_18px_-6px_rgba(255,107,53,.5)]"
+                      className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full font-display text-[19px] font-extrabold text-deep-blue shadow-[0_8px_18px_-6px_rgba(255,107,53,.5)]"
                       style={{ backgroundColor: ORANGE }}
                       aria-hidden="true"
                     >
@@ -593,7 +593,7 @@ export default function LandingPage({
             <div className="flex flex-wrap items-center gap-5">
               <Link
                 href="/agences"
-                className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-white shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)]"
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-deep-blue shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)]"
                 style={{ backgroundColor: ORANGE }}
               >
                 {t('hw.agencies.cta')} <Arrow />
@@ -735,39 +735,29 @@ export default function LandingPage({
         /* #735 polish: theme variables for the Honest Window sections.
            Light values reproduce the approved design exactly; the .dark
            set is applied by next-themes (system preference) on <html>. */
+        /* Design Council Phase 1: --hw-* are aliases of the shared
+           @ouiboo/tokens variables only - no forked palette values.
+           The shared tokens carry the light/dark values, so one alias
+           set serves both themes. */
         .hw-root {
-          --hw-page: #ffffff;
-          --hw-sand: #f6f1e6;
-          --hw-card: #ffffff;
-          --hw-panel: #f3f7fc;
-          --hw-panel-border: #dce6f2;
-          --hw-record: #ffffff;
-          --hw-record-border: #b9c9de;
-          --hw-checkline: #fbf8f1;
-          --hw-line: #e3dac4;
-          --hw-divider: #f0eadb;
-          --hw-ink: #14263f;
-          --hw-heading: #0a192f;
-          --hw-muted: #5b6b82;
-          --hw-accent: #e04e1a;
-          --hw-chip: #0a192f;
+          --hw-page: var(--background);
+          --hw-sand: var(--secondary);
+          --hw-card: var(--popover);
+          --hw-panel: var(--muted);
+          --hw-panel-border: var(--border);
+          --hw-record: var(--popover);
+          --hw-record-border: var(--border);
+          --hw-checkline: var(--paper);
+          --hw-line: var(--border);
+          --hw-divider: var(--border);
+          --hw-ink: var(--foreground);
+          --hw-heading: var(--deep-blue);
+          --hw-muted: var(--muted-foreground);
+          --hw-accent: var(--accent);
+          --hw-chip: var(--lead);
         }
         .dark .hw-root {
-          --hw-page: #060d1a;
-          --hw-sand: #0e2447;
-          --hw-card: #142c50;
-          --hw-panel: #0c2142;
-          --hw-panel-border: #24405f;
-          --hw-record: #091830;
-          --hw-record-border: #33537e;
-          --hw-checkline: #0c2142;
-          --hw-line: #31507a;
-          --hw-divider: #24405f;
-          --hw-ink: #d9e3f0;
-          --hw-heading: #ffffff;
-          --hw-muted: #a3b5cc;
-          --hw-accent: #ff8c5a;
-          --hw-chip: #ff6b35;
+          --hw-heading: var(--foreground);
         }
         /* #772: the expanded state stays calm — the item keeps its
            neutral surface; orange survives only as the small accent of

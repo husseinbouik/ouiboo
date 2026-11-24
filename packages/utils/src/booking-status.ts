@@ -18,7 +18,7 @@ export const getTravelerBookingStatusTone = (status: BookingStatusType) => {
     case BookingStatus.Confirmed:
       return 'bg-success text-success-foreground';
     case BookingStatus.AwaitingValidation:
-      return 'bg-ocean-500 text-white';
+      return 'bg-ocean-500 text-deep-blue';
     case BookingStatus.Pending:
     // #369: deposit paid, waiting for the group minimum outcome.
     case BookingStatus.PendingMinimum:
