@@ -19,6 +19,18 @@ name: API Coverage
 on:
   pull_request:
     branches: [staging, master]
+    # Path filter (#1021, finding C3): this is the third execution of
+    # the API suite, so it only runs when the API, a shared package or
+    # the floor machinery itself changed. Safe at trigger level because
+    # "API coverage floor" is NOT a required branch-protection context
+    # (see docs/ci/governance.md) — a filtered run cannot deadlock a PR.
+    paths:
+      - 'apps/api/**'
+      - 'packages/**'
+      - 'scripts/check-api-coverage-floors.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/api-coverage.yml'
   workflow_dispatch:
 
 permissions:
