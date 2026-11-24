@@ -76,7 +76,7 @@ export function LayerBInventorySection({
                 // Inventory images are remote media URLs; a plain img
                 // keeps this server page free of image-domain config.
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={trip.images[0]} alt="" className="h-40 w-full object-cover" loading="lazy" />
+                <img src={trip.images[0]} alt={interpolate(layerB.photoAlt, { title: trip.title })} className="h-40 w-full object-cover" loading="lazy" />
               ) : null}
               <div className="p-5">
                 <h3 className="font-bold leading-snug">{trip.title}</h3>

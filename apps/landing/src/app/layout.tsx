@@ -8,7 +8,7 @@ import { getInitialLanguage, languageInitScript } from '@ouiboo/i18n/server';
 import { buildLandingMetadata } from "../lib/metadata";
 
 import Providers from "../components/Providers";
-import LoadingSpinner from "../components/LoadingSpinner"; // Import the spinner
+import PageSkeleton from "../components/PageSkeleton";
 import AnalyticsConsent from "../components/AnalyticsConsent";
 import { Suspense } from "react";
 
@@ -53,8 +53,8 @@ export default async function RootLayout({
         </a>
         {/* Pass the current locale to the provider */}
         <Providers locale={currentLocale}>
-          {/* Use the new LoadingSpinner as the Suspense fallback */}
-<Suspense fallback={<LoadingSpinner />}>
+          {/* M6: layout-skeleton Suspense fallback (ex-bouncing-dots) */}
+<Suspense fallback={<PageSkeleton />}>
             {children}
           </Suspense>
           <AnalyticsConsent />

@@ -3,8 +3,10 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
-import { LogoLockup } from '@ouiboo/ui'
-import { CookiePreferencesButton } from './AnalyticsConsent'
+import { motion } from 'framer-motion'
+import Reveal, { heroItem, heroStagger, REVEAL_STAGGER_S } from './Reveal'
+import SiteHeader from './SiteHeader'
+import SiteFooter from './SiteFooter'
 
 // #749 (Council S11 §4 + founder decisions 2026-10-31): the dedicated
 // agency page — the forwardable, findable artefact of the beta's only
@@ -22,7 +24,6 @@ import { CookiePreferencesButton } from './AnalyticsConsent'
 // photo is founder-hands-later, never a stock/AI face.
 
 const NAVY = '#0A192F'
-const DEEP = '#060D1A'
 const ORANGE = '#FF6B35'
 
 // The founder's own number — the same one already published as the
@@ -128,12 +129,6 @@ export default function AgencesPage() {
     </a>
   )
 
-  const langMarks = [
-    { code: 'en', label: 'EN' },
-    { code: 'fr', label: 'FR' },
-    { code: 'ar', label: 'AR' },
-  ]
-
   const qaKeys = ['exclusive', 'leave', 'client', 'cancel', 'provide', 'golive', 'french', 'computer'] as const
   const honestyItems = t('hw.agencesPage.honesty.items', { returnObjects: true }) as string[]
 
@@ -141,50 +136,31 @@ export default function AgencesPage() {
     <div className="hw-root font-sans" style={{ backgroundColor: 'var(--hw-page)', color: 'var(--hw-ink)' }}>
       {/* ---------- Hero (navy, agency palette leadership) ---------- */}
       <section className="relative overflow-hidden text-white" style={{ backgroundColor: NAVY }}>
-        <header className="relative z-20">
-          <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-5">
-            <Link href="/" className="flex items-center gap-2.5" aria-label="Ouiboo">
-              <LogoLockup height={30} tone="on-dark" />
-            </Link>
-            <div className="flex items-center gap-[18px]">
-              <div className="flex items-center gap-1.5 text-[13.5px] font-semibold tracking-wide" role="group" aria-label="Language">
-                {langMarks.map((mark, i) => (
-                  <span key={mark.code} className="flex items-center gap-1.5">
-                    {i > 0 && <span className="opacity-40">·</span>}
-                    <button
-                      type="button"
-                      onClick={() => i18n.changeLanguage(mark.code)}
-                      aria-pressed={currentLang === mark.code}
-                      className={currentLang === mark.code ? 'opacity-100 underline underline-offset-4' : 'opacity-55 hover:opacity-90'}
-                    >
-                      {mark.label}
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <Link href="/" className="hidden text-[14.5px] font-semibold opacity-95 hover:underline hover:underline-offset-[5px] hover:opacity-100 sm:block">
-                {t('hw.agencesPage.nav.back')}
-              </Link>
-            </div>
-          </div>
-        </header>
+        {/* Header: the ONE shared landing header (Council surface 3,
+            Option A) — identical spec to the home page's. */}
+        <SiteHeader contextAction="home" anchorBase="/" className="relative z-20" />
 
-        <div className="relative z-[2] mx-auto max-w-[1200px] px-6 pb-[72px] pt-[38px] max-sm:pb-14">
-          <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: ORANGE }}>
+        <motion.div
+          className="relative z-[2] mx-auto max-w-[1200px] px-6 pb-[72px] pt-[38px] max-sm:pb-14"
+          variants={heroStagger}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div variants={heroItem} className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: ORANGE }}>
             {t('hw.agencesPage.hero.eyebrow')}
-          </div>
-          <h1 className="mb-5 mt-4 max-w-[760px] text-[clamp(2rem,4.4vw,3.2rem)] font-extrabold leading-[1.12] tracking-[-0.015em]">
+          </motion.div>
+          <motion.h1 variants={heroItem} className="mb-5 mt-4 max-w-[760px] text-[clamp(2rem,4.4vw,3.2rem)] font-extrabold leading-[1.12] tracking-[-0.015em]">
             {t('hw.agencesPage.hero.titleA')}
             <br />
             {t('hw.agencesPage.hero.titleB')}
             <br />
             <span style={{ color: ORANGE }}>{t('hw.agencesPage.hero.titleC')}</span>
-          </h1>
-          <p className="max-w-[640px] text-[clamp(1.02rem,1.6vw,1.2rem)] leading-[1.6] text-white/[0.88]">
+          </motion.h1>
+          <motion.p variants={heroItem} className="max-w-[640px] text-[clamp(1.02rem,1.6vw,1.2rem)] leading-[1.6] text-white/[0.88]">
             {t('hw.agencesPage.hero.lead')}
-          </p>
+          </motion.p>
 
-          <div className="mt-9 flex flex-wrap items-start gap-x-10 gap-y-8">
+          <motion.div variants={heroItem} className="mt-9 flex flex-wrap items-start gap-x-10 gap-y-8">
             <div className="flex items-start gap-4">
               <span
                 className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-full font-display text-[17px] font-extrabold text-white ring-2 ring-white/25"
@@ -210,15 +186,15 @@ export default function AgencesPage() {
                 {t('hw.agencesPage.hero.ctaNote')}
               </span>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       <main id="main-content" tabIndex={-1}>
         {/* ---------- 2 · How it starts ---------- */}
         <section className="py-[92px] max-sm:py-16" style={{ backgroundColor: 'var(--hw-sand)' }}>
           <div className="mx-auto max-w-[1200px] px-6">
-            <div className="mb-11 max-w-[720px]">
+            <Reveal className="mb-11 max-w-[720px]">
               <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--hw-accent)' }}>
                 {t('hw.agencesPage.steps.eyebrow')}
               </div>
@@ -228,10 +204,10 @@ export default function AgencesPage() {
               <p className="text-[16.5px]" style={{ color: 'var(--hw-muted)' }}>
                 {t('hw.agencesPage.steps.intro')}
               </p>
-            </div>
+            </Reveal>
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-3 lg:gap-[26px]">
               {(['step1', 'step2', 'step3'] as const).map((step, i) => (
-                <div key={step} className="relative">
+                <Reveal key={step} delay={i * REVEAL_STAGGER_S} className="relative">
                   <span
                     className="flex h-[46px] w-[46px] items-center justify-center rounded-full font-display text-[19px] font-extrabold text-deep-blue shadow-[0_8px_18px_-6px_rgba(255,107,53,.5)]"
                     style={{ backgroundColor: ORANGE }}
@@ -245,7 +221,7 @@ export default function AgencesPage() {
                   <p className="max-w-[420px] text-[15.5px] leading-[1.6]" style={{ color: 'var(--hw-muted)' }}>
                     {t(`hw.agencesPage.steps.${step}.text`)}
                   </p>
-                </div>
+                </Reveal>
               ))}
             </div>
             <div className="mt-11">
@@ -263,46 +239,64 @@ export default function AgencesPage() {
         {/* ---------- 3 · Money ---------- */}
         <section className="py-[92px] max-sm:py-16">
           <div className="mx-auto max-w-[1200px] px-6">
-            <div className="mb-11 max-w-[720px]">
+            <Reveal className="mb-11 max-w-[720px]">
               <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--hw-accent)' }}>
                 {t('hw.agencesPage.money.eyebrow')}
               </div>
               <h2 className="mb-3 mt-3 text-[clamp(1.7rem,3.2vw,2.35rem)] font-extrabold leading-[1.15] tracking-[-0.015em]" style={{ color: 'var(--hw-heading)' }}>
                 {t('hw.agencesPage.money.title')}
               </h2>
-            </div>
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-[26px]">
-              {(['direct', 'never', 'beta'] as const).map((key) => (
-                <div
-                  key={key}
-                  className="rounded-2xl border p-[24px_24px_20px]"
-                  style={{ backgroundColor: 'var(--hw-panel)', borderColor: 'var(--hw-panel-border)' }}
+            </Reveal>
+            {/* Council Option A: the money story as a formal
+                payment-record panel — the same facts the three cards
+                carried (paid directly, nothing through Ouiboo, 0 MAD
+                today), presented as one worked example an agency can
+                screenshot and share internally. The written fee
+                guarantee below it stays verbatim. */}
+            <Reveal className="max-w-[880px] rounded-[20px] border p-[28px_28px_24px]" style={{ backgroundColor: 'var(--hw-record)', borderColor: 'var(--hw-record-border)' }}>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                <span className="font-display text-[16px] font-bold" style={{ color: 'var(--hw-heading)' }}>
+                  {t('hw.agencesPage.money.panel.title')}
+                </span>
+                <span
+                  className="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide"
+                  style={{ backgroundColor: 'var(--hw-sand)', color: 'var(--hw-heading)' }}
                 >
-                  <h3 className="mb-2 text-[16.5px] font-bold" style={{ color: 'var(--hw-heading)' }}>
-                    {t(`hw.agencesPage.money.items.${key}.title`)}
-                  </h3>
-                  <p className="text-[15px] leading-[1.6]" style={{ color: 'var(--hw-muted)' }}>
-                    {t(`hw.agencesPage.money.items.${key}.text`)}
-                  </p>
+                  {t('hw.agencesPage.money.panel.chip')}
+                </span>
+              </div>
+              {(
+                [
+                  ['totalLabel', 'totalValue'],
+                  ['depositLabel', 'depositValue'],
+                  ['balanceLabel', 'balanceValue'],
+                  ['throughLabel', 'throughValue'],
+                  ['feeLabel', 'feeValue'],
+                ] as const
+              ).map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-baseline justify-between gap-6 border-b border-dashed py-[11px] text-[14.5px] last:border-b-0"
+                  style={{ borderColor: 'var(--hw-line)', color: 'var(--hw-ink)' }}
+                >
+                  <span>{t(`hw.agencesPage.money.panel.${label}`)}</span>
+                  <b className="whitespace-nowrap" style={{ color: 'var(--hw-heading)' }}>
+                    {t(`hw.agencesPage.money.panel.${value}`)}
+                  </b>
                 </div>
               ))}
-            </div>
-            <div className="mt-8 rounded-[20px] border p-[28px_28px_24px]" style={{ backgroundColor: 'var(--hw-record)', borderColor: 'var(--hw-record-border)' }}>
-              <h3 className="mb-3 flex items-center gap-[10px] text-[19px] font-bold" style={{ color: 'var(--hw-heading)' }}>
-                <ShieldCheck className="h-[22px] w-[22px]" />
-                {t('hw.agencesPage.money.guaranteeTitle')}
-              </h3>
-              <p className="max-w-[820px] text-[16px] leading-[1.65]" style={{ color: 'var(--hw-ink)' }}>
+              <p className="mt-4 max-w-[820px] text-[15px] leading-[1.65]" style={{ color: 'var(--hw-muted)' }}>
+                <b style={{ color: 'var(--hw-heading)' }}>{t('hw.agencesPage.money.guaranteeTitle')}:</b>{' '}
                 {t('hw.agencesPage.money.guarantee')}
               </p>
-            </div>
+            </Reveal>
           </div>
         </section>
 
         {/* ---------- 4 · Proof (Example artefacts) ---------- */}
         <section className="py-[92px] max-sm:py-16" style={{ backgroundColor: 'var(--hw-sand)' }}>
           <div className="mx-auto max-w-[1200px] px-6">
-            <div className="mb-11 max-w-[720px]">
+            <Reveal className="mb-11 max-w-[720px]">
               <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--hw-accent)' }}>
                 {t('hw.agencesPage.proof.eyebrow')}
               </div>
@@ -312,10 +306,10 @@ export default function AgencesPage() {
               <p className="text-[16.5px]" style={{ color: 'var(--hw-muted)' }}>
                 {t('hw.agencesPage.proof.intro')}
               </p>
-            </div>
+            </Reveal>
             <div className="grid grid-cols-1 items-start gap-[26px] lg:grid-cols-2">
               {/* Verification record artefact */}
-              <div className="rounded-[20px] border p-[28px_28px_24px]" style={{ backgroundColor: 'var(--hw-record)', borderColor: 'var(--hw-record-border)' }}>
+              <Reveal className="rounded-[20px] border p-[28px_28px_24px]" style={{ backgroundColor: 'var(--hw-record)', borderColor: 'var(--hw-record-border)' }}>
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <span className="font-display text-[15px] font-bold" style={{ color: 'var(--hw-heading)' }}>
                     {t('hw.agencesPage.proof.recordTitle')}
@@ -341,10 +335,10 @@ export default function AgencesPage() {
                     {t('hw.agencesPage.proof.recordNote')}
                   </div>
                 </div>
-              </div>
+              </Reveal>
 
               {/* Booking Pass + storefront artefact */}
-              <div className="rounded-[20px] border p-[28px_28px_24px]" style={{ backgroundColor: 'var(--hw-card)', borderColor: 'var(--hw-line)' }}>
+              <Reveal delay={REVEAL_STAGGER_S} className="rounded-[20px] border p-[28px_28px_24px]" style={{ backgroundColor: 'var(--hw-card)', borderColor: 'var(--hw-line)' }}>
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <span className="font-display text-[15px] font-bold" style={{ color: 'var(--hw-heading)' }}>
                     {t('hw.agencesPage.proof.passTitle')}
@@ -369,7 +363,7 @@ export default function AgencesPage() {
                     {t('hw.agencesPage.proof.storefrontText')}
                   </p>
                 </div>
-              </div>
+              </Reveal>
             </div>
           </div>
         </section>
@@ -377,16 +371,17 @@ export default function AgencesPage() {
         {/* ---------- 5 · Objections Q&A ---------- */}
         <section className="py-[92px] max-sm:py-16">
           <div className="mx-auto max-w-[1200px] px-6">
-            <div className="mb-11 max-w-[720px]">
+            <Reveal className="mb-11 max-w-[720px]">
               <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--hw-accent)' }}>
                 {t('hw.agencesPage.qa.eyebrow')}
               </div>
               <h2 className="mb-3 mt-3 text-[clamp(1.7rem,3.2vw,2.35rem)] font-extrabold leading-[1.15] tracking-[-0.015em]" style={{ color: 'var(--hw-heading)' }}>
                 {t('hw.agencesPage.qa.title')}
               </h2>
-            </div>
+            </Reveal>
             <div className="flex max-w-[820px] flex-col gap-[14px]">
               {qaKeys.map((key, i) => (
+                <Reveal key={key} delay={i * REVEAL_STAGGER_S}>
                 <details
                   key={key}
                   open={i === 0}
@@ -410,6 +405,7 @@ export default function AgencesPage() {
                     {t(`hw.agencesPage.qa.items.${key}.a`)}
                   </div>
                 </details>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -417,7 +413,7 @@ export default function AgencesPage() {
 
         {/* ---------- 6 · Honesty panel ---------- */}
         <section className="py-[92px] text-white max-sm:py-16" style={{ backgroundColor: NAVY }}>
-          <div className="mx-auto max-w-[1200px] px-6">
+          <Reveal className="mx-auto max-w-[1200px] px-6">
             <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: ORANGE }}>
               {t('hw.agencesPage.honesty.eyebrow')}
             </div>
@@ -438,12 +434,12 @@ export default function AgencesPage() {
             <p className="mt-9 max-w-[760px] border-t border-white/[0.14] pt-6 text-[15px] leading-[1.65] text-white/[0.72]">
               {t('hw.agencesPage.honesty.legal')}
             </p>
-          </div>
+          </Reveal>
         </section>
 
         {/* ---------- 7 · Final CTA ---------- */}
         <section className="py-[92px] max-sm:py-16">
-          <div className="mx-auto max-w-[1200px] px-6">
+          <Reveal className="mx-auto max-w-[1200px] px-6">
             <div className="flex flex-wrap items-start gap-x-12 gap-y-9">
               <div className="flex items-start gap-4">
                 <span
@@ -486,60 +482,15 @@ export default function AgencesPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </Reveal>
         </section>
       </main>
 
-      {/* ---------- Footer (slim) ---------- */}
-      <footer className="pb-[110px] pt-14 text-white/[0.78] lg:pb-[34px]" style={{ backgroundColor: DEEP }}>
-        <div className="mx-auto max-w-[1200px] px-6">
-          <div className="flex flex-wrap items-start justify-between gap-8">
-            <div>
-              <Link href="/" className="flex items-center gap-2.5 text-white" aria-label="Ouiboo">
-                <LogoLockup height={30} tone="on-dark" />
-              </Link>
-              <p className="mt-[14px] max-w-[300px] text-[14.5px] leading-[1.6] text-white/[0.66]">{t('hw.footer.tagline')}</p>
-            </div>
-            <ul className="flex flex-col gap-[11px] text-[14.5px]">
-              <li>
-                <Link href="/" className="hover:text-white">
-                  {t('hw.agencesPage.nav.back')}
-                </Link>
-              </li>
-              <li>
-                <Link href="/guides" className="hover:text-white">
-                  {t('hw.footer.guides')}
-                </Link>
-              </li>
-              <li>
-                <Link href="/verification" className="hover:text-white">
-                  {t('hw.footer.verification')}
-                </Link>
-              </li>
-              <li>
-                <a href={`${agencyUrl}/login?lang=${currentLang}`} className="hover:text-white">
-                  {t('hw.footer.agencyLogin')}
-                </a>
-              </li>
-              <li>
-                <a href={`mailto:${supportEmail}`} className="hover:text-white">
-                  {t('hw.footer.support')}
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-white/[0.12] pt-6 text-[13.5px] text-white/[0.55]">
-            <span>{t('hw.footer.bottomLeft', { year: new Date().getFullYear() })}</span>
-            <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              <a href="/privacy" className="hover:text-white">
-                {t('footer.privacy')}
-              </a>
-              <CookiePreferencesButton className="hover:text-white" />
-              <span>{t('hw.footer.madeIn')}</span>
-            </span>
-          </div>
-        </div>
-      </footer>
+      {/* ---------- Footer: the ONE shared navy trust footer
+          (Council surface 3, Option A) — replaces the slim footer
+          that dropped the Trust column. Extra mobile bottom padding
+          clears the sticky WhatsApp bar. ---------- */}
+      <SiteFooter anchorBase="/" className="max-lg:pb-[110px]" />
 
       {/* ---------- Sticky mobile WhatsApp bar ---------- */}
       <div

@@ -115,9 +115,24 @@ describe('Logo geometry (final mark, #794)', () => {
 });
 
 describe('Logo adoption inventory (#794)', () => {
+  // Design Council phase 3 (2026-11-24): the landing lockup moved into the
+  // shared <SiteHeader> that both landing pages render, so for those two
+  // surfaces the lockup is pinned in the header file (and the pages are
+  // pinned to render the header).
+  const LOCKUP_VIA: Record<string, string> = {
+    'landing page': 'apps/landing/src/components/SiteHeader.tsx',
+    'landing agences page': 'apps/landing/src/components/SiteHeader.tsx',
+  };
+
   for (const [surface, file] of Object.entries(LOCKUPS)) {
     it(`${surface} renders the shared <LogoLockup>`, () => {
-      expect(repoFile(file)).toContain('<LogoLockup');
+      const via = LOCKUP_VIA[surface];
+      if (via) {
+        expect(repoFile(file)).toContain('<SiteHeader');
+        expect(repoFile(via)).toContain('<LogoLockup');
+      } else {
+        expect(repoFile(file)).toContain('<LogoLockup');
+      }
     });
   }
 

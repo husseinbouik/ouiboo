@@ -562,7 +562,8 @@
         "BUDGET": "Économique",
         "NATURE": "Nature"
       },
-      "freeCancellation": "Annulation gratuite jusqu'à {{days}} jours avant"
+      "freeCancellation": "Annulation gratuite jusqu'à {{days}} jours avant",
+      "photoAlt": "Photo du voyage — {{title}}"
     }
   },
   "beta": {
@@ -576,7 +577,6 @@
       "signup": "S'inscrire"
     },
     "hero": {
-      "statusPill": "Vitrine uniquement — aucune réservation ni paiement sur Ouiboo pour le moment",
       "titleA": "Le Maroc, à vous",
       "titleB": "de l'explorer.",
       "subline": "Des voyages organisés par les agences du pays — chacune vérifiée avant d'apparaître ici.",
@@ -754,9 +754,13 @@
       "agencyLogin": "Espace agence",
       "travellerLogin": "Espace voyageur",
       "support": "Assistance",
-      "bottomLeft": "© {{year}} Ouiboo · Vitrine uniquement",
+      "bottomLeft": "© {{year}} Ouiboo",
       "madeIn": "Fait à Tanger, Maroc",
-      "copyright": "Droits d'auteur"
+      "copyright": "Droits d'auteur",
+      "legalLine": "Ouiboo — un projet de Hussein Bouik · Tanger, Maroc · {{email}}",
+      "allTrips": "Tous les voyages",
+      "featuredTrips": "Voyages en vedette",
+      "foundingCohort": "Cohorte fondatrice"
     },
     "guidesPage": {
       "title": "Guides des villes du Maroc",
@@ -765,7 +769,8 @@
     },
     "agencesPage": {
       "nav": {
-        "back": "Accueil"
+        "back": "Accueil",
+        "talk": "Contactez-nous"
       },
       "hero": {
         "eyebrow": "Pour les agences · Cohorte fondatrice",
@@ -815,7 +820,21 @@
           }
         },
         "guaranteeTitle": "Notre engagement écrit pour la suite",
-        "guarantee": "Tout frais futur ne s'appliquera que par facture mensuelle publiée, adressée à votre agence, convenue par écrit à l'avance, avec un préavis et le droit de partir avant le premier frais — et jamais déduit des paiements des voyageurs."
+        "guarantee": "Tout frais futur ne s'appliquera que par facture mensuelle publiée, adressée à votre agence, convenue par écrit à l'avance, avec un préavis et le droit de partir avant le premier frais — et jamais déduit des paiements des voyageurs.",
+        "panel": {
+          "title": "Relevé de paiement — comment une réservation est payée",
+          "chip": "Exemple · voyage à 1 450 MAD",
+          "totalLabel": "Un voyageur réserve un voyage à 1 450 MAD / personne",
+          "totalValue": "1 450 MAD",
+          "depositLabel": "Acompte (30 %) — payé par le voyageur à votre agence, par virement bancaire ou Cash Plus",
+          "depositValue": "435 MAD → vous",
+          "balanceLabel": "Solde — payé lorsque le minimum du groupe est confirmé, toujours directement à vous",
+          "balanceValue": "1 015 MAD → vous",
+          "throughLabel": "Transit par Ouiboo",
+          "throughValue": "0 MAD",
+          "feeLabel": "Frais Ouiboo aujourd'hui (agences fondatrices)",
+          "feeValue": "0 MAD"
+        }
       },
       "proof": {
         "eyebrow": "Preuves",
@@ -890,6 +909,22 @@
         "signupQuiet": "Vous préférez vous inscrire directement ? Créer votre compte agence"
       },
       "stickyCta": "Discuter sur WhatsApp"
+    },
+    "moneyStrip": {
+      "items": {
+        "direct": {
+          "title": "Vous payez l'agence directement",
+          "text": "Un acompte d'abord (jusqu'à 30 %), le solde seulement une fois votre groupe confirmé. Ouiboo ne touche jamais à votre argent."
+        },
+        "checked": {
+          "title": "Chaque agence est vérifiée",
+          "text": "Licence, assurance et immatriculation vérifiées sur les documents eux-mêmes — et revérifiées automatiquement."
+        },
+        "protected": {
+          "title": "Votre acompte est protégé par des règles",
+          "text": "Si le minimum du groupe n'est pas atteint, votre acompte vous est intégralement remboursé. Les barèmes d'annulation sont acceptés avant le paiement."
+        }
+      }
     }
   }
 }

@@ -331,7 +331,13 @@
     "support": "Support",
     "privacy": "Privacy",
     "terms": "Terms",
-    "help": "Help centre"
+    "help": "Help centre",
+    "colExplore": "Explore",
+    "colTrust": "Trust",
+    "colAgencies": "Agencies",
+    "allTrips": "All trips",
+    "sellOnOuiboo": "Sell on Ouiboo",
+    "legalLine": "Ouiboo — a project by Hussein Bouik · Tangier, Morocco"
   },
   "login": {
     "title": "Welcome back",

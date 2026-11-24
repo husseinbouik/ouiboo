@@ -562,7 +562,8 @@
         "BUDGET": "Budget",
         "NATURE": "Nature"
       },
-      "freeCancellation": "Free cancellation up to {{days}} days before"
+      "freeCancellation": "Free cancellation up to {{days}} days before",
+      "photoAlt": "Trip photo — {{title}}"
     }
   },
   "beta": {
@@ -576,7 +577,6 @@
       "signup": "Sign up"
     },
     "hero": {
-      "statusPill": "Showcase only — no bookings or payments on Ouiboo yet",
       "titleA": "Morocco is yours",
       "titleB": "to explore.",
       "subline": "Trips run by Morocco's own agencies — each one checked before it appears here.",
@@ -754,9 +754,13 @@
       "agencyLogin": "Agency login",
       "travellerLogin": "Traveller login",
       "support": "Support",
-      "bottomLeft": "© {{year}} Ouiboo · Showcase only",
+      "bottomLeft": "© {{year}} Ouiboo",
       "madeIn": "Made in Tangier, Morocco",
-      "copyright": "Copyright"
+      "copyright": "Copyright",
+      "legalLine": "Ouiboo — a project by Hussein Bouik · Tangier, Morocco · {{email}}",
+      "allTrips": "All trips",
+      "featuredTrips": "Featured trips",
+      "foundingCohort": "Founding cohort"
     },
     "guidesPage": {
       "title": "Morocco city guides",
@@ -765,7 +769,8 @@
     },
     "agencesPage": {
       "nav": {
-        "back": "Home"
+        "back": "Home",
+        "talk": "Talk to us"
       },
       "hero": {
         "eyebrow": "For agencies · Founding cohort",
@@ -815,7 +820,21 @@
           }
         },
         "guaranteeTitle": "Our written commitment for what comes next",
-        "guarantee": "Any future fee will apply only through a published monthly invoice addressed to your agency, agreed in writing in advance, with notice and the right to leave before the first fee — and never deducted from traveller payments."
+        "guarantee": "Any future fee will apply only through a published monthly invoice addressed to your agency, agreed in writing in advance, with notice and the right to leave before the first fee — and never deducted from traveller payments.",
+        "panel": {
+          "title": "Payment record — how a booking pays out",
+          "chip": "Example · 1,450 MAD trip",
+          "totalLabel": "Traveller books a trip at 1,450 MAD / person",
+          "totalValue": "1,450 MAD",
+          "depositLabel": "Deposit (30%) — paid by the traveller to your agency, bank transfer or Cash Plus",
+          "depositValue": "435 MAD → you",
+          "balanceLabel": "Balance — paid when the group minimum is confirmed, again directly to you",
+          "balanceValue": "1,015 MAD → you",
+          "throughLabel": "Passing through Ouiboo",
+          "throughValue": "0 MAD",
+          "feeLabel": "Ouiboo fee today (founding agencies)",
+          "feeValue": "0 MAD"
+        }
       },
       "proof": {
         "eyebrow": "Proof",
@@ -890,6 +909,22 @@
         "signupQuiet": "Prefer to register directly? Create your agency account"
       },
       "stickyCta": "Chat on WhatsApp"
+    },
+    "moneyStrip": {
+      "items": {
+        "direct": {
+          "title": "You pay the agency directly",
+          "text": "A deposit first (up to 30%), the balance only once your group is confirmed. Ouiboo never touches your money."
+        },
+        "checked": {
+          "title": "Every agency is checked",
+          "text": "Licence, insurance and registration verified against the documents themselves — and re-checked automatically."
+        },
+        "protected": {
+          "title": "Your deposit is protected by rules",
+          "text": "If the group minimum isn't met, your deposit comes back in full. Cancellation scales are agreed before you pay."
+        }
+      }
     }
   }
 }
