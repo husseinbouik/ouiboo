@@ -5,7 +5,6 @@ import { PaymentsService } from './payments.service';
 import { GatewayEnablementService } from './gateway-enablement.service';
 import { GatewayEnablementController } from './gateway-enablement.controller';
 import { PaymentsController } from './payments.controller';
-import { CMIPaymentProvider } from './providers/cmi-payment.provider';
 import { StripePaymentProvider } from './providers/stripe-payment.provider';
 import { CashPlusPaymentProvider } from './providers/cashplus-payment.provider';
 import { PaymentProviderFactory } from './providers/payment-provider.factory';
@@ -18,7 +17,9 @@ import { NotificationsModule } from '../notifications/notifications.module';
   imports: [CommonModule, DatabaseModule, EmailModule, AuthModule, ExternalPaymentsModule, NotificationsModule],
   providers: [
     PaymentsService,
-    CMIPaymentProvider,
+    // B3: CMIPaymentProvider is deliberately NOT registered — it is a
+    // locked stub (parked decision #362) and must not be injectable.
+    // Selection via PaymentProviderFactory throws explicitly instead.
     StripePaymentProvider,
     CashPlusPaymentProvider,
     PaymentProviderFactory,

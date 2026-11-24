@@ -3,7 +3,9 @@ import { IsDecimalMoney } from '../../common/validators/is-decimal-money.decorat
 import { type MoneyInput } from '../../common/money.util';
 
 export enum PaymentProviderDto {
-  CMI = 'CMI',
+  // B3: 'CMI' is deliberately absent — the CMI provider is a locked
+  // stub (parked decision #362), so the API boundary rejects it with a
+  // validation error instead of letting it reach the provider factory.
   STRIPE = 'STRIPE',
   CASHPLUS = 'CASHPLUS',
 }
