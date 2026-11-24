@@ -155,7 +155,8 @@
       "target": "Target",
       "metadata": "Metadata",
       "termsAccepted": "Terms v{{version}} accepted",
-      "termsUnrecorded": "Terms version unrecorded"
+      "termsUnrecorded": "Terms version unrecorded",
+      "age": "Age"
     },
     "actions": {
       "review": "Review",
@@ -254,7 +255,16 @@
       "cashPlusPhone": "Cash Plus number",
       "cashPlusPending": "Cash Plus: pending review",
       "methodCashPlus": "Cash Plus",
-      "methodBankTransfer": "Bank transfer"
+      "methodBankTransfer": "Bank transfer",
+      "ageMinutes": "{{count}}m waiting",
+      "ageHours": "{{count}}h waiting",
+      "ageDays": "{{count}}d waiting",
+      "decisionPanel": "Decision panel",
+      "selectedProof": "Proof under review",
+      "missingTitle": "Before you can continue:",
+      "missingMinistryCheck": "Tick the Ministry of Tourism list attestation",
+      "missingOverrideReason": "Enter an override reason for the name mismatch",
+      "missingRejectionReason": "Enter a rejection reason"
     },
     "messages": {
       "noBankDetails": "No bank details on file.",

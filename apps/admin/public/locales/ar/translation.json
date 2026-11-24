@@ -155,7 +155,8 @@
       "target": "الهدف",
       "metadata": "البيانات الوصفية",
       "termsAccepted": "تم قبول الشروط الإصدار {{version}}",
-      "termsUnrecorded": "إصدار الشروط غير مسجل"
+      "termsUnrecorded": "إصدار الشروط غير مسجل",
+      "age": "مدة الانتظار"
     },
     "actions": {
       "review": "مراجعة",
@@ -254,7 +255,16 @@
       "cashPlusPhone": "رقم كاش بلوس",
       "cashPlusPending": "كاش بلوس: قيد المراجعة",
       "methodCashPlus": "كاش بلوس",
-      "methodBankTransfer": "تحويل بنكي"
+      "methodBankTransfer": "تحويل بنكي",
+      "ageMinutes": "في الانتظار منذ {{count}} دقيقة",
+      "ageHours": "في الانتظار منذ {{count}} ساعة",
+      "ageDays": "في الانتظار منذ {{count}} يوم",
+      "decisionPanel": "لوحة القرار",
+      "selectedProof": "الإثبات قيد المراجعة",
+      "missingTitle": "قبل أن تتمكن من المتابعة:",
+      "missingMinistryCheck": "فعّل إقرار التحقق من قائمة وزارة السياحة",
+      "missingOverrideReason": "أدخل سبب التجاوز لعدم تطابق الاسم",
+      "missingRejectionReason": "أدخل سبب الرفض"
     },
     "messages": {
       "noBankDetails": "لا توجد بيانات بنكية محفوظة.",

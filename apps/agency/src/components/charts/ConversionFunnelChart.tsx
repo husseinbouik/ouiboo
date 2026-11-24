@@ -61,7 +61,7 @@ export default function ConversionFunnelChart({ data }: FunnelProps) {
             <XAxis type="number" hide />
             <YAxis dataKey="stage" type="category" width={120} />
             <Tooltip formatter={(v: number) => v.toLocaleString()} />
-            <Bar dataKey="count" minPointSize={5}>
+            <Bar dataKey="count" minPointSize={5} animationDuration={600} animationEasing="ease-out">
               {transformed?.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={['#60a5fa', '#38bdf8', '#14b8a6', '#10b981'][index % 4]} />
               ))}

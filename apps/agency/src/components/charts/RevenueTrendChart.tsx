@@ -65,8 +65,8 @@ export default function RevenueTrendChart({ data, period, rangeLabel }: { data?:
             <XAxis dataKey="label" tick={{ fontSize: 12 }} />
             <YAxis tickFormatter={(v) => formatCurrency(v, undefined, i18n.language)} />
             <Tooltip formatter={(value: number) => formatCurrency(value, undefined, i18n.language)} labelFormatter={(l) => l} />
-            <Area type="monotone" dataKey="amount" stroke="#10b981" fill="url(#grad)" />
-            <Line type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} />
+            <Area type="monotone" dataKey="amount" stroke="#10b981" fill="url(#grad)" animationDuration={600} animationEasing="ease-out" />
+            <Line type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} animationDuration={600} animationEasing="ease-out" />
           </LineChart>
         </ResponsiveContainer>
       </div>

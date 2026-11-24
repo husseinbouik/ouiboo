@@ -1,4 +1,4 @@
-import { INVOICE_GENERATE_ERROR_KEYS, resolveInvoiceGenerateErrorKey } from './dashboard-utils';
+import { INVOICE_GENERATE_ERROR_KEYS, getQueueAge, resolveInvoiceGenerateErrorKey } from './dashboard-utils';
 
 const axiosError = (data: unknown) => ({ response: { data } });
 
@@ -44,5 +44,22 @@ describe('resolveInvoiceGenerateErrorKey (#374)', () => {
     expect(resolveInvoiceGenerateErrorKey(null)).toBe(INVOICE_GENERATE_ERROR_KEYS.fallback);
     expect(resolveInvoiceGenerateErrorKey(undefined)).toBe(INVOICE_GENERATE_ERROR_KEYS.fallback);
     expect(resolveInvoiceGenerateErrorKey(new Error('network down'))).toBe(INVOICE_GENERATE_ERROR_KEYS.fallback);
+  });
+});
+
+describe('getQueueAge (Phase 5 — queue workbench ages)', () => {
+  const now = new Date('2026-11-24T12:00:00.000Z');
+
+  it('reports minutes under an hour, hours up to 48h, then days', () => {
+    expect(getQueueAge('2026-11-24T11:45:00.000Z', now)).toEqual({ amount: 15, unit: 'minutes' });
+    expect(getQueueAge('2026-11-23T10:00:00.000Z', now)).toEqual({ amount: 26, unit: 'hours' });
+    expect(getQueueAge('2026-11-20T12:00:00.000Z', now)).toEqual({ amount: 4, unit: 'days' });
+  });
+
+  it('clamps future timestamps to zero and rejects missing/invalid ones', () => {
+    expect(getQueueAge('2026-11-24T13:00:00.000Z', now)).toEqual({ amount: 0, unit: 'minutes' });
+    expect(getQueueAge(null, now)).toBeNull();
+    expect(getQueueAge(undefined, now)).toBeNull();
+    expect(getQueueAge('not-a-date', now)).toBeNull();
   });
 });

@@ -26,6 +26,55 @@ type SummaryCard = {
   onClick?: () => void;
 };
 
+/**
+ * M8/M13 (Design Council 2026-11-24): admin overview counts count up
+ * over 600ms ease-out on FIRST mount only — refetches render the new
+ * value directly, and reduced-motion (or no rAF) renders the final
+ * value immediately. Admin has no framer-motion, so this is a small
+ * rAF loop; tabular numerals come from the .oui-numeric class on the
+ * parent element.
+ */
+function CountUpValue({ value }: { value: number }) {
+  const [display, setDisplay] = React.useState(value);
+  const animatedRef = React.useRef(false);
+  const rafRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (animatedRef.current) {
+      // Refetch: jump straight to the new value (never re-animate),
+      // deferred to a frame so no setState runs synchronously here.
+      const id = window.requestAnimationFrame(() => setDisplay(value));
+      return () => window.cancelAnimationFrame(id);
+    }
+    animatedRef.current = true;
+    if (
+      value === 0 ||
+      typeof window === 'undefined' ||
+      typeof window.requestAnimationFrame !== 'function' ||
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ) {
+      // display already initialised to the final value — nothing to do.
+      return;
+    }
+    const duration = 600;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(Math.round(eased * value));
+      if (progress < 1) {
+        rafRef.current = window.requestAnimationFrame(tick);
+      }
+    };
+    rafRef.current = window.requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) window.cancelAnimationFrame(rafRef.current);
+    };
+  }, [value]);
+
+  return <>{display}</>;
+}
+
 type DashboardShellProps = {
   t: TFn;
   activeTab: AdminTab;
@@ -181,7 +230,7 @@ export default function DashboardShell({
             <CardContent className="p-6 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{card.label}</p>
-                <p className="oui-numeric text-3xl font-black text-foreground mt-2">{card.value}</p>
+                <p className="oui-numeric text-3xl font-black text-foreground mt-2">{typeof card.value === 'number' ? <CountUpValue value={card.value} /> : card.value}</p>
               </div>
               <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${card.tone}`}>
                 <card.icon className="h-6 w-6" />

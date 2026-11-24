@@ -155,7 +155,8 @@
       "target": "Cible",
       "metadata": "Métadonnées",
       "termsAccepted": "Conditions v{{version}} acceptées",
-      "termsUnrecorded": "Version des conditions non enregistrée"
+      "termsUnrecorded": "Version des conditions non enregistrée",
+      "age": "Ancienneté"
     },
     "actions": {
       "review": "Examiner",
@@ -254,7 +255,16 @@
       "cashPlusPhone": "Numéro Cash Plus",
       "cashPlusPending": "Cash Plus : en attente de vérification",
       "methodCashPlus": "Cash Plus",
-      "methodBankTransfer": "Virement bancaire"
+      "methodBankTransfer": "Virement bancaire",
+      "ageMinutes": "En attente depuis {{count}} min",
+      "ageHours": "En attente depuis {{count}} h",
+      "ageDays": "En attente depuis {{count}} j",
+      "decisionPanel": "Panneau de décision",
+      "selectedProof": "Justificatif en cours d’examen",
+      "missingTitle": "Avant de continuer :",
+      "missingMinistryCheck": "Cochez l’attestation de vérification auprès de la liste du ministère du Tourisme",
+      "missingOverrideReason": "Saisissez un motif de dérogation pour l’écart de nom",
+      "missingRejectionReason": "Saisissez un motif de rejet"
     },
     "messages": {
       "noBankDetails": "Aucune coordonnée bancaire enregistrée.",

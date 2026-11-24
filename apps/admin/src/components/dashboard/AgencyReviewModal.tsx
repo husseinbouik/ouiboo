@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { XCircle, CheckCircle2, Eye, TriangleAlert } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@ouiboo/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, MissingRequirementsHint } from '@ouiboo/ui';
 import { LicenceStatus, VerificationStatus, type LicenceStatusType, type VerificationStatusType } from '@ouiboo/types';
 import type { AdminAgency, FeedbackState } from './types';
 import {
@@ -261,6 +261,15 @@ export default function AgencyReviewModal({
                       <span>{t('dashboard.labels.ministryCheck')}</span>
                     </label>
                   )}
+                  {/* Phase 5: a disabled Verify button must say what is
+                      missing (shared MissingRequirementsHint, Phase 1)
+                      instead of sitting silent. */}
+                  {canVerify && !ministryChecked && (
+                    <MissingRequirementsHint
+                      title={t('dashboard.labels.missingTitle')}
+                      missing={[t('dashboard.labels.missingMinistryCheck')]}
+                    />
+                  )}
                   <div className="flex flex-wrap gap-3">
                     <Button
                       className="bg-success text-success-foreground hover:bg-success/90 border-none"
@@ -436,6 +445,17 @@ export default function AgencyReviewModal({
                       className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
                     />
                   </div>
+                  <MissingRequirementsHint
+                    title={t('dashboard.labels.missingTitle')}
+                    missing={[
+                      ...(overrideRequired && !bankOverrideReason.trim()
+                        ? [t('dashboard.labels.missingOverrideReason')]
+                        : []),
+                      ...(canReject && !bankRejectionReason.trim()
+                        ? [t('dashboard.labels.missingRejectionReason')]
+                        : []),
+                    ]}
+                  />
                   <div className="flex flex-wrap gap-3">
                     <Button
                       className="bg-success text-success-foreground hover:bg-success/90 border-none"
@@ -534,6 +554,17 @@ export default function AgencyReviewModal({
                       className="w-full rounded-xl border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sunset-orange/20"
                     />
                   </div>
+                  <MissingRequirementsHint
+                    title={t('dashboard.labels.missingTitle')}
+                    missing={[
+                      ...(overrideRequired && !cashPlusOverrideReason.trim()
+                        ? [t('dashboard.labels.missingOverrideReason')]
+                        : []),
+                      ...(canReject && !cashPlusRejectionReason.trim()
+                        ? [t('dashboard.labels.missingRejectionReason')]
+                        : []),
+                    ]}
+                  />
                   <div className="flex flex-wrap gap-3">
                     <Button
                       className="bg-success text-success-foreground hover:bg-success/90 border-none"
@@ -562,7 +593,7 @@ export default function AgencyReviewModal({
           </div>
         </div>
         {agencyFeedback && (
-          <div className={`text-sm font-medium ${agencyFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
+          <div className={`animate-in fade-in slide-in-from-top-1 duration-150 text-sm font-medium ${agencyFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
             {agencyFeedback.message}
           </div>
         )}

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { LayoutDashboard } from 'lucide-react';
-import { Button, Card, Badge, Pagination } from '@ouiboo/ui';
+import { Button, Card, Badge, Pagination, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from '@ouiboo/ui';
 import { BookingPaymentStatus, PaymentMethod } from '@ouiboo/types';
 import type { PaginationMeta } from '@ouiboo/utils';
 import { apiClient } from '@/lib/api-client';
@@ -79,7 +79,7 @@ export default function BookingsTab({
      {t('dashboard.sections.bookingMonitor')} ({pagination?.total ?? bookings.length})
   </h2>
   {bookingFeedback && (
-    <div className={`text-sm font-medium ${bookingFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
+    <div className={`animate-in fade-in slide-in-from-top-1 duration-150 text-sm font-medium ${bookingFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
       {bookingFeedback.message}
     </div>
   )}
@@ -88,25 +88,25 @@ export default function BookingsTab({
   )}
   <div className="bg-card rounded-3xl overflow-hidden shadow-sm border border-border">
      <div className="overflow-x-auto">
-     <table className="w-full text-start">
-        <thead className="bg-muted text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
-           <tr>
-              <th className="px-6 py-4">{t('dashboard.table.booking')}</th>
-              <th className="px-6 py-4">{t('dashboard.table.traveler')}</th>
-              <th className="px-6 py-4">{t('dashboard.table.status')}</th>
-              <th className="px-6 py-4 text-end">{t('dashboard.table.amount')}</th>
-              <th className="px-6 py-4 text-end">{t('dashboard.table.action')}</th>
-           </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
+     <Table>
+        <TableHeader>
+           <TableRow>
+              <TableHead scope="col">{t('dashboard.table.booking')}</TableHead>
+              <TableHead scope="col">{t('dashboard.table.traveler')}</TableHead>
+              <TableHead scope="col">{t('dashboard.table.status')}</TableHead>
+              <TableHead scope="col" className="text-end">{t('dashboard.table.amount')}</TableHead>
+              <TableHead scope="col" className="text-end">{t('dashboard.table.action')}</TableHead>
+           </TableRow>
+        </TableHeader>
+        <TableBody>
            {bookings.map((booking) => {
               const canRefund = booking.paymentMethod === PaymentMethod.Gateway
                 && booking.paymentStatus === BookingPaymentStatus.Paid
                 && Boolean(booking.paymentGatewayTransactionId);
 
               return (
-              <tr key={booking.id} className="hover:bg-muted/50 transition-colors">
-                 <td className="px-6 py-4">
+              <TableRow key={booking.id}>
+                 <TableCell>
                     <p className="font-bold text-sm line-clamp-1">{booking.session.template.title}</p>
                     <p className="text-[10px] text-muted-foreground font-mono italic">#{booking.id.substring(0, 8)}</p>
                     {/* #481 + B9: read-only terms-acceptance evidence —
@@ -128,9 +128,9 @@ export default function BookingsTab({
                         {t('dashboard.table.termsUnrecorded')}
                       </p>
                     )}
-                 </td>
-                 <td className="px-6 py-4 text-sm font-medium">{booking.traveler.name}</td>
-                 <td className="px-6 py-4">
+                 </TableCell>
+                 <TableCell className="text-sm font-medium">{booking.traveler.name}</TableCell>
+                 <TableCell>
                   <div className="flex flex-col items-start gap-2">
                     <Badge className="font-black text-[8px] uppercase">{getAdminBookingBadgeLabel(booking.status, t)}</Badge>
                     <Badge variant="outline" className="text-[8px] font-black uppercase">
@@ -145,9 +145,9 @@ export default function BookingsTab({
                       ) : null;
                     })()}
                   </div>
-                 </td>
-                 <td className="px-6 py-4 text-end font-black">{booking.totalAmount} {booking.session.currency}</td>
-                 <td className="px-6 py-4 text-end">
+                 </TableCell>
+                 <TableCell className="text-end font-black">{booking.totalAmount} {booking.session.currency}</TableCell>
+                 <TableCell className="text-end">
                   <div className="flex flex-col items-end gap-2">
                     <Button
                       size="sm"
@@ -172,11 +172,11 @@ export default function BookingsTab({
                       {t('dashboard.interventions.repair')}
                     </Button>
                   </div>
-                 </td>
-</tr>
+                 </TableCell>
+</TableRow>
             )})}
-         </tbody>
-      </table>
+         </TableBody>
+      </Table>
       </div>
    </div>
    <Pagination pagination={pagination} onPageChange={onPageChange} labels={paginationLabels} className="mt-2" />

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Receipt, Download } from 'lucide-react';
-import { Button, Card, Pagination } from '@ouiboo/ui';
+import { Button, Card, Pagination, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ouiboo/ui';
 import { toPaginatedList, type PaginationMeta } from '@ouiboo/utils';
 import { apiClient } from '@/lib/api-client';
 import type { AdminAgency, AdminInvoice, FeedbackState } from './types';
@@ -160,7 +160,7 @@ export default function InvoicesTab({ t, invoices, pagination, onPageChange, pag
           <p className="text-xs text-muted-foreground">{t('dashboard.invoices.generateHint')}</p>
         </div>
         {feedback && (
-          <p className={`text-sm ${feedback.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{feedback.message}</p>
+          <p className={`animate-in fade-in slide-in-from-top-1 duration-150 text-sm ${feedback.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>{feedback.message}</p>
         )}
       </Card>
 
@@ -168,32 +168,32 @@ export default function InvoicesTab({ t, invoices, pagination, onPageChange, pag
         {invoices.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">{t('dashboard.invoices.empty')}</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <th className="px-4 py-3">{t('dashboard.invoices.number')}</th>
-                <th className="px-4 py-3">{t('dashboard.invoices.agency')}</th>
-                <th className="px-4 py-3">{t('dashboard.invoices.period')}</th>
-                <th className="px-4 py-3">{t('dashboard.invoices.issued')}</th>
-                <th className="px-4 py-3 text-right">{t('dashboard.invoices.gross')}</th>
-                <th className="px-4 py-3 text-right">{t('dashboard.invoices.fee')}</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col">{t('dashboard.invoices.number')}</TableHead>
+                <TableHead scope="col">{t('dashboard.invoices.agency')}</TableHead>
+                <TableHead scope="col">{t('dashboard.invoices.period')}</TableHead>
+                <TableHead scope="col">{t('dashboard.invoices.issued')}</TableHead>
+                <TableHead scope="col" className="text-right">{t('dashboard.invoices.gross')}</TableHead>
+                <TableHead scope="col" className="text-right">{t('dashboard.invoices.fee')}</TableHead>
+                <TableHead scope="col"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {invoices.map((invoice) => (
-                <tr key={invoice.id} className="border-b border-border/60">
-                  <td className="px-4 py-3 font-semibold text-foreground">{invoice.number}</td>
-                  <td className="px-4 py-3">{invoice.agencyName}</td>
-                  <td className="px-4 py-3">{periodLabel(invoice)}</td>
-                  <td className="px-4 py-3">{formatDateTime(invoice.issuedAt, t)}</td>
-                  <td className="px-4 py-3 text-right">
+                <TableRow key={invoice.id}>
+                  <TableCell className="font-semibold text-foreground">{invoice.number}</TableCell>
+                  <TableCell>{invoice.agencyName}</TableCell>
+                  <TableCell>{periodLabel(invoice)}</TableCell>
+                  <TableCell>{formatDateTime(invoice.issuedAt, t)}</TableCell>
+                  <TableCell className="text-right">
                     {invoice.subtotalAmount} {invoice.currency}
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold">
+                  </TableCell>
+                  <TableCell className="text-right font-semibold">
                     {invoice.totalAmount} {invoice.currency}
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                  </TableCell>
+                  <TableCell className="text-right">
                     <Button
                       variant="outline"
                       size="sm"
@@ -204,11 +204,11 @@ export default function InvoicesTab({ t, invoices, pagination, onPageChange, pag
                       <Download className="h-4 w-4" />
                       {t('dashboard.invoices.download')}
                     </Button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </Card>
 

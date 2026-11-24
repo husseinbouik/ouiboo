@@ -73,7 +73,7 @@ export default function AdminActionModal({
             />
             <p className="text-xs text-muted-foreground">{t('dashboard.interventions.auditNote')}</p>
           </div>
-          {error && <div className="text-sm font-medium text-danger">{error}</div>}
+          {error && <div role="alert" className="animate-in fade-in slide-in-from-top-1 duration-150 text-sm font-medium text-danger">{error}</div>}
           <div className="flex flex-wrap gap-3">
             <Button
               className={destructive

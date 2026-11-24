@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { X } from 'lucide-react'
+import { CheckCircle2, X } from 'lucide-react'
 import {
   Toast,
   ToastTitle,
@@ -54,7 +54,20 @@ interface ToastRecord extends Required<Pick<ToastOptions, 'title'>> {
   action?: ToastActionObject
   durationMs: number
   dismissLabel: string
+  /** M2 (Design Council 2026-11-24): exit phase — the toast stays
+   * mounted for TOAST_EXIT_MS playing its fade/slide-out before it is
+   * removed from the stack. */
+  leaving?: boolean
 }
+
+/**
+ * M2 motion timing, aligned with MOTION_TOKENS in @ouiboo/tokens
+ * (durations.standard = 200ms in, durations.fast = 150ms out). The
+ * tokens package is not a dependency of @ouiboo/ui, so the values are
+ * mirrored here — change them together.
+ */
+export const TOAST_ENTER_MS = 200
+export const TOAST_EXIT_MS = 150
 
 interface ToastContextValue {
   toast: (options: ToastOptions) => number
@@ -76,7 +89,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const nextId = React.useRef(1)
   const timers = React.useRef(new Map<number, ReturnType<typeof setTimeout>>())
 
-  const dismissToast = React.useCallback((id: number) => {
+  const removeToast = React.useCallback((id: number) => {
     setToasts((current) => current.filter((entry) => entry.id !== id))
     const timer = timers.current.get(id)
     if (timer) {
@@ -84,6 +97,28 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       timers.current.delete(id)
     }
   }, [])
+
+  // M2: dismissal plays the 150ms exit animation before removal, so a
+  // toast never vanishes in one frame. The auto-dismiss timer and the
+  // manual dismiss/action paths all funnel through here.
+  const dismissToast = React.useCallback(
+    (id: number) => {
+      const existing = timers.current.get(id)
+      if (existing) {
+        clearTimeout(existing)
+      }
+      setToasts((current) =>
+        current.map((entry) =>
+          entry.id === id ? { ...entry, leaving: true } : entry,
+        ),
+      )
+      timers.current.set(
+        id,
+        setTimeout(() => removeToast(id), TOAST_EXIT_MS),
+      )
+    },
+    [removeToast],
+  )
 
   const toast = React.useCallback(
     (options: ToastOptions) => {
@@ -133,10 +168,26 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 p-4 sm:items-end"
       >
         {toasts.map((entry) => (
-          <div key={entry.id} className="pointer-events-auto w-full max-w-sm">
+          <div
+            key={entry.id}
+            className={cn(
+              'pointer-events-auto w-full max-w-sm',
+              entry.leaving
+                ? 'animate-out fade-out-0 slide-out-to-bottom-2 duration-150'
+                : 'animate-in fade-in-0 slide-in-from-bottom-2 duration-200',
+            )}
+          >
             <Toast
               variant={entry.variant}
               role={entry.variant === 'error' ? 'alert' : 'status'}
+              icon={
+                entry.variant === 'success' ? (
+                  <CheckCircle2
+                    className="h-5 w-5 animate-in fade-in-0 duration-200"
+                    aria-hidden="true"
+                  />
+                ) : undefined
+              }
               action={
                 entry.action ? (
                   <ToastAction

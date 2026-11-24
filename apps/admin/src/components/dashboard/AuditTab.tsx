@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { FileText, Download, Trash2 } from 'lucide-react';
-import { Button, Card, Pagination } from '@ouiboo/ui';
+import { Button, Card, Pagination, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from '@ouiboo/ui';
 import type { PaginationMeta } from '@ouiboo/utils';
 import type { AdminAuditLog, FeedbackState } from './types';
 import { formatDateTime, renderAuditMetadata } from './formatters';
@@ -67,7 +67,7 @@ export default function AuditTab({
   </div>
 
   {auditFeedback && (
-    <div className={`text-sm font-medium ${auditFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
+    <div className={`animate-in fade-in slide-in-from-top-1 duration-150 text-sm font-medium ${auditFeedback.type === 'success' ? 'text-success' : 'text-danger'}`}>
       {auditFeedback.message}
     </div>
   )}
@@ -76,41 +76,41 @@ export default function AuditTab({
     <div className="bg-card rounded-3xl overflow-hidden shadow-sm border border-border">
       {logs.length ? (
         <div className="overflow-x-auto">
-        <table className="w-full text-start">
-          <thead className="bg-muted text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
-            <tr>
-              <th className="px-6 py-4">{t('dashboard.table.when')}</th>
-              <th className="px-6 py-4">{t('dashboard.table.actor')}</th>
-              <th className="px-6 py-4">{t('dashboard.table.action')}</th>
-              <th className="px-6 py-4">{t('dashboard.table.target')}</th>
-              <th className="px-6 py-4">{t('dashboard.table.metadata')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col">{t('dashboard.table.when')}</TableHead>
+              <TableHead scope="col">{t('dashboard.table.actor')}</TableHead>
+              <TableHead scope="col">{t('dashboard.table.action')}</TableHead>
+              <TableHead scope="col">{t('dashboard.table.target')}</TableHead>
+              <TableHead scope="col">{t('dashboard.table.metadata')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {logs.map((log) => (
-              <tr key={log.id} className="align-top hover:bg-muted/50 transition-colors">
-                <td className="px-6 py-4 text-sm text-muted-foreground">
+              <TableRow key={log.id} className="align-top">
+                <TableCell className="text-sm text-muted-foreground align-top">
                   <p className="font-medium text-foreground">{formatDateTime(log.createdAt, t)}</p>
                   <p className="text-[10px] font-mono text-muted-foreground">#{log.id.slice(0, 8)}</p>
-                </td>
-                <td className="px-6 py-4 text-sm">
+                </TableCell>
+                <TableCell className="text-sm align-top">
                   <p className="font-medium text-foreground">{log.actorEmail || t('dashboard.labels.system')}</p>
                   <p className="text-muted-foreground">{log.actorId || t('dashboard.labels.noActorId')}</p>
-                </td>
-                <td className="px-6 py-4 text-sm font-semibold text-foreground">
+                </TableCell>
+                <TableCell className="text-sm font-semibold text-foreground align-top">
                   {getAdminAuditActionLabel(log.action, t)}
-                </td>
-                <td className="px-6 py-4 text-sm text-muted-foreground">
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground align-top">
                   <p className="font-medium text-foreground">{log.targetType}</p>
                   <p>{log.targetId || t('dashboard.labels.noTargetId')}</p>
-                </td>
-                <td className="px-6 py-4">
+                </TableCell>
+                <TableCell className="align-top">
                   {renderAuditMetadata(log.metadata, t)}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         </div>
       ) : (
         <div className="p-10 text-center text-sm text-muted-foreground">

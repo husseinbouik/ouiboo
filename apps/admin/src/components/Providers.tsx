@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ThemeProvider } from 'next-themes';
+import { ToastProvider } from '@ouiboo/ui';
 import { AuthProvider } from './AuthContext';
 import '@/lib/i18n';
 
@@ -30,7 +31,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
                 <AuthProvider>
-                    {children}
+                    {/* M2 (Design Council 2026-11-24): admin was the only
+                        app with no toast host, so operator actions
+                        confirmed silently. The shared ToastProvider
+                        animates 200ms in / 150ms out (MOTION_TOKENS). */}
+                    <ToastProvider>
+                        {children}
+                    </ToastProvider>
                 </AuthProvider>
             </ThemeProvider>
             {process.env.NODE_ENV === 'development' ? <ReactQueryDevtools initialIsOpen={false} /> : null}

@@ -4,6 +4,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ToastProvider } from '@ouiboo/ui';
 import AdminDashboard from './page';
 import { apiClient } from '@/lib/api-client';
 
@@ -34,9 +35,13 @@ const getMock = apiClient.get as jest.Mock;
 
 function renderDashboard() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  // Phase 5: the dashboard fires toasts for key decisions (M2), so it
+  // now requires the shared ToastProvider the real Providers.tsx mounts.
   return render(
     <QueryClientProvider client={client}>
-      <AdminDashboard />
+      <ToastProvider>
+        <AdminDashboard />
+      </ToastProvider>
     </QueryClientProvider>,
   );
 }

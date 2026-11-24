@@ -235,6 +235,9 @@ export type AdminTrip = {
   title: string;
   description?: string | null;
   status?: TripStatusType;
+  /** Phase 5: queue age in the pending-review workbench, when the
+   * payload carries it (optional — older payloads omit it). */
+  createdAt?: string;
   images?: string[];
   agency: {
     companyName: string;

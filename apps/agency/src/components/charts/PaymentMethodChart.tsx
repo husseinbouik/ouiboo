@@ -33,7 +33,7 @@ export default function PaymentMethodChart({ data = { MANUAL: 0, GATEWAY: 0 } }:
       <div style={{ minHeight: 300 }}>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
-            <Pie data={transformed} dataKey="value" nameKey="name" outerRadius={90} label={(entry) => `${Math.round((entry.value / (total || 1)) * 100)}%`}>
+            <Pie data={transformed} dataKey="value" nameKey="name" outerRadius={90} animationDuration={600} animationEasing="ease-out" label={(entry) => `${Math.round((entry.value / (total || 1)) * 100)}%`}>
               {transformed.map((_, i) => (
                 <Cell key={`cell-${i}`} fill={i === 0 ? '#f59e0b' : '#10b981'} />
               ))}
