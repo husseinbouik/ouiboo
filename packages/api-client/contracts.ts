@@ -98,39 +98,13 @@ export interface TripDetails extends TripListItem {
   agency?: AgencyProfile | null
 }
 
-export interface CreateTripInput {
-  title: string
-  description: string
-  category: TripCategory | string
-  startLocation: string
-  /** #675: destination slug from the BETA_DESTINATIONS config. */
-  destinationSlug?: string | null
-  /** #676: structured meeting point alongside startLocation. */
-  meetingPoint?: {
-    address?: string | null
-    mapsUrl?: string | null
-    pickupAvailable: boolean
-  } | null
-  durationDays: number
-  durationNights: number
-  inclusions?: string[]
-  exclusions?: string[]
-  checklist?: string[]
-  images?: string[]
-  status?: TripStatus | string
-  itinerary?: Array<{
-    dayNumber: number
-    title?: string
-    description: string
-    activities?: string[]
-    /** #676: language-neutral day facts. */
-    distanceKm?: number | null
-    driveTimeMinutes?: number | null
-    mealsIncluded?: string[]
-    accommodationName?: string | null
-    accommodationType?: string | null
-  }>
-}
+// #1025 (A5): CreateTripInput's single source of truth is the Zod schema
+// in @ouiboo/schemas (z.infer of CreateTripTemplateSchema). The previous
+// hand-written contract here had already diverged — it omitted
+// translations, cancellationPolicy, faqs, pickupPoints,
+// payOnArrivalEnabled, privateTourEnabled and imageAlts.
+export type { CreateTripInput } from '@ouiboo/schemas'
+import type { CreateTripInput } from '@ouiboo/schemas'
 
 export type UpdateTripInput = Partial<CreateTripInput>
 

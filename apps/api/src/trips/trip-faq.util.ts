@@ -1,5 +1,7 @@
 import { buildCancellationScaleSnapshot, summarizeCancellation } from '../cancellation/cancellation.util';
 import { findProhibitedCommercialTerms } from './publish-guardrails.util';
+import type { TripFaqEntry } from '@ouiboo/types';
+export type { TripFaqEntry } from '@ouiboo/types';
 
 /**
  * #686 (Council S6): per-trip FAQ generation + agency-FAQ validation.
@@ -19,11 +21,6 @@ import { findProhibitedCommercialTerms } from './publish-guardrails.util';
 
 export const MAX_AGENCY_FAQS = 5;
 export const FAQ_LOCALES = ['fr', 'ar', 'en'] as const;
-
-export interface TripFaqEntry {
-    question: Record<string, string>;
-    answer: Record<string, string>;
-}
 
 type FaqTemplate = { question: Record<string, string>; answer: Record<string, string> };
 

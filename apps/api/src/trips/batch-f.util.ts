@@ -1,3 +1,5 @@
+import type { ItineraryStop, PickupPoint } from '@ouiboo/types';
+export type { ItineraryStop, PickupPoint } from '@ouiboo/types';
 /**
  * Council S6 Batch F shared rules (#694, #696, #697, #701).
  *
@@ -97,13 +99,6 @@ function cleanLangMap(raw: unknown, maxLength: number): Record<string, string> |
     return Object.keys(out).length > 0 ? out : null;
 }
 
-export interface PickupPoint {
-    id: string;
-    name: string;
-    address?: string | null;
-    mapsUrl?: string | null;
-}
-
 /** #701: validate + normalize the agency-defined pickup points. */
 export function normalizePickupPoints(raw: unknown): PickupPoint[] | null {
     if (raw === undefined || raw === null) return null;
@@ -128,12 +123,6 @@ export function normalizePickupPoints(raw: unknown): PickupPoint[] | null {
             mapsUrl,
         };
     });
-}
-
-export interface ItineraryStop {
-    name: Record<string, string>;
-    durationMinutes?: number | null;
-    admissionNote?: Record<string, string> | null;
 }
 
 /** #701: validate + normalize one day's per-stop detail. */

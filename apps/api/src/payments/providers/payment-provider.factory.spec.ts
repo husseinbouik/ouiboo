@@ -6,6 +6,7 @@ import {
 import { StripePaymentProvider } from './stripe-payment.provider';
 import { CashPlusPaymentProvider } from './cashplus-payment.provider';
 import { PaymentProvider } from '../interfaces/payment-provider.interface';
+import { PaymentProvider as PaymentProviderKind } from '@ouiboo/types';
 
 /**
  * B3 — CMI stub lock. The CMI provider is an unfinished stub behind a
@@ -18,18 +19,18 @@ describe('PaymentProviderFactory — CMI lock (B3)', () => {
   const factory = new PaymentProviderFactory(stripeProvider, cashplusProvider);
 
   it('throws the explicit not-implemented error for CMI', () => {
-    expect(() => factory.getProvider('CMI')).toThrow(
+    expect(() => factory.getProvider(PaymentProviderKind.Cmi)).toThrow(
       CmiProviderNotImplementedError,
     );
-    expect(() => factory.getProvider('CMI')).toThrow(/not implemented/);
+    expect(() => factory.getProvider(PaymentProviderKind.Cmi)).toThrow(/not implemented/);
   });
 
   it('still resolves the Stripe provider', () => {
-    expect(factory.getProvider('STRIPE')).toBe(stripeProvider);
+    expect(factory.getProvider(PaymentProviderKind.Stripe)).toBe(stripeProvider);
   });
 
   it('still resolves the Cash Plus provider', () => {
-    expect(factory.getProvider('CASHPLUS')).toBe(cashplusProvider);
+    expect(factory.getProvider(PaymentProviderKind.CashPlus)).toBe(cashplusProvider);
   });
 
   it('still rejects unknown providers', () => {

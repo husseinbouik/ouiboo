@@ -1,55 +1,5 @@
-/**
- * #546: multilingual trip content.
- *
- * A trip's title + description live in a language map stored on
- * `TripTemplate.translations` (Json), keyed by ISO language code:
- *
- *   { "fr": { "title": "...", "description": "..." },
- *     "ar": { "title": "...", "description": "..." } }
- *
- * The map is the scalable shape (the `cancellationPolicy` Json precedent):
- * adding a future language is a data change, never a schema change.
- *
- * FRENCH IS CANONICAL. The long-standing `title` / `description` columns
- * hold the French text and mirror `translations.fr` on every write, so
- * every pre-existing consumer (bookings, emails, admin, search) keeps
- * rendering exactly what it renders today. Other languages exist only in
- * the map; public payloads resolve them server-side per request locale.
- */
-
-/**
- * #584 (phase 2): one itinerary day's text inside a language entry.
- * Days align to the canonical ItineraryDay rows by `dayNumber`;
- * `activities` are free-text tags stored per day (verified in the API
- * DTO — they are `string[]`, not enum codes), so they localize as part
- * of the day's language-keyed content.
- */
-export interface TripTranslationDay {
-    dayNumber?: number;
-    title?: string;
-    description?: string;
-    activities?: string[];
-}
-
-export interface TripTranslationEntry {
-    title?: string;
-    description?: string;
-    /** #745: photo captions in this language (index-aligned with the
-     * trip's `images`, exactly like the canonical `imageAlts` column).
-     * Additive inside the existing Json map — no schema change. */
-    imageAlts?: string[];
-    /** #745: the start location in this language. The canonical
-     * `startLocation` column mirrors the canonical entry, exactly
-     * like `title`. Free text (a place name), resolved per locale. */
-    startLocation?: string;
-    /** #584: itinerary days in this language (aligned by dayNumber). */
-    itinerary?: TripTranslationDay[];
-    /** #584: whole-list translations — a non-empty list wins wholesale. */
-    inclusions?: string[];
-    exclusions?: string[];
-    checklist?: string[];
-}
-
+import type { TripTranslationDay, TripTranslationEntry } from '@ouiboo/types';
+export type { TripTranslationDay, TripTranslationEntry } from '@ouiboo/types';
 /** The canonical (French) section content of a trip, as stored outside the map. */
 export interface TripCanonicalSections {
     itinerary?: Array<{

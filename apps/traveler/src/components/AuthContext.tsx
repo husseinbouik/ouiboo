@@ -1,13 +1,10 @@
 'use client';
 
 import { createAuthContext } from '@ouiboo/auth';
+import type { AuthUser } from '@ouiboo/types';
 
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    avatar?: string;
+/** #1025 (A4): traveller session user = shared AuthUser + display currency. */
+interface User extends AuthUser {
     displayCurrency?: string;
 }
 

@@ -1,5 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@ouiboo/database';
+import { PLATFORM_DEFAULT_CANCELLATION_BANDS } from '@ouiboo/types';
+import type { CancellationBand, CancellationScale, CancellationScaleSnapshot, CancellationSummary } from '@ouiboo/types';
+// #1025: the canonical bands live in @ouiboo/types; re-exported for existing consumers.
+export { PLATFORM_DEFAULT_CANCELLATION_BANDS };
+export type { CancellationBand, CancellationScale, CancellationScaleSnapshot, CancellationSummary } from '@ouiboo/types';
 
 /**
  * #417 (Council P0-11) — the platform cancellation scale.
@@ -51,39 +56,8 @@ export const CANCELLATION_RULE_AGENCY_FAULT = 'AGENCY_FAULT_FULL_REFUND';
 export const CANCELLATION_RULE_MINIMUM_NOT_REACHED =
     'MINIMUM_GROUP_NOT_REACHED_DEPOSIT_REFUNDABLE';
 
-export interface CancellationBand {
-    /** Whole days before the session start at which this band begins. */
-    minDaysBeforeStart: number;
-    /** Percent of the amount actually paid that is refunded. */
-    refundPercent: number;
-}
-
-export interface CancellationScale {
-    version: string;
-    bands: CancellationBand[];
-}
-
-/** The resolved scale as snapshotted on a booking / shown pre-payment. */
-export interface CancellationScaleSnapshot extends CancellationScale {
-    floorRefundPercent: number;
-    refundInitiationDays: number;
-}
-
 export type CancellationTrigger = 'TRAVELLER' | 'AGENCY_FAULT' | 'MINIMUM_NOT_REACHED';
 
-/**
- * Platform default bands for traveller-initiated cancellations, applied
- * when an agency has not set its own. Founder-adjustable policy values:
- * free cancellation a month out, tapering to no refund in the last
- * 3 days.
- */
-export const PLATFORM_DEFAULT_CANCELLATION_BANDS: CancellationBand[] = [
-    { minDaysBeforeStart: 30, refundPercent: 100 },
-    { minDaysBeforeStart: 15, refundPercent: 75 },
-    { minDaysBeforeStart: 7, refundPercent: 50 },
-    { minDaysBeforeStart: 3, refundPercent: 25 },
-    { minDaysBeforeStart: 0, refundPercent: 0 },
-];
 
 export const MAX_CANCELLATION_BANDS = 10;
 const MAX_BAND_MIN_DAYS = 365;
@@ -222,14 +196,6 @@ export function buildCancellationScaleSnapshot(raw: unknown): CancellationScaleS
  * never disagree.
  */
 export const FREE_CANCELLATION_MIN_DAYS = 1;
-
-export interface CancellationSummary {
-    freeCancellation: boolean;
-    /** Threshold (days before start) of the free tier, when one exists. */
-    freeCancellationDays: number | null;
-    /** The best refund percent the scale offers (its top band). */
-    bestRefundPercent: number;
-}
 
 /** Derive the #687 summary from a resolved scale (or stored policy JSON). */
 export function summarizeCancellation(raw: unknown): CancellationSummary {

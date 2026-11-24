@@ -1,16 +1,93 @@
-export enum UserRole {
-    Agency = "AGENCY",
-    Traveler = "TRAVELER",
-    Admin = "ADMIN",
-}
+// Domain enums are generated from the Prisma schema — see ./enums.ts
+// (#1025 / A3: single source of truth; regenerate via scripts/generate-enums.mjs).
+import {
+    UserRole,
+    VerificationStatus,
+    TravelLicenceType,
+    LicenceStatus,
+    BankDetailsStatus,
+    ManualPaymentChannel,
+    TripStatus,
+    SessionKind,
+    AccommodationTier,
+    TripCategory,
+    ItineraryMeal,
+    AccommodationType,
+    BookingStatus,
+    BookingAttendance,
+    SubscriptionStatus,
+    PaymentMethod,
+    RefundStatus,
+    BookingPaymentStatus,
+    SessionStatus,
+    SessionGroupStatus,
+    BookingPaymentPlanStatus,
+    PricingUnit,
+    AddOnPricingUnit,
+    type CustomTripRequestStatusType,
+    type QuoteRequestStatusType,
+} from './enums';
+export * from './enums';
 
 export interface Review {
     id: string;
     rating: number;
     comment?: string | null;
     response?: string | null;
+    /** #776: optional sub-scores stored on the review (null = not scored). */
+    organisationRating?: number | null;
+    guideRating?: number | null;
+    valueRating?: number | null;
+    accuracyRating?: number | null;
+    /** #776: API-relative, visibility-gated photo paths (VISIBLE reviews only). */
+    photos?: string[];
+    /** #783: API-relative, visibility-gated video path (VISIBLE reviews
+     * with a video only); null/absent = no video. Never a storage key. */
+    video?: string | null;
     isVerifiedBooking: boolean;
     createdAt: string;
+    traveler?: {
+        id: string;
+        name: string;
+        avatar?: string;
+    };
+}
+
+/**
+ * #1025 (A4): the authenticated-user wire shape returned by /users/me and
+ * consumed by the per-app auth contexts. Apps extend this base with their
+ * own profile payload instead of re-declaring the whole user.
+ */
+export interface AuthUser {
+    id: string;
+    name: string;
+    email: string;
+    role: UserRole;
+    avatar?: string;
+}
+
+/** #1025 (A4): minimal public trip shape shown on an agency storefront. */
+export interface PublicTripSummary {
+    id: string;
+    title: string;
+    description: string;
+    images: string[];
+    imageAlts?: string[];
+    durationDays: number;
+    startLocation: string;
+    sessions: Array<{
+        id: string;
+    }>;
+}
+
+/** #1025 (A4): one row of the agency analytics top-trips table. */
+export interface AgencyTopTripRow {
+    id: string;
+    title: string;
+    bookings: number;
+    revenue: number;
+    avgRating: number;
+    reviewCount: number;
 }
 
 export interface User {
@@ -21,78 +98,6 @@ export interface User {
     avatar?: string;
 }
 
-export enum VerificationStatus {
-    Pending = "PENDING",
-    // #422 (Council P0-20): proof image accepted, bank confirmation pending —
-    // the payment is not settled in this state.
-    Accepted = "ACCEPTED",
-    Verified = "VERIFIED",
-    Rejected = "REJECTED",
-}
-
-export enum CopyrightReportStatus {
-    Open = "OPEN",
-    Actioned = "ACTIONED",
-    Dismissed = "DISMISSED",
-}
-
-export type VerificationStatusType = VerificationStatus;
-
-// Law 11-16 travel-agency licence categories (#371)
-export enum TravelLicenceType {
-    FullOperator = "ODV",
-    SalesOnly = "DV",
-}
-
-export type TravelLicenceTypeType = TravelLicenceType;
-
-export enum LicenceStatus {
-    NotSubmitted = "NOT_SUBMITTED",
-    PendingReview = "PENDING_REVIEW",
-    Verified = "VERIFIED",
-    Rejected = "REJECTED",
-    Expired = "EXPIRED",
-}
-
-export type LicenceStatusType = LicenceStatus;
-
-// #421 (Council P0-19): lifecycle of an agency's bank payment destination.
-// Submitted details sit in pending fields until an admin verifies them
-// against the bank attestation; only VERIFIED details are traveller-live.
-export enum BankDetailsStatus {
-    Unverified = "UNVERIFIED",
-    PendingReview = "PENDING_REVIEW",
-    Verified = "VERIFIED",
-    Rejected = "REJECTED",
-}
-
-export type BankDetailsStatusType = BankDetailsStatus;
-
-export enum SubscriptionStatus {
-    Trial = "TRIAL",
-    Active = "ACTIVE",
-    Cancelled = "CANCELLED",
-    Expired = "EXPIRED",
-}
-
-export type SubscriptionStatusType = SubscriptionStatus;
-
-export enum PaymentMethod {
-    Manual = "MANUAL",
-    Gateway = "GATEWAY",
-}
-
-export type PaymentMethodType = PaymentMethod;
-
-/** #988: which manual channel a traveller chose — bank transfer or
- * Cash Plus. Both are MANUAL (traveller pays the agency directly). */
-export enum ManualPaymentChannel {
-    BankTransfer = "BANK_TRANSFER",
-    CashPlus = "CASH_PLUS",
-}
-
-export type ManualPaymentChannelType = ManualPaymentChannel;
-
 export enum PaymentProvider {
     Cmi = "CMI",
     Stripe = "STRIPE",
@@ -102,38 +107,8 @@ export enum PaymentProvider {
 export type PaymentProviderType = PaymentProvider;
 export type DecimalString = string;
 
-export enum BookingPaymentStatus {
-    Unpaid = "UNPAID",
-    Paid = "PAID",
-    Refunded = "REFUNDED",
-    Failed = "FAILED",
-    /** #369: staged payments — deposit verified, balance outstanding. */
-    PartiallyPaid = "PARTIALLY_PAID",
-}
-
 /** #369: session-level minimum-group outcome for staged payments. */
-export enum SessionGroupStatus {
-    NotRequired = "NOT_REQUIRED",
-    PendingMinimum = "PENDING_MINIMUM",
-    Confirmed = "CONFIRMED",
-    NotConfirmed = "NOT_CONFIRMED",
-}
-
-export type SessionGroupStatusType = SessionGroupStatus;
-
 /** #369: lifecycle of a booking's staged payment plan. */
-export enum BookingPaymentPlanStatus {
-    DepositDue = "DEPOSIT_DUE",
-    DepositPaid = "DEPOSIT_PAID",
-    BalanceDue = "BALANCE_DUE",
-    FullyPaid = "FULLY_PAID",
-    RefundDue = "REFUND_DUE",
-    Refunded = "REFUNDED",
-    Cancelled = "CANCELLED",
-}
-
-export type BookingPaymentPlanStatusType = BookingPaymentPlanStatus;
-
 /**
  * #369: a booking's staged payment plan. Amounts are owed to / held by the
  * agency — never a OuiBoo balance. Present only on staged bookings.
@@ -154,24 +129,6 @@ export interface BookingPaymentPlan {
     status: BookingPaymentPlanStatus;
     paymentPolicyVersion: string;
     refundPolicyVersion: string;
-}
-
-export type BookingPaymentStatusType = BookingPaymentStatus;
-
-export enum RefundStatus {
-    Pending = "PENDING",
-    Processed = "PROCESSED",
-    Failed = "FAILED",
-}
-
-export type RefundStatusType = RefundStatus;
-
-export enum NotificationType {
-    PaymentReminder = "PAYMENT_REMINDER",
-    TripReminder = "TRIP_REMINDER",
-    BookingConfirmation = "BOOKING_CONFIRMATION",
-    Cancellation = "CANCELLATION",
-    ReviewRequest = "REVIEW_REQUEST",
 }
 
 export interface AgencyProfile {
@@ -252,75 +209,16 @@ export interface AgencyProfile {
     cashPlusRejectionReason?: string;
 }
 
-export enum TripStatus {
-    Active = "ACTIVE",
-    Draft = "DRAFT",
-    Archived = "ARCHIVED",
-    Inactive = "INACTIVE",
-}
-
-export type TripStatusType = TripStatus;
-
-export enum SessionStatus {
-    Open = "OPEN",
-    Full = "FULL",
-    Cancelled = "CANCELLED",
-}
-
-export type SessionStatusType = SessionStatus;
-
-export enum TripCategory {
-    Adventure = "ADVENTURE",
-    Cultural = "CULTURAL",
-    Luxury = "LUXURY",
-    Budget = "BUDGET",
-    Nature = "NATURE",
-}
-
 /**
  * #676 (Council S6): language-neutral itinerary facts. Meals and
  * accommodation types are enums (never language maps); distance/drive
  * time are numbers; the accommodation name is a proper noun.
  */
-export enum ItineraryMeal {
-    Breakfast = "BREAKFAST",
-    Lunch = "LUNCH",
-    Dinner = "DINNER",
-}
-
-export type ItineraryMealType = ItineraryMeal;
-
-export enum AccommodationType {
-    Hotel = "HOTEL",
-    Riad = "RIAD",
-    Guesthouse = "GUESTHOUSE",
-    Camp = "CAMP",
-    Hostel = "HOSTEL",
-    Other = "OTHER",
-}
-
-export type AccommodationTypeType = AccommodationType;
-
 /**
  * #701 (Council S6): agency-labelled accommodation tiers (itinerary
  * phase 2), rendered with "or similar" honesty.
  */
-export enum AccommodationTier {
-    Standard = "STANDARD",
-    Comfort = "COMFORT",
-    Premium = "PREMIUM",
-}
-
-export type AccommodationTierType = AccommodationTier;
-
 /** #694 (Council S6): session kind — shared per-person vs private per-group. */
-export enum SessionKind {
-    Shared = "SHARED",
-    Private = "PRIVATE",
-}
-
-export type SessionKindType = SessionKind;
-
 /** #701: one per-stop detail entry on an itinerary day. Name and
  * admission note are language-keyed maps (ISO code -> text). */
 export interface ItineraryStop {
@@ -457,6 +355,21 @@ export interface CancellationScale {
     bands: CancellationBand[];
 }
 
+/**
+ * #417/#1025: platform default bands, applied when a trip stores none.
+ * This is the single canonical copy — the API cancellation util and the
+ * @ouiboo/schemas package both re-export it (previously each kept a
+ * hand-synced duplicate). Founder-adjustable policy values: free
+ * cancellation a month out, tapering to no refund in the last 3 days.
+ */
+export const PLATFORM_DEFAULT_CANCELLATION_BANDS: CancellationBand[] = [
+    { minDaysBeforeStart: 30, refundPercent: 100 },
+    { minDaysBeforeStart: 15, refundPercent: 75 },
+    { minDaysBeforeStart: 7, refundPercent: 50 },
+    { minDaysBeforeStart: 3, refundPercent: 25 },
+    { minDaysBeforeStart: 0, refundPercent: 0 },
+];
+
 /** #546: one language's trip title + description in the translations map. */
 /** #584: one itinerary day inside a language entry — text keyed to the canonical day by dayNumber. */
 export interface TripTranslationDay {
@@ -476,6 +389,10 @@ export interface TripTranslationEntry {
     inclusions?: string[];
     exclusions?: string[];
     checklist?: string[];
+    /** #1025 (A3): per-language start location + image alt texts, carried
+     * by the API translation payloads. */
+    startLocation?: string;
+    imageAlts?: string[];
 }
 
 /** #546: trip title + description keyed by ISO language code (fr canonical). */
@@ -488,8 +405,6 @@ export interface CancellationScaleSnapshot extends CancellationScale {
 }
 
 /** #695 (Council S6): agency-priced variant (option tier) on a trip. */
-export type PricingUnit = 'PER_PERSON' | 'PER_GROUP' | 'PER_VEHICLE';
-export type AddOnPricingUnit = 'PER_PERSON' | 'PER_BOOKING';
 
 export interface TripPricingVariant {
     id: string;
@@ -661,18 +576,6 @@ export interface TripSession {
  * publicRef and trip facts only; `traveler` appears solely on the
  * accepted agency's view after acceptance.
  */
-export enum CustomTripRequestStatus {
-    Pending = "PENDING",
-    Quoted = "QUOTED",
-    Accepted = "ACCEPTED",
-    Declined = "DECLINED",
-    Cancelled = "CANCELLED",
-    Expired = "EXPIRED",
-    Converted = "CONVERTED",
-}
-
-export type CustomTripRequestStatusType = CustomTripRequestStatus;
-
 export interface CustomTripOffer {
     id: string;
     requestId: string;
@@ -744,16 +647,6 @@ export interface DestinationInventoryTrip {
  * accepts (ACCEPTED — quote, scale and acceptance timestamp are
  * snapshotted immutably) or the flow ends (DECLINED/CANCELLED).
  */
-export enum QuoteRequestStatus {
-    Pending = "PENDING",
-    Quoted = "QUOTED",
-    Accepted = "ACCEPTED",
-    Declined = "DECLINED",
-    Cancelled = "CANCELLED",
-}
-
-export type QuoteRequestStatusType = QuoteRequestStatus;
-
 /**
  * #682: one firm-quote request and, once accepted, its immutable
  * snapshot. Amounts are stringified decimals (house money convention);
@@ -796,35 +689,11 @@ export interface QuoteRequest {
     traveler?: { email: string; name?: string | null } | null;
 }
 
-export enum BookingStatus {
-    Pending = "PENDING",
-    AwaitingValidation = "AWAITING_VALIDATION",
-    Confirmed = "CONFIRMED",
-    Rejected = "REJECTED",
-    Cancelled = "CANCELLED",
-    Completed = "COMPLETED",
-    /** #369: staged payments — deposit verified, waiting for group confirmation. */
-    PendingMinimum = "PENDING_MINIMUM",
-    /** #369: staged payments — group minimum not reached by the deadline. */
-    NotConfirmed = "NOT_CONFIRMED",
-    /** #434 (Council P1-08): agency recorded that the traveller did not attend. */
-    NoShow = "NO_SHOW",
-}
-
 /**
  * #434 (Council P1-08): attendance recorded by the agency for a booking.
  * Absent/null = not recorded yet. Only ATTENDED makes a completed
  * booking review-eligible.
  */
-export enum BookingAttendance {
-    Attended = "ATTENDED",
-    NoShow = "NO_SHOW",
-}
-
-export type BookingAttendanceType = BookingAttendance;
-
-export type BookingStatusType = BookingStatus;
-
 /**
  * #481: the current version of the traveller booking terms (the binding
  * checkout / terms-page wording in en/fr/ar). The checkout sends this

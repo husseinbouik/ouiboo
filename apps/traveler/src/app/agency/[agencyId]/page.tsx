@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { VerificationStatus, type VerificationStatusType } from '@ouiboo/types';
+import { VerificationStatus, type PublicTripSummary, type VerificationStatusType } from '@ouiboo/types';
 import { getServerTranslations } from '@/lib/server-translations';
 import { getInitialLanguage } from '@ouiboo/i18n/server';
 import SellerIdentity from '@/components/SellerIdentity';
@@ -58,18 +58,8 @@ interface AgencyPublicProfile {
   } | null;
 }
 
-interface Trip {
-  id: string;
-  title: string;
-  description: string;
-  images: string[];
-  imageAlts?: string[];
-  durationDays: number;
-  startLocation: string;
-  sessions: Array<{
-    id: string;
-  }>;
-}
+/** #1025 (A4): storefront trip shape is the shared PublicTripSummary. */
+type Trip = PublicTripSummary;
 
 async function getAgency(id: string): Promise<AgencyPublicProfile | null> {
   try {

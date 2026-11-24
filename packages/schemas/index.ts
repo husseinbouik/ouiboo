@@ -182,17 +182,11 @@ export const CancellationPolicySchema = z.object({
 });
 
 /**
- * #417: platform default bands, applied when a trip stores none.
- * Mirrors PLATFORM_DEFAULT_CANCELLATION_BANDS in the API
- * (apps/api/src/cancellation/cancellation.util.ts) — keep them in sync.
+ * #417/#1025: platform default bands, applied when a trip stores none.
+ * Single canonical copy lives in @ouiboo/types — re-exported here so
+ * existing @ouiboo/schemas consumers keep working.
  */
-export const PLATFORM_DEFAULT_CANCELLATION_BANDS: Array<z.infer<typeof CancellationBandSchema>> = [
-    { minDaysBeforeStart: 30, refundPercent: 100 },
-    { minDaysBeforeStart: 15, refundPercent: 75 },
-    { minDaysBeforeStart: 7, refundPercent: 50 },
-    { minDaysBeforeStart: 3, refundPercent: 25 },
-    { minDaysBeforeStart: 0, refundPercent: 0 },
-];
+export { PLATFORM_DEFAULT_CANCELLATION_BANDS } from "@ouiboo/types";
 
 /**
  * #546: one language's trip title + description inside the translations
