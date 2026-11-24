@@ -9,6 +9,8 @@ import { apiClient } from '@/lib/api-client';
 import { Button, Card, CardContent, Badge } from '@ouiboo/ui';
 import { AlertCircle, CheckCircle2, Loader2, Landmark, Clock, UploadCloud } from 'lucide-react';
 import { cn } from '@ouiboo/ui/utils';
+import { motion, useReducedMotion } from 'framer-motion';
+import { MOTION_TOKENS } from '@ouiboo/tokens';
 import { BookingStatus, type BookingDetails } from '@ouiboo/types';
 import SellerIdentity from '@/components/SellerIdentity';
 import SellerBlock from '@/components/SellerBlock';
@@ -92,6 +94,8 @@ export default function CheckoutConfirmationPage() {
     verifyPaymentMutation,
   ]);
 
+  const reduceMotion = useReducedMotion();
+  const motionDuration = reduceMotion ? 0 : Number.parseFloat(MOTION_TOKENS.durations.slow) / 1000;
   const hasUploadedProof = booking?.paymentProof || isProofUploaded;
   const isConfirmed = booking?.status === BookingStatus.Confirmed;
   const isCancelled = booking?.status === BookingStatus.Cancelled || gatewayStatus === 'cancelled';
@@ -139,9 +143,14 @@ export default function CheckoutConfirmationPage() {
         <Card className="border-none shadow-2xl shadow-black/10 rounded-[3rem] overflow-hidden">
           <CardContent className="p-10 space-y-10">
             <div className="text-center space-y-4">
-              <div className="mx-auto h-20 w-20 rounded-3xl bg-success/10 text-success flex items-center justify-center">
+              <motion.div
+                initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: motionDuration }}
+                className="mx-auto h-20 w-20 rounded-3xl bg-success/10 text-success flex items-center justify-center"
+              >
                 <CheckCircle2 className="h-10 w-10" />
-              </div>
+              </motion.div>
               <Badge className="mx-auto bg-success/10 text-success border-none px-4 py-1.5 rounded-full font-black uppercase text-[10px] tracking-widest">
                 {isCancelled ? t('checkout.confirmation.paymentCancelledBadge') : isConfirmed ? t('checkout.confirmation.bookingConfirmedBadge') : t('checkout.confirmation.bookingSubmittedBadge')}
               </Badge>
@@ -203,11 +212,14 @@ export default function CheckoutConfirmationPage() {
                 </div>
               )}
               <div className="space-y-3">
-                {statusItems.map((item) => {
+                {statusItems.map((item, index) => {
                   const Icon = item.icon;
                   return (
-                    <div
+                    <motion.div
                       key={item.title}
+                      initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: motionDuration, delay: reduceMotion ? 0 : 0.15 + index * 0.15 }}
                       className={cn(
                         "flex items-start gap-4 rounded-3xl border p-5",
                         item.state === 'complete' ? "border-success/20 bg-success/10" : "border-border/60 bg-muted/20"
@@ -225,7 +237,7 @@ export default function CheckoutConfirmationPage() {
                         <p className="text-sm font-black text-foreground">{item.title}</p>
                         <p className="text-[11px] font-medium text-muted-foreground">{item.description}</p>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>

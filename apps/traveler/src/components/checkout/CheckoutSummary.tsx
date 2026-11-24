@@ -12,6 +12,7 @@ import SellerBlock from '../SellerBlock';
 import { ModelExplainer } from '../ModelExplainer';
 import { CancellationScaleCard } from '../CancellationScaleCard';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
+import { DepositSchedule } from '@/components/DepositSchedule';
 
 type CheckoutSummaryProps = {
   trip: CheckoutTrip;
@@ -168,6 +169,25 @@ export function CheckoutSummary({
         </div>
       </div>
 
+      {/* Phase 2 — Checkout A deposit rail: the staged split + next
+          steps stay visible beside the submit at all times. */}
+      {stagedAmounts ? (
+        <DepositSchedule
+          depositPercent={totalPrice > 0 ? (stagedAmounts.depositDue / totalPrice) * 100 : 0}
+          depositLabel={formatTotalLine(depositRounded)}
+          balanceLabel={formatTotalLine(balanceRounded)}
+        />
+      ) : null}
+      <div className="rounded-2xl bg-muted/30 p-5">
+        <p className="text-sm font-black text-foreground">{t('checkout.whatNextTitle')}</p>
+        <ol className="mt-3 list-decimal space-y-1.5 ps-5 text-sm text-muted-foreground">
+          <li>{t('checkout.whatNext1')}</li>
+          <li>{t('checkout.whatNext2')}</li>
+          <li>{t('checkout.whatNext3')}</li>
+          <li>{t('checkout.whatNext4')}</li>
+        </ol>
+      </div>
+
       {/* #417: the cancellation scale, repeated at checkout before payment. */}
       <CancellationScaleCard
         scale={trip.cancellationScale}
@@ -211,7 +231,8 @@ export function CheckoutSummary({
         disabled={!canSubmit || isSubmitting}
         aria-describedby={!canSubmit ? 'checkout-missing-requirements' : undefined}
         onClick={onSubmit}
-        className="w-full h-20 rounded-3xl text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 border-none group px-10"
+        aria-busy={isSubmitting}
+        className="w-full h-20 rounded-3xl text-xl font-black bg-primary hover:bg-primary/90 text-white shadow-2xl shadow-primary/20 transition-all border-none group px-10 disabled:cursor-not-allowed"
       >
         {isSubmitting ? t('checkout.submitting') : t('checkout.completeBooking')} <CheckCircle2 className="h-6 w-6 ms-4 group-hover:scale-110 transition-transform" />
       </Button>

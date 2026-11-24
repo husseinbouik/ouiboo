@@ -11,6 +11,7 @@ import { ReferralBlock } from '@/components/ReferralBlock';
 import { useAuth } from '@/components/AuthContext';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { AccountShell } from '@/components/AccountShell';
 
 type ProfileFormValues = {
   name: string;
@@ -128,14 +129,9 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background pt-24 pb-20 transition-colors duration-300">
-      <div className="max-w-4xl mx-auto px-6 space-y-8">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-5xl font-black text-foreground font-display tracking-tight">{t('profilePage.title')}</h1>
-            <p className="mt-2 text-muted-foreground">{t('profilePage.subtitle')}</p>
-          </div>
-          <div className="h-1 w-24 bg-sunset-orange rounded-full shrink-0" />
-        </div>
+      <AccountShell title={t('profilePage.title')}>
+        <p className="-mt-4 mb-8 text-muted-foreground">{t('profilePage.subtitle')}</p>
+        <div className="space-y-8">
 
         <Card className="border-none shadow-2xl shadow-deep-blue/5 dark:shadow-none dark:ring-1 dark:ring-border rounded-4xl overflow-hidden bg-card">
           <CardHeader className="p-10 pb-0">
@@ -249,6 +245,16 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
+        <Card className="border border-border shadow-sm rounded-3xl overflow-hidden bg-card">
+          <CardContent className="p-8">
+            <p className="text-lg font-black text-foreground font-display flex items-center gap-2">
+              <Shield className="h-5 w-5 text-ocean-700 dark:text-ocean-300" aria-hidden="true" />
+              {t('profilePage.agenciesSeeTitle')}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t('profilePage.agenciesSeeBody')}</p>
+          </CardContent>
+        </Card>
+
         <ReferralBlock />
 
         <Card className="border-none shadow-2xl shadow-deep-blue/5 dark:shadow-none dark:ring-1 dark:ring-border rounded-4xl overflow-hidden bg-card">
@@ -262,7 +268,8 @@ export default function ProfilePage() {
             <CurrencySelector className="h-12 px-4 bg-muted/50 dark:bg-card rounded-2xl" />
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </AccountShell>
     </div>
   );
 }

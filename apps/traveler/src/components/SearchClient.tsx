@@ -1102,7 +1102,7 @@ export default function SearchClient({
                 independently of the page — sticky under the header,
                 capped at the viewport height below it, overflow-y
                 auto. The page keeps its own scroll. */}
-            <div className="bg-card p-5 rounded-2xl border border-border space-y-6 sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto">
+            <div className="bg-card p-5 rounded-2xl border border-border shadow-sm space-y-6 sticky top-28 max-h-[calc(100vh-8rem)] overflow-y-auto motion-safe:transition-shadow">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-semibold flex items-center gap-2"><Filter className="h-4 w-4" /> {t('search.filters')}</h3>
                 <span className="flex items-center gap-3">
@@ -1239,7 +1239,7 @@ export default function SearchClient({
               </div>
             )}
 
-            <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-5", filtersHidden ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
+            <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-5 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-300 motion-safe:transition-all", filtersHidden ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
               {isLoading ? (
                 <TripCardSkeletonGrid count={6} className={cn("col-span-full sm:grid-cols-2 gap-5", filtersHidden ? "lg:grid-cols-4" : "lg:grid-cols-3")} />
               ) : trips.length > 0 ? (

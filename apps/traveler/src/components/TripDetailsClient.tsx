@@ -38,6 +38,7 @@ import { TripFaqSection, pickFaqText } from '@/components/TripFaqSection';
 import type { CancellationSummary, PickupPoint, TripFaqEntry } from '@ouiboo/types';
 import { QuoteRequestPanel } from '@/components/QuoteRequestPanel';
 import { RatingDistribution } from '@/components/RatingDistribution';
+import { DepositSchedule } from '@/components/DepositSchedule';
 import { SnapRail } from '@/components/SnapRail';
 import { PhotoViewer } from '@/components/PhotoViewer';
 import { TripMosaic } from '@/components/TripMosaic';
@@ -319,14 +320,7 @@ export default function TripDetailsClient({
   const galleryImages = trip.images && trip.images.length > 0 ? trip.images : [''];
 
   return (
-    <div className="min-h-screen bg-background pb-32 font-sans text-foreground overflow-hidden relative">
-      {/* Background Blobs */}
-      <div aria-hidden="true" className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80 opacity-20 dark:opacity-10 pointer-events-none">
-          <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-sunset-orange sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
-      </div>
-      <div aria-hidden="true" className="absolute inset-x-0 top-[40rem] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[40rem] opacity-20 dark:opacity-10 pointer-events-none">
-          <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative right-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] translate-x-1/2 rotate-[120deg] bg-blue-400 sm:right-[calc(50%-30rem)] sm:w-[72.1875rem]"/>
-      </div>
+    <div className="min-h-screen bg-background pb-32 font-sans text-foreground relative">
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32">
         <Link href="/search" className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-all mb-5 sm:mb-8 group bg-card/50 backdrop-blur-sm px-4 sm:px-5 py-2.5 rounded-xl border border-border/50 hover:bg-card shadow-sm">
@@ -439,14 +433,14 @@ export default function TripDetailsClient({
                     </h1>
                     
                     <div className="flex flex-wrap items-center gap-6">
-                        <div className="flex items-center gap-1.5 bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <div className="flex items-center gap-1.5 bg-sunset-orange/10 px-3 py-1.5 rounded-full border border-sunset-orange/20">
+                            <Star className="h-4 w-4 fill-sunset-orange text-sunset-orange" />
                             {/* #681 (Council S6): the average renders only
                                 at/above the 5-review threshold; below it the
                                 count is published without an average, and at
                                 zero the localised "No reviews yet" (#579). */}
-                            <span className="font-bold text-sm text-amber-700 dark:text-yellow-400">{ratingDisplayState(reviewStats?.totalReviews) === 'rated' ? (reviewStats?.averageRating ?? 0).toFixed(1) : ratingDisplayState(reviewStats?.totalReviews) === 'below-threshold' ? t('tripDetails.reviewsCount', { count: reviewStats?.totalReviews ?? 0 }) : t('tripDetails.newTrip')}</span>
-                            <span className="text-xs text-amber-700 dark:text-yellow-400/70 font-medium">{reviewStats?.totalReviews ? t('tripDetails.reviewsCount', { count: reviewStats.totalReviews }) : t('reviews.noReviewsYet')}</span>
+                            <span className="font-bold text-sm text-warning-dark">{ratingDisplayState(reviewStats?.totalReviews) === 'rated' ? (reviewStats?.averageRating ?? 0).toFixed(1) : ratingDisplayState(reviewStats?.totalReviews) === 'below-threshold' ? t('tripDetails.reviewsCount', { count: reviewStats?.totalReviews ?? 0 }) : t('tripDetails.newTrip')}</span>
+                            <span className="text-xs text-warning-dark font-medium">{reviewStats?.totalReviews ? t('tripDetails.reviewsCount', { count: reviewStats.totalReviews }) : t('reviews.noReviewsYet')}</span>
                         </div>
                         {/* #468: share this trip (native sheet / intent menu).
                             allowRuntimeOriginFallback: this app serves the trip
@@ -471,10 +465,10 @@ export default function TripDetailsClient({
                       className={cn(
                         "mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-md",
                         !nextDepartureSession
-                          ? "bg-rose-800"
+                          ? "bg-danger"
                           : nextDepartureSession.availableSeats < 5
-                            ? "bg-amber-600"
-                            : "bg-emerald-700"
+                            ? "bg-warning-dark"
+                            : "bg-ocean-700"
                       )}
                     >
                       <Zap className="h-4 w-4" />
@@ -534,10 +528,10 @@ export default function TripDetailsClient({
                     {(trip.payOnArrivalEnabled || trip.privateTourEnabled) ? (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {trip.payOnArrivalEnabled ? (
-                          <span className="rounded-lg bg-sky-700 px-2.5 py-1 text-[11px] font-bold text-white">{t('batchF.payOnArrivalBadge')}</span>
+                          <span className="rounded-lg bg-ocean-700 px-2.5 py-1 text-[11px] font-bold text-white">{t('batchF.payOnArrivalBadge')}</span>
                         ) : null}
                         {trip.privateTourEnabled ? (
-                          <span className="rounded-lg bg-violet-700 px-2.5 py-1 text-[11px] font-bold text-white">{t('batchF.privateBadge')}</span>
+                          <span className="rounded-lg bg-deep-blue px-2.5 py-1 text-[11px] font-bold text-white">{t('batchF.privateBadge')}</span>
                         ) : null}
                       </div>
                     ) : null}
@@ -582,7 +576,7 @@ export default function TripDetailsClient({
                         {/* Timeline Connector */}
                         <div className="absolute start-4 top-2 bottom-0 w-0.5 bg-border/60 group-last:hidden" />
                         
-                        <div className="absolute start-0 top-0 w-8 h-8 rounded-full bg-card border-2 border-sunset-orange text-sunset-orange flex items-center justify-center font-bold text-xs z-10 shadow-sm transition-all group-hover:scale-110 group-hover:bg-sunset-orange group-hover:text-white">
+                        <div className="absolute start-0 top-0 w-8 h-8 rounded-full bg-card border-2 border-sunset-orange text-sunset-orange flex items-center justify-center font-bold text-xs z-10 shadow-sm transition-all group-hover:scale-110 group-hover:bg-sunset-orange group-hover:text-deep-blue">
                           {day.dayNumber}
                         </div>
                         
@@ -702,7 +696,7 @@ export default function TripDetailsClient({
                         className="flex items-center gap-3 p-4 bg-success/10 rounded-2xl border border-success/20"
                       >
                          <div className="h-8 w-8 rounded-full bg-success/100/10 flex items-center justify-center shrink-0">
-                             <Check className="h-4 w-4 text-emerald-500" />
+                             <Check className="h-4 w-4 text-ocean-700" />
                           </div>
                          <span className="font-semibold text-foreground text-sm">{item}</span>
                       </motion.div>
@@ -744,10 +738,10 @@ export default function TripDetailsClient({
                           whileInView={{ opacity: 1, y: 0 }}
                           viewport={{ once: true }}
                           transition={{ delay: idx * 0.05 }}
-                          className="flex items-center gap-3 p-4 bg-amber-50/30 dark:bg-amber-500/5 rounded-2xl border border-amber-100/50 dark:border-amber-500/10"
+                          className="flex items-center gap-3 p-4 bg-sand/40 dark:bg-muted rounded-2xl border border-sand dark:border-border"
                         >
                            <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-                               <ClipboardList className="h-4 w-4 text-amber-500" />
+                               <ClipboardList className="h-4 w-4 text-warning-dark" />
                             </div>
                            <span className="font-semibold text-foreground text-sm">{item}</span>
                         </motion.div>
@@ -883,6 +877,17 @@ export default function TripDetailsClient({
                         </div>
                     </div>
 
+                    {/* Phase 2 (Option C borrow): deposit-schedule visual in the
+                        sticky rail — the staged split stays visible while the
+                        itinerary scrolls. */}
+                    {(selectedSessionData && isStagedSession(selectedSessionData) ? selectedSessionData : openSessions.find((session) => isStagedSession(session))) ? (
+                      <DepositSchedule
+                        depositPercent={(() => { const sess = selectedSessionData && isStagedSession(selectedSessionData) ? selectedSessionData : openSessions.find((session) => isStagedSession(session))!; return Number(sess.price) > 0 ? (Number(sess.deposit) / Number(sess.price)) * 100 : 0; })()}
+                        depositLabel={formatDisplayAmount((selectedSessionData && isStagedSession(selectedSessionData) ? selectedSessionData : openSessions.find((session) => isStagedSession(session)))!.deposit)}
+                        balanceLabel={formatDisplayAmount(Number((selectedSessionData && isStagedSession(selectedSessionData) ? selectedSessionData : openSessions.find((session) => isStagedSession(session)))!.price) - Number((selectedSessionData && isStagedSession(selectedSessionData) ? selectedSessionData : openSessions.find((session) => isStagedSession(session)))!.deposit))}
+                      />
+                    ) : null}
+
                     <div className="space-y-4">
                         <label id="session-select-label" className="text-xs font-bold text-foreground uppercase tracking-wider ms-1">{t('tripDetails.selectDate')}</label>
                         <div
@@ -916,16 +921,16 @@ export default function TripDetailsClient({
                                           <span className="font-bold text-foreground text-sm">
                                               {new Date(session.startDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })} - {new Date(session.endDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
                                           </span>
-                                          <span className={cn("text-xs font-bold mt-1", session.availableSeats < 5 ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")}>
+                                          <span className={cn("text-xs font-bold mt-1", session.availableSeats < 5 ? "text-warning-dark" : "text-ocean-700 dark:text-ocean-300")}>
                                               {t('tripDetails.spotsLeft', { count: session.availableSeats })}
                                           </span>
                                           {(session.sessionKind === 'PRIVATE' || session.allowPayLater) ? (
                                             <span className="mt-1 flex gap-1">
                                               {session.sessionKind === 'PRIVATE' ? (
-                                                <span className="rounded bg-violet-700 px-1.5 py-0.5 text-[10px] font-bold text-white">{t('batchF.privateBadge')}</span>
+                                                <span className="rounded bg-deep-blue px-1.5 py-0.5 text-[10px] font-bold text-white">{t('batchF.privateBadge')}</span>
                                               ) : null}
                                               {session.allowPayLater ? (
-                                                <span className="rounded bg-sky-700 px-1.5 py-0.5 text-[10px] font-bold text-white">{t('batchF.payLaterBadge')}</span>
+                                                <span className="rounded bg-ocean-700 px-1.5 py-0.5 text-[10px] font-bold text-white">{t('batchF.payLaterBadge')}</span>
                                               ) : null}
                                             </span>
                                           ) : null}
@@ -967,7 +972,7 @@ export default function TripDetailsClient({
                                         )}
                                         {/* Batch F session notes (#694/#696/#697). */}
                                         {session.sessionKind === 'PRIVATE' ? (
-                                          <p className="text-[10px] font-semibold text-violet-700 dark:text-violet-300">
+                                          <p className="text-[10px] font-semibold text-deep-blue dark:text-foreground">
                                             {t('batchF.privateSessionNote')} {t('batchF.privatePriceNote')}
                                           </p>
                                         ) : null}
@@ -1041,7 +1046,7 @@ export default function TripDetailsClient({
                                     router.push(`/checkout/${tripId}?${params.toString()}`);
                                 }
                             }}
-                            className="w-full h-14 rounded-xl text-lg font-bold bg-deep-blue dark:bg-sunset-orange hover:bg-blue-900 dark:hover:bg-sunset-orange-dark text-white dark:text-deep-blue dark:hover:text-white shadow-lg shadow-blue-900/20 dark:shadow-orange-900/20 transition-all active:scale-95 disabled:opacity-50"
+                            className="w-full h-14 rounded-xl text-lg font-bold bg-deep-blue dark:bg-sunset-orange hover:bg-deep-blue/90 dark:hover:bg-sunset-orange-dark text-white dark:text-deep-blue dark:hover:text-white shadow-lg shadow-deep-blue/20 dark:shadow-orange-900/20 transition-all active:scale-95 disabled:opacity-50"
                         >
                             {t('tripDetails.bookNow')}
                         </Button>

@@ -8,6 +8,7 @@ import { Button, EmptyState } from '@ouiboo/ui';
 import { AlertTriangle, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
+import { AccountShell } from '@/components/AccountShell';
 
 type Conversation = {
   id: string;
@@ -71,8 +72,8 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
-      <h1 className="text-3xl font-bold mb-8">{t('messages.title')}</h1>
+    <div className="py-12">
+      <AccountShell title={t('messages.title')}>
       {/* #251/B23: ID documents and payment credentials must never be
           sent through chat — warn on the messaging surface itself. */}
       <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-5 text-sm mb-8 flex gap-3" role="note">
@@ -126,6 +127,7 @@ export default function MessagesPage() {
           ))}
         </div>
       )}
+      </AccountShell>
     </div>
   );
 }

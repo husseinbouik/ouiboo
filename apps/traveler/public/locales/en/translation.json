@@ -194,7 +194,7 @@
     "stepGuestDetails": "Guest details",
     "stepPayment": "Payment",
     "stepConfirmation": "Confirmation",
-    "initializing": "Initializing Security...",
+    "initializing": "Loading checkout…",
     "tripNotFound": "Trip not found.",
     "selectSession": "Select a session",
     "retryTitle": "Retry payment",
@@ -307,7 +307,14 @@
     "cashPlusFeeNote": "The Cash Plus sending fee is paid by you, on top of this amount — the agency must receive the full amount.",
     "cashPlusTransactionCode": "Cash Plus transaction code",
     "cashPlusTransactionCodePlaceholder": "e.g. CP-2026-000123",
-    "cashPlusCodeOrReceipt": "Enter the transaction code from your Cash Plus receipt, and/or upload the receipt below."
+    "cashPlusCodeOrReceipt": "Enter the transaction code from your Cash Plus receipt, and/or upload the receipt below.",
+    "step1Title": "Step 1 — Who is travelling?",
+    "step2Title": "Step 2 — Pay the agency",
+    "whatNextTitle": "What happens next",
+    "whatNext1": "Pay the agency directly",
+    "whatNext2": "Upload your receipt or Cash Plus code",
+    "whatNext3": "The agency confirms — the group fills",
+    "whatNext4": "Only then is the balance due; if the minimum is not met, your deposit is refunded by the agency"
   },
   "trust": {
     "title": "Why book on Ouiboo",
@@ -344,7 +351,10 @@
     "errorFailed": "Login failed. Please try again.",
     "invalidCredentials": "Incorrect email or password. Please try again.",
     "loggingIn": "Logging in...",
-    "networkError": "Cannot reach the server. Please check your connection and try again."
+    "networkError": "Cannot reach the server. Please check your connection and try again.",
+    "brandHeadline": "Morocco is yours to explore.",
+    "brandBody": "Book trips from agencies checked before listing, and manage your bookings, proofs and messages in one place.",
+    "brandMoneyLine": "You pay the agency directly — Ouiboo never touches your money."
   },
   "signup": {
     "dateOfBirth": "Date of birth",
@@ -520,7 +530,10 @@
     "or": "Or",
     "noAccount": "Do not have an account?",
     "signUp": "Sign Up",
-    "close": "Close dialog"
+    "close": "Close dialog",
+    "brandHeadline": "Morocco is yours to explore.",
+    "brandBody": "Book trips from agencies checked before listing, and manage your bookings, proofs and messages in one place.",
+    "brandMoneyLine": "You pay the agency directly — Ouiboo never touches your money."
   },
   "agency": {
     "notFoundTitle": "Agency not found",
@@ -780,7 +793,11 @@
       "deniedBody": "Push notifications are blocked in your browser settings. Allow notifications for this site to enable them.",
       "unsupportedBody": "This browser does not support push notifications.",
       "unavailableBody": "Push notifications are not available right now. Please try again later."
-    }
+    },
+    "groupToday": "Today",
+    "groupEarlier": "Earlier",
+    "markAllRead": "Mark all read",
+    "fallbackTitle": "Notification"
   },
   "seller": {
     "organisedAndSoldBy": "Organised and sold by {{name}}",
@@ -886,7 +903,11 @@
       "OTHER": "Accommodation"
     },
     "meetingArea": "Meeting point: {{area}} (exact address on your booking)",
-    "meetingPickup": "Pickup available"
+    "meetingPickup": "Pickup available",
+    "depositScheduleTitle": "How payment works",
+    "depositNow": "{{percent}}% now",
+    "balanceLater": "{{percent}}% later",
+    "depositMinNotMet": "Minimum not met? Your deposit is refunded in full by the agency. You pay the agency directly — Ouiboo never touches your money."
   },
   "reviews": {
     "loading": "Loading reviews...",
@@ -1179,7 +1200,13 @@
     "viewDetails": "View details",
     "emptyTitle": "No bookings found",
     "emptyBody": "Your upcoming adventures will appear here once you book them.",
-    "reviewModalBody": "Help other travelers by sharing your thoughts about this trip."
+    "reviewModalBody": "Help other travelers by sharing your thoughts about this trip.",
+    "nextStep": "Next step",
+    "nextStepBalance": "Pay the balance to the agency",
+    "nextStepUploadProof": "Upload your payment proof",
+    "nextStepAwaitingAgency": "Waiting for the agency to confirm your proof",
+    "nextStepConfirmed": "You're booked — check your trip details before departure",
+    "nextStepViewDetails": "View the booking details"
   },
   "quotes": {
     "title": "Request these dates",
@@ -1306,7 +1333,23 @@
     "cashPlusFeeNote": "The Cash Plus sending fee is on top — the agency must receive the full stage amount.",
     "cashPlusCodePlaceholder": "Cash Plus transaction code",
     "cashPlusSubmitCode": "Submit code",
-    "cashPlusCodeOrReceipt": "You can also upload the receipt photo instead of, or as well as, the code."
+    "cashPlusCodeOrReceipt": "You can also upload the receipt photo instead of, or as well as, the code.",
+    "journeyTitle": "Your payment journey",
+    "journeyNextStep": "Next step",
+    "journeyDepositTitle": "Deposit",
+    "journeyDepositDone": "Deposit confirmed by the agency.",
+    "journeyDepositProof": "Proof received — the agency is reviewing it.",
+    "journeyDepositTodo": "Pay the deposit directly to the agency and upload your proof.",
+    "journeyConfirmTitle": "Confirmation",
+    "journeyConfirmDone": "Your booking is confirmed.",
+    "journeyConfirmTodo": "The agency confirms your booking and the group.",
+    "journeyBalanceTitle": "Balance",
+    "journeyBalanceDone": "Balance paid in full.",
+    "journeyBalanceTodo": "The balance is only due after the trip is confirmed.",
+    "proofStageSending": "Sending your proof…",
+    "proofStageStoring": "Storing your proof securely…",
+    "proofStageFinishing": "Finishing up…",
+    "proofReceivedUnderReview": "Proof received — under review by the agency"
   },
   "verificationRecord": {
     "title": "Verification record",
@@ -1499,7 +1542,9 @@
     "saving": "Saving...",
     "save": "Save profile",
     "displayCurrency": "Display currency",
-    "displayCurrencyHelp": "Prices are shown in this currency. Bookings are always charged in the trip’s own currency."
+    "displayCurrencyHelp": "Prices are shown in this currency. Bookings are always charged in the trip’s own currency.",
+    "agenciesSeeTitle": "What agencies see about you",
+    "agenciesSeeBody": "When you book or message an agency, it sees your name and — for a booking — your phone number and the trip details for that booking. Agencies do not see your password, your other bookings, or payment proofs for other trips."
   },
   "wishlistPage": {
     "title": "My wishlist",
@@ -1548,7 +1593,9 @@
     "summarySaved_zero": "{{count}} saved trips",
     "summarySaved_two": "{{count}} saved trips",
     "summarySaved_few": "{{count}} saved trips",
-    "summarySaved_many": "{{count}} saved trips"
+    "summarySaved_many": "{{count}} saved trips",
+    "depositNote": "Deposit is at most 30% of the trip price — you pay the agency directly.",
+    "signedOutBrand": "Trips from agencies checked before listing — you always pay the agency directly."
   },
   "referral": {
     "title": "Invite travellers",
@@ -1576,5 +1623,12 @@
     "step3Title": "Get your Booking Pass",
     "step3Text": "Your pass confirms the trip, the meeting point and what's included.",
     "refundNote": "If the minimum group isn't reached, your deposit is refunded in full."
+  },
+  "account": {
+    "eyebrow": "Your account",
+    "navLabel": "Account sections",
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "messages": "Messages"
   }
 }

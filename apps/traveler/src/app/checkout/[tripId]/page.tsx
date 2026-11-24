@@ -307,6 +307,13 @@ export default function CheckoutPage() {
           <div className="lg:col-span-8 space-y-8">
             <Card className="border-none shadow-xl shadow-black/5 rounded-4xl overflow-hidden">
               <CardContent className="p-10 space-y-10">
+                <div>
+                  <ol aria-label={t('checkout.progressLabel')} className="mb-8 grid grid-cols-2 gap-3">
+                    <li className="border-t-[3px] border-ocean-500 pt-2 text-sm font-bold text-foreground">{t('checkout.step1Title')}</li>
+                    <li className="border-t-[3px] border-sunset-orange pt-2 text-sm font-bold text-foreground">{t('checkout.step2Title')}</li>
+                  </ol>
+                  <h2 className="text-xl font-black font-display text-foreground">{t('checkout.step1Title')}</h2>
+                </div>
                 <CheckoutGuestForm
                   trip={trip}
                   retryBooking={retryBooking}
@@ -334,14 +341,14 @@ export default function CheckoutPage() {
                   onRemove={() => { setAppliedPromo(null); setPromoError(null); }}
                 />
                 {payOnArrivalElection ? (
-                  <div className="rounded-2xl border border-sky-200 bg-sky-50 dark:bg-sky-500/10 p-5 text-sm" data-testid="checkout-pay-on-arrival">
+                  <div className="rounded-2xl border border-ocean-500/30 bg-ocean-500/10 p-5 text-sm" data-testid="checkout-pay-on-arrival">
                     <p className="font-bold text-foreground">{t('batchF.payOnArrivalBadge')}</p>
                     <p className="mt-1 text-muted-foreground">
                       {t('batchF.payOnArrivalNote', { agency: trip.agency?.legalName ?? trip.agency?.companyName ?? t('batchF.theAgency') })}
                     </p>
                   </div>
                 ) : payLaterElection ? (
-                  <div className="rounded-2xl border border-sky-200 bg-sky-50 dark:bg-sky-500/10 p-5 text-sm" data-testid="checkout-pay-later">
+                  <div className="rounded-2xl border border-ocean-500/30 bg-ocean-500/10 p-5 text-sm" data-testid="checkout-pay-later">
                     <p className="font-bold text-foreground">{t('batchF.payLaterBadge')}</p>
                     <p className="mt-1 text-muted-foreground">
                       {t('batchF.payLaterNote', {
@@ -354,6 +361,8 @@ export default function CheckoutPage() {
                   </div>
                 ) : null}
                 {!payOnArrivalElection ? (
+                <>
+                <h2 className="text-xl font-black font-display text-foreground">{t('checkout.step2Title')}</h2>
                 <CheckoutPayment
                   bankDetails={bankDetails}
                   hasBankDetails={hasBankDetails}
@@ -381,6 +390,7 @@ export default function CheckoutPage() {
                     language: i18n.language,
                   } : null}
                 />
+                </>
                 ) : null}
               </CardContent>
             </Card>

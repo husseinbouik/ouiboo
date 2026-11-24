@@ -194,7 +194,7 @@
     "stepGuestDetails": "Coordonnées",
     "stepPayment": "Paiement",
     "stepConfirmation": "Confirmation",
-    "initializing": "Initialisation de la sécurité...",
+    "initializing": "Chargement de la réservation…",
     "tripNotFound": "Voyage introuvable.",
     "selectSession": "Sélectionnez une session",
     "retryTitle": "Réessayer le paiement",
@@ -307,7 +307,14 @@
     "cashPlusFeeNote": "Les frais d’envoi Cash Plus sont à votre charge, en plus de ce montant — l’agence doit recevoir le montant intégral.",
     "cashPlusTransactionCode": "Code de transaction Cash Plus",
     "cashPlusTransactionCodePlaceholder": "ex. CP-2026-000123",
-    "cashPlusCodeOrReceipt": "Saisissez le code de transaction de votre reçu Cash Plus et/ou téléversez le reçu ci-dessous."
+    "cashPlusCodeOrReceipt": "Saisissez le code de transaction de votre reçu Cash Plus et/ou téléversez le reçu ci-dessous.",
+    "step1Title": "Étape 1 — Qui voyage ?",
+    "step2Title": "Étape 2 — Payez l'agence",
+    "whatNextTitle": "Et ensuite ?",
+    "whatNext1": "Payez l'agence directement",
+    "whatNext2": "Envoyez votre reçu ou votre code Cash Plus",
+    "whatNext3": "L'agence confirme — le groupe se remplit",
+    "whatNext4": "Le solde n'est dû qu'ensuite ; si le minimum n'est pas atteint, votre acompte est remboursé par l'agence"
   },
   "trust": {
     "title": "Pourquoi réserver sur Ouiboo",
@@ -344,7 +351,10 @@
     "errorFailed": "Échec de la connexion. Veuillez réessayer.",
     "invalidCredentials": "Email ou mot de passe incorrect. Veuillez réessayer.",
     "loggingIn": "Connexion en cours...",
-    "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez."
+    "networkError": "Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.",
+    "brandHeadline": "Le Maroc, à vous de l'explorer.",
+    "brandBody": "Réservez des voyages d'agences vérifiées avant publication et gérez vos réservations, justificatifs et messages au même endroit.",
+    "brandMoneyLine": "Vous payez l'agence directement — Ouiboo ne touche jamais votre argent."
   },
   "signup": {
     "dateOfBirth": "Date de naissance",
@@ -520,7 +530,10 @@
     "or": "Ou",
     "noAccount": "Vous n'avez pas de compte ?",
     "signUp": "S'inscrire",
-    "close": "Fermer la boîte de dialogue"
+    "close": "Fermer la boîte de dialogue",
+    "brandHeadline": "Le Maroc, à vous de l'explorer.",
+    "brandBody": "Réservez des voyages d'agences vérifiées avant publication et gérez vos réservations, justificatifs et messages au même endroit.",
+    "brandMoneyLine": "Vous payez l'agence directement — Ouiboo ne touche jamais votre argent."
   },
   "agency": {
     "notFoundTitle": "Agence introuvable",
@@ -780,7 +793,11 @@
       "deniedBody": "Les notifications push sont bloquées dans les réglages de votre navigateur. Autorisez les notifications pour ce site pour les activer.",
       "unsupportedBody": "Ce navigateur ne prend pas en charge les notifications push.",
       "unavailableBody": "Les notifications push ne sont pas disponibles pour le moment. Veuillez réessayer plus tard."
-    }
+    },
+    "groupToday": "Aujourd'hui",
+    "groupEarlier": "Plus tôt",
+    "markAllRead": "Tout marquer comme lu",
+    "fallbackTitle": "Notification"
   },
   "seller": {
     "organisedAndSoldBy": "Organisé et vendu par {{name}}",
@@ -886,7 +903,11 @@
       "OTHER": "Hébergement"
     },
     "meetingArea": "Point de rendez-vous : {{area}} (adresse exacte sur votre réservation)",
-    "meetingPickup": "Ramassage disponible"
+    "meetingPickup": "Ramassage disponible",
+    "depositScheduleTitle": "Comment fonctionne le paiement",
+    "depositNow": "{{percent}} % maintenant",
+    "balanceLater": "{{percent}} % plus tard",
+    "depositMinNotMet": "Minimum non atteint ? Votre acompte est intégralement remboursé par l'agence. Vous payez l'agence directement — Ouiboo ne touche jamais votre argent."
   },
   "reviews": {
     "loading": "Chargement des avis...",
@@ -1179,7 +1200,13 @@
     "viewDetails": "Voir les détails",
     "emptyTitle": "Aucune réservation trouvée",
     "emptyBody": "Vos prochaines aventures apparaîtront ici une fois votre réservation effectuée.",
-    "reviewModalBody": "Aidez d’autres voyageurs en partageant votre avis sur ce voyage."
+    "reviewModalBody": "Aidez d’autres voyageurs en partageant votre avis sur ce voyage.",
+    "nextStep": "Prochaine étape",
+    "nextStepBalance": "Payez le solde à l'agence",
+    "nextStepUploadProof": "Envoyez votre justificatif de paiement",
+    "nextStepAwaitingAgency": "En attente de la confirmation de votre justificatif par l'agence",
+    "nextStepConfirmed": "Réservation confirmée — vérifiez les détails de votre voyage avant le départ",
+    "nextStepViewDetails": "Voir les détails de la réservation"
   },
   "quotes": {
     "title": "Demander ces dates",
@@ -1306,7 +1333,23 @@
     "cashPlusFeeNote": "Les frais d’envoi Cash Plus sont en sus — l’agence doit recevoir le montant intégral de l’étape.",
     "cashPlusCodePlaceholder": "Code de transaction Cash Plus",
     "cashPlusSubmitCode": "Envoyer le code",
-    "cashPlusCodeOrReceipt": "Vous pouvez aussi téléverser la photo du reçu, à la place du code ou en plus."
+    "cashPlusCodeOrReceipt": "Vous pouvez aussi téléverser la photo du reçu, à la place du code ou en plus.",
+    "journeyTitle": "Votre parcours de paiement",
+    "journeyNextStep": "Prochaine étape",
+    "journeyDepositTitle": "Acompte",
+    "journeyDepositDone": "Acompte confirmé par l'agence.",
+    "journeyDepositProof": "Justificatif reçu — l'agence est en train de le vérifier.",
+    "journeyDepositTodo": "Payez l'acompte directement à l'agence et envoyez votre justificatif.",
+    "journeyConfirmTitle": "Confirmation",
+    "journeyConfirmDone": "Votre réservation est confirmée.",
+    "journeyConfirmTodo": "L'agence confirme votre réservation et le groupe.",
+    "journeyBalanceTitle": "Solde",
+    "journeyBalanceDone": "Solde intégralement payé.",
+    "journeyBalanceTodo": "Le solde n'est dû qu'après la confirmation du voyage.",
+    "proofStageSending": "Envoi de votre justificatif…",
+    "proofStageStoring": "Enregistrement sécurisé de votre justificatif…",
+    "proofStageFinishing": "Finalisation…",
+    "proofReceivedUnderReview": "Justificatif reçu — en cours de vérification par l'agence"
   },
   "verificationRecord": {
     "title": "Fiche de vérification",
@@ -1499,7 +1542,9 @@
     "saving": "Enregistrement...",
     "save": "Enregistrer le profil",
     "displayCurrency": "Devise d’affichage",
-    "displayCurrencyHelp": "Les prix sont affichés dans cette devise. Les réservations sont toujours facturées dans la devise propre au voyage."
+    "displayCurrencyHelp": "Les prix sont affichés dans cette devise. Les réservations sont toujours facturées dans la devise propre au voyage.",
+    "agenciesSeeTitle": "Ce que les agences voient de vous",
+    "agenciesSeeBody": "Lorsque vous réservez ou écrivez à une agence, elle voit votre nom et — pour une réservation — votre numéro de téléphone et les détails du voyage concerné. Les agences ne voient ni votre mot de passe, ni vos autres réservations, ni les justificatifs de paiement d'autres voyages."
   },
   "wishlistPage": {
     "title": "Ma liste d’envies",
@@ -1548,7 +1593,9 @@
     "summarySaved_zero": "{{count}} voyages enregistrés",
     "summarySaved_two": "{{count}} voyages enregistrés",
     "summarySaved_few": "{{count}} voyages enregistrés",
-    "summarySaved_many": "{{count}} voyages enregistrés"
+    "summarySaved_many": "{{count}} voyages enregistrés",
+    "depositNote": "L'acompte représente au maximum 30 % du prix du voyage — vous payez l'agence directement.",
+    "signedOutBrand": "Des voyages d'agences vérifiées avant publication — vous payez toujours l'agence directement."
   },
   "referral": {
     "title": "Invitez des voyageurs",
@@ -1576,5 +1623,12 @@
     "step3Title": "Recevez votre Booking Pass",
     "step3Text": "Votre pass confirme le voyage, le point de rendez-vous et ce qui est inclus.",
     "refundNote": "Si le groupe minimum n'est pas atteint, votre acompte est intégralement remboursé."
+  },
+  "account": {
+    "eyebrow": "Votre compte",
+    "navLabel": "Sections du compte",
+    "profile": "Profil",
+    "notifications": "Notifications",
+    "messages": "Messages"
   }
 }

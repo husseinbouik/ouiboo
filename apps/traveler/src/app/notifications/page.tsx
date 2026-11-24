@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -9,6 +9,7 @@ import { Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/components/AuthContext';
 import { PushNotificationToggle } from '@/components/PushNotificationToggle';
+import { AccountShell } from '@/components/AccountShell';
 
 type Notification = {
   id: string;
@@ -33,6 +34,25 @@ export default function NotificationsPage() {
   });
 
   const notifications = data?.items || [];
+  // Phase 2 — Account A: grouped notifications + mark-all-read. The
+  // notifications API exposes no read-state mutation (NotificationLog
+  // rows are read:false by contract), so mark-all-read is a local
+  // reading state for this session only — it never claims the server
+  // recorded it.
+  const [readIds, setReadIds] = useState<ReadonlySet<string>>(new Set());
+  const [allRead, setAllRead] = useState(false);
+  const isRead = (n: Notification) => allRead || readIds.has(n.id) || Boolean(n.read);
+  const groups = useMemo(() => {
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const today: Notification[] = []; const earlier: Notification[] = [];
+    for (const n of notifications) {
+      if (n.createdAt && new Date(n.createdAt) >= todayStart) today.push(n); else earlier.push(n);
+    }
+    return [
+      { key: 'today', label: t('notifications.groupToday'), items: today },
+      { key: 'earlier', label: t('notifications.groupEarlier'), items: earlier },
+    ].filter((g) => g.items.length > 0);
+  }, [notifications, t]);
 
   // Show sign-in gate immediately for guests (#139)
   if (!isAuthLoading && !user) {
@@ -72,33 +92,50 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
-      <h1 className="text-3xl font-bold mb-8">Notifications</h1>
-      <PushNotificationToggle />
-      {notifications.length === 0 ? (
-        <EmptyState
-          icon={<Bell className="h-6 w-6" />}
-          title={t('notifications.emptyTitle')}
-          description={t('notifications.emptyBody')}
-        />
-      ) : (
-        <div className="space-y-3">
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              className={`bg-card rounded-2xl border p-4 ${n.read ? 'border-border' : 'border-primary/40 bg-primary/5'}`}
-            >
-              <p className="font-semibold">{n.title || 'Notification'}</p>
-              {n.message && <p className="text-sm text-muted-foreground mt-1">{n.message}</p>}
-              {n.createdAt && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  {new Date(n.createdAt).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-          ))}
+    <div className="py-12">
+      <AccountShell title={t('notifications.title')}>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <PushNotificationToggle />
+          {notifications.some((n) => !isRead(n)) ? (
+            <Button type="button" variant="outline" onClick={() => setAllRead(true)}>
+              {t('notifications.markAllRead')}
+            </Button>
+          ) : null}
         </div>
-      )}
+        {notifications.length === 0 ? (
+          <EmptyState
+            icon={<Bell className="h-6 w-6" />}
+            title={t('notifications.emptyTitle')}
+            description={t('notifications.emptyBody')}
+          />
+        ) : (
+          <div className="space-y-8">
+            {groups.map((group) => (
+              <section key={group.key} aria-label={group.label}>
+                <h2 className="mb-3 text-xs font-black uppercase tracking-widest text-muted-foreground">{group.label}</h2>
+                <div className="space-y-3">
+                  {group.items.map((n) => (
+                    <button
+                      type="button"
+                      key={n.id}
+                      onClick={() => setReadIds((prev) => new Set(prev).add(n.id))}
+                      className={`block w-full rounded-2xl border bg-card p-4 text-start ${isRead(n) ? 'border-border' : 'border-primary/40 bg-primary/5'}`}
+                    >
+                      <p className="font-semibold">{n.title || t('notifications.fallbackTitle')}</p>
+                      {n.message && <p className="mt-1 text-sm text-muted-foreground">{n.message}</p>}
+                      {n.createdAt && (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {new Date(n.createdAt).toLocaleDateString()}
+                        </p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </AccountShell>
     </div>
   );
 }

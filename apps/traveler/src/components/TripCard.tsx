@@ -439,10 +439,10 @@ export function TripCard({ trip, imageSizes, staticPhoto = false, variant = 'def
           {!isSearch && (trip.payOnArrivalEnabled || trip.privateTourEnabled) ? (
             <div className="flex flex-wrap gap-1.5">
               {trip.payOnArrivalEnabled ? (
-                <Badge className="bg-sky-700 text-white text-[10px] font-bold rounded-lg px-2 py-0.5 border-none">{t('batchF.payOnArrivalBadge')}</Badge>
+                <Badge className="bg-ocean-700 text-white text-[10px] font-bold rounded-lg px-2 py-0.5 border-none">{t('batchF.payOnArrivalBadge')}</Badge>
               ) : null}
               {trip.privateTourEnabled ? (
-                <Badge className="bg-violet-700 text-white text-[10px] font-bold rounded-lg px-2 py-0.5 border-none">{t('batchF.privateBadge')}</Badge>
+                <Badge className="bg-deep-blue text-white text-[10px] font-bold rounded-lg px-2 py-0.5 border-none">{t('batchF.privateBadge')}</Badge>
               ) : null}
             </div>
           ) : null}
