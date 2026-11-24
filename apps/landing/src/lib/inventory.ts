@@ -27,6 +27,7 @@ export interface LayerBContent {
   backToCity: string
   categoryNames: Record<string, string>
   freeCancellation: string
+  photoAlt: string
 }
 
 const LAYER_B_BY_LOCALE: Record<SupportedLanguage, LayerBContent> = {

@@ -1,6 +1,7 @@
-// app/loading.tsx (or the appropriate route directory)
-import LoadingSpinner from '@/components/LoadingSpinner'; // Adjust the import path
+// Design Council 2026-11-24, M6: layout skeleton instead of the
+// retired bouncing-dots spinner (components/LoadingSpinner.js).
+import PageSkeleton from '@/components/PageSkeleton';
 
 export default function Loading() {
-  return <LoadingSpinner />;
+  return <PageSkeleton />;
 }

@@ -4,8 +4,10 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslation } from 'react-i18next'
-import { LogoLockup } from '@ouiboo/ui'
-import { CookiePreferencesButton } from './AnalyticsConsent'
+import { motion } from 'framer-motion'
+import Reveal, { heroItem, heroStagger, scrollReveal, REVEAL_STAGGER_S } from './Reveal'
+import SiteHeader from './SiteHeader'
+import SiteFooter from './SiteFooter'
 import type { ShowcaseCardData } from '../lib/showcase'
 
 // #735 (founder-approved design, "The Honest Window" v7): the homepage is
@@ -48,11 +50,10 @@ if (
 }
 
 const NAVY = '#0A192F'
-const DEEP = '#060D1A'
 const ORANGE = '#FF6B35'
 // The remaining section colours live in the --hw-* variables at the
 // bottom of this file (light values = the approved design; .dark set =
-// the next-themes dark rendering). NAVY/DEEP/ORANGE stay constants:
+// the next-themes dark rendering). NAVY/ORANGE stay constants:
 // the hero, the agency block and the footer are navy in both themes.
 
 function ShieldCheck({ className = 'h-[19px] w-[19px]' }: { className?: string }) {
@@ -112,8 +113,6 @@ export default function LandingPage({
   const currentLang = i18n.language
   const isRTL = currentLang === 'ar'
   const travelerUrl = process.env.NEXT_PUBLIC_TRAVELER_URL || 'http://localhost:3001'
-  const agencyUrl = process.env.NEXT_PUBLIC_AGENCY_URL || 'http://localhost:3002'
-  const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'ouibouuu@gmail.com'
 
   useEffect(() => {
     document.documentElement.lang = currentLang
@@ -136,69 +135,11 @@ export default function LandingPage({
     return Array.isArray(tags) ? (tags as string[]) : []
   }
 
-  const langMarks = [
-    { code: 'en', label: 'EN' },
-    { code: 'fr', label: 'FR' },
-    { code: 'ar', label: 'AR' },
-  ]
-
   return (
     <div className="hw-root font-sans" style={{ backgroundColor: 'var(--hw-page)', color: 'var(--hw-ink)' }}>
-      {/* ---------- Header (absolute over the hero, per the design) ---------- */}
-      <header className="absolute inset-x-0 top-0 z-20 text-white">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-5">
-          <a href="#top" className="flex items-center gap-2.5" aria-label="Ouiboo">
-            <LogoLockup height={30} tone="on-dark" />
-          </a>
-          <nav className="hidden items-center gap-[34px] text-[15px] font-medium min-[901px]:flex" aria-label={t('common.globalNavigationLabel')}>
-            <a href="#how" className="opacity-90 hover:underline hover:underline-offset-[5px] hover:opacity-100">
-              {t('nav.howItWorks')}
-            </a>
-            <a href="#guides" className="opacity-90 hover:underline hover:underline-offset-[5px] hover:opacity-100">
-              {t('hw.nav.guides')}
-            </a>
-            <a href="#faq" className="opacity-90 hover:underline hover:underline-offset-[5px] hover:opacity-100">
-              {t('hw.nav.faq')}
-            </a>
-          </nav>
-          <div className="flex items-center gap-[18px]">
-            <div className="hidden items-center gap-1.5 text-[13.5px] font-semibold tracking-wide sm:flex" role="group" aria-label="Language">
-              {langMarks.map((mark, i) => (
-                <span key={mark.code} className="flex items-center gap-1.5">
-                  {i > 0 && <span className="opacity-40">·</span>}
-                  <button
-                    type="button"
-                    onClick={() => i18n.changeLanguage(mark.code)}
-                    aria-pressed={currentLang === mark.code}
-                    className={currentLang === mark.code ? 'opacity-100 underline underline-offset-4' : 'opacity-55 hover:opacity-90'}
-                  >
-                    {mark.label}
-                  </button>
-                </span>
-              ))}
-            </div>
-            <a
-              href={`${travelerUrl}/login?lang=${currentLang}`}
-              className="hidden text-[14.5px] font-semibold opacity-95 hover:underline hover:underline-offset-[5px] hover:opacity-100 sm:block"
-            >
-              {t('hw.nav.login')}
-            </a>
-            <a
-              href={`${travelerUrl}/signup?lang=${currentLang}`}
-              className="whitespace-nowrap rounded-full px-[18px] py-[9px] text-sm font-semibold text-deep-blue shadow-[0_8px_20px_-8px_rgba(255,107,53,.6)] transition-colors"
-              style={{ backgroundColor: ORANGE }}
-            >
-              {t('hw.nav.signup')}
-            </a>
-            <Link
-              href="/agences"
-              className="hidden whitespace-nowrap rounded-full border-[1.5px] border-white/55 px-[18px] py-[9px] text-sm font-semibold hover:bg-white/[0.12] sm:block"
-            >
-              {t('nav.forAgencies')}
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* ---------- Header: the ONE shared landing header (Council
+          surface 3, Option A), absolute over the hero per the design ---------- */}
+      <SiteHeader contextAction="agencies" className="absolute inset-x-0 top-0 z-20" />
 
       <main id="main-content" tabIndex={-1}>
         {/* ---------- 1 · Hero ---------- */}
@@ -227,23 +168,32 @@ export default function LandingPage({
             style={{ background: 'linear-gradient(to top, rgba(6,13,26,.78) 0%, rgba(6,13,26,0) 34%)' }}
           />
           <div className="relative z-[2] mx-auto max-w-[1200px] px-6">
-            <div className="max-w-[824px] pb-9 pt-[126px] max-sm:pt-[108px]">
-              <span className="inline-flex items-center gap-[9px] rounded-full border border-white/[0.22] bg-[#0A192F]/[0.66] py-2 pe-4 ps-3 text-[13.5px] font-semibold backdrop-blur-[6px]">
-                <span
-                  className="h-[9px] w-[9px] rounded-full"
-                  style={{ backgroundColor: ORANGE, boxShadow: '0 0 0 4px rgba(255,107,53,.25)' }}
-                />
-                {t('hw.hero.statusPill')}
-              </span>
-              <h1 className="mb-4 mt-5 text-[clamp(2.1rem,4.6vw,3.35rem)] font-extrabold leading-[1.07] tracking-[-0.015em]">
+            {/* M3: hero entrance stagger. The Council Phase 3 build
+                also REMOVES the old hero status pill ("Showcase only
+                — no bookings yet"): it contradicted the built
+                checkout; the money-model strip under the hero now
+                carries the trust story instead. */}
+            <motion.div
+              className="max-w-[824px] pb-9 pt-[126px] max-sm:pt-[108px]"
+              variants={heroStagger}
+              initial="hidden"
+              animate="show"
+            >
+              <motion.h1
+                variants={heroItem}
+                className="mb-4 mt-5 text-[clamp(2.1rem,4.6vw,3.35rem)] font-extrabold leading-[1.07] tracking-[-0.015em]"
+              >
                 {t('hw.hero.titleA')}
                 <br />
                 {t('hw.hero.titleB')}
-              </h1>
-              <p className="max-w-[600px] text-[clamp(1.02rem,1.6vw,1.22rem)] leading-[1.6] text-white/[0.88]">
+              </motion.h1>
+              <motion.p
+                variants={heroItem}
+                className="max-w-[600px] text-[clamp(1.02rem,1.6vw,1.22rem)] leading-[1.6] text-white/[0.88]"
+              >
                 {t('hw.hero.subline')}
-              </p>
-              <div className="mb-[14px] mt-6 flex flex-wrap gap-[14px]">
+              </motion.p>
+              <motion.div variants={heroItem} className="mb-[14px] mt-6 flex flex-wrap gap-[14px]">
                 <a
                   href={`${travelerUrl}/signup?lang=${currentLang}`}
                   className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-deep-blue shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)] transition-colors max-sm:px-5 max-sm:py-[13px] max-sm:text-[14.5px]"
@@ -257,18 +207,20 @@ export default function LandingPage({
                 >
                   {t('hw.hero.ctaExplore')}
                 </a>
-              </div>
-              <Link
-                href="/agences"
-                className="mb-[26px] inline-block text-[14.5px] font-semibold text-white/90 underline decoration-[rgba(255,107,53,.75)] underline-offset-[5px] hover:text-white"
-              >
-                {t('hw.hero.agencyLink')} <Arrow />
-              </Link>
-              <div className="flex max-w-[680px] items-center gap-[9px] text-sm font-medium text-white/[0.92]">
+              </motion.div>
+              <motion.div variants={heroItem}>
+                <Link
+                  href="/agences"
+                  className="mb-[26px] inline-block text-[14.5px] font-semibold text-white/90 underline decoration-[rgba(255,107,53,.75)] underline-offset-[5px] hover:text-white"
+                >
+                  {t('hw.hero.agencyLink')} <Arrow />
+                </Link>
+              </motion.div>
+              <motion.div variants={heroItem} className="flex max-w-[680px] items-center gap-[9px] text-sm font-medium text-white/[0.92]">
                 <ShieldCheck />
                 <span>{t('hw.hero.trustLine')}</span>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </div>
           <div className="relative z-[2] mx-auto flex max-w-[1200px] justify-end px-6 pb-5">
             <span className="rounded-full bg-[#060D1A]/[0.45] px-[11px] py-[5px] text-[12.5px] text-white/[0.85] backdrop-blur-[4px]">
@@ -277,9 +229,33 @@ export default function LandingPage({
           </div>
         </section>
 
+        {/* ---------- 1b · Money-model strip (Council Option A:
+            directly under the hero, where a first-time visitor decides
+            whether to trust the site) ---------- */}
+        <section aria-label={t('hw.moneyStrip.items.direct.title')} className="border-b" style={{ backgroundColor: 'var(--hw-card)', borderColor: 'var(--hw-line)' }}>
+          <div className="mx-auto grid max-w-[1200px] grid-cols-1 md:grid-cols-3">
+            {(['direct', 'checked', 'protected'] as const).map((key, i) => (
+              <Reveal
+                key={key}
+                delay={i * REVEAL_STAGGER_S}
+                className="px-6 py-6 md:px-8 md:py-7 md:[&:not(:last-child)]:border-e"
+                style={{ borderColor: 'var(--hw-line)' }}
+              >
+                <b className="text-[15.5px]" style={{ color: 'var(--hw-heading)' }}>
+                  {i + 1} · {t(`hw.moneyStrip.items.${key}.title`)}
+                </b>
+                <p className="mt-[6px] text-sm leading-[1.55]" style={{ color: 'var(--hw-muted)' }}>
+                  {t(`hw.moneyStrip.items.${key}.text`)}
+                </p>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
         {/* ---------- 2 · Showcase ---------- */}
         <section id="guides" className="pb-[92px] pt-[84px] max-sm:py-16" style={{ backgroundColor: 'var(--hw-sand)' }}>
           <div className="mx-auto max-w-[1200px] px-6">
+            <Reveal>
             <div id="showcase" className="mb-10 flex flex-wrap items-end justify-between gap-[30px]">
               <div className="max-w-[720px]">
                 <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--hw-accent)' }}>
@@ -296,14 +272,16 @@ export default function LandingPage({
                 <b style={{ color: 'var(--hw-heading)' }}>{t('hw.showcase.noteLead')}</b> {t('hw.showcase.note')}
               </div>
             </div>
+            </Reveal>
 
             <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-6 px-6 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-[26px] lg:overflow-visible lg:px-0 lg:pb-0">
               {showcaseCards?.length
-                ? showcaseCards.map((card) => {
+                ? showcaseCards.map((card, cardIdx) => {
                     const content =
                       card.content[(currentLang as 'fr' | 'ar' | 'en')] || card.content.fr
                     return (
-                      <article
+                      <motion.article
+                        {...scrollReveal(cardIdx * REVEAL_STAGGER_S)}
                         key={card.tripId}
                         className="flex w-[82vw] max-w-[340px] shrink-0 snap-start flex-col overflow-hidden rounded-[20px] shadow-[0_18px_40px_-18px_rgba(10,25,47,.25)] lg:w-auto lg:max-w-none"
                         style={{ backgroundColor: 'var(--hw-card)' }}
@@ -373,11 +351,12 @@ export default function LandingPage({
                             {t('hw.showcase.viewTrip')} <span style={{ color: 'var(--hw-accent)' }}><Arrow /></span>
                           </a>
                         </div>
-                      </article>
+                      </motion.article>
                     )
                   })
-                : SHOWCASE.map((card) => (
-                <article
+                : SHOWCASE.map((card, cardIdx) => (
+                <motion.article
+                  {...scrollReveal(cardIdx * REVEAL_STAGGER_S)}
                   key={card.key}
                   className="flex w-[82vw] max-w-[340px] shrink-0 snap-start flex-col overflow-hidden rounded-[20px] shadow-[0_18px_40px_-18px_rgba(10,25,47,.25)] lg:w-auto lg:max-w-none"
                   style={{ backgroundColor: 'var(--hw-card)' }}
@@ -442,11 +421,11 @@ export default function LandingPage({
                       {t('hw.showcase.viewTrip')} <span style={{ color: 'var(--hw-accent)' }}><Arrow /></span>
                     </a>
                   </div>
-                </article>
+                </motion.article>
               ))}
             </div>
 
-            <div className="mt-[42px] flex flex-wrap items-center gap-[14px]">
+            <Reveal className="mt-[42px] flex flex-wrap items-center gap-[14px]">
               <span className="text-[15px] font-semibold" style={{ color: 'var(--hw-heading)' }}>
                 {t('hw.showcase.guidesLabel')}
               </span>
@@ -460,14 +439,14 @@ export default function LandingPage({
               <a href="#how" className="ms-[6px] text-[14.5px] font-semibold" style={{ color: 'var(--hw-accent)' }}>
                 {t('hw.showcase.verifyLink')} <Arrow />
               </a>
-            </div>
+            </Reveal>
           </div>
         </section>
 
         {/* ---------- 3 · How it works + verification ---------- */}
         <section id="how" className="py-[92px] max-sm:py-16">
           <div className="mx-auto max-w-[1200px] px-6">
-            <div className="mb-11 max-w-[720px]">
+            <Reveal className="mb-11 max-w-[720px]">
               <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--hw-accent)' }}>
                 {t('hw.how.eyebrow')}
               </div>
@@ -477,11 +456,11 @@ export default function LandingPage({
               <p className="text-[16.5px]" style={{ color: 'var(--hw-muted)' }}>
                 {t('hw.how.intro')}
               </p>
-            </div>
+            </Reveal>
             <div className="grid grid-cols-1 items-start gap-14 lg:grid-cols-[1.05fr_0.95fr]">
               <div className="flex flex-col gap-[34px]">
                 {(['step1', 'step2', 'step3'] as const).map((step, i) => (
-                  <div key={step} className="flex gap-5">
+                  <Reveal key={step} delay={i * REVEAL_STAGGER_S} className="flex gap-5">
                     <span
                       className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full font-display text-[19px] font-extrabold text-deep-blue shadow-[0_8px_18px_-6px_rgba(255,107,53,.5)]"
                       style={{ backgroundColor: ORANGE }}
@@ -497,10 +476,10 @@ export default function LandingPage({
                         {t(`hw.how.steps.${step}.text`)}
                       </p>
                     </div>
-                  </div>
+                  </Reveal>
                 ))}
               </div>
-              <div className="rounded-[20px] border p-[28px_28px_24px]" style={{ backgroundColor: 'var(--hw-panel)', borderColor: 'var(--hw-panel-border)' }}>
+              <Reveal className="rounded-[20px] border p-[28px_28px_24px]" style={{ backgroundColor: 'var(--hw-panel)', borderColor: 'var(--hw-panel-border)' }}>
                 <h3 className="mb-4 flex items-center gap-[10px] text-[19px] font-bold" style={{ color: 'var(--hw-heading)' }}>
                   <svg viewBox="0 0 24 24" fill="none" className="h-[22px] w-[22px]" aria-hidden="true">
                     <path d="M12 3l7 2.6v5.2c0 4.6-3 7.7-7 9.2-4-1.5-7-4.6-7-9.2V5.6L12 3z" style={{ fill: 'var(--hw-heading)' }} />
@@ -550,7 +529,7 @@ export default function LandingPage({
                 <Link href="/verification" className="mt-4 inline-block text-[15px] font-semibold" style={{ color: 'var(--hw-accent)' }}>
                   {t('hw.how.panel.panelLink')} <Arrow />
                 </Link>
-              </div>
+              </Reveal>
             </div>
           </div>
         </section>
@@ -558,6 +537,7 @@ export default function LandingPage({
         {/* ---------- 4 · Agency block ---------- */}
         <section id="agencies" className="py-[92px] text-white max-sm:py-16" style={{ backgroundColor: NAVY }}>
           <div className="mx-auto max-w-[1200px] px-6">
+            <Reveal>
             <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: ORANGE }}>
               {t('hw.agencies.eyebrow')}
             </div>
@@ -580,7 +560,8 @@ export default function LandingPage({
                 </span>
               ))}
             </div>
-            <div className="mb-[42px] grid grid-cols-1 gap-5 sm:grid-cols-2">
+            </Reveal>
+            <Reveal className="mb-[42px] grid grid-cols-1 gap-5 sm:grid-cols-2">
               {(['payDirect', 'brand', 'fees', 'exclusive'] as const).map((key) => (
                 <div key={key} className="rounded-2xl border border-white/10 bg-[#10233F] p-[24px_24px_20px]">
                   <h3 className="mb-2 text-[16.5px] font-bold" style={{ color: ORANGE }}>
@@ -589,8 +570,8 @@ export default function LandingPage({
                   <p className="text-[15px] leading-[1.6] text-white/[0.85]">{t(`hw.agencies.objections.${key}.text`)}</p>
                 </div>
               ))}
-            </div>
-            <div className="flex flex-wrap items-center gap-5">
+            </Reveal>
+            <Reveal className="flex flex-wrap items-center gap-5">
               <Link
                 href="/agences"
                 className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-[26px] py-[14px] text-[15.5px] font-semibold text-deep-blue shadow-[0_10px_24px_-8px_rgba(255,107,53,.55)]"
@@ -599,14 +580,14 @@ export default function LandingPage({
                 {t('hw.agencies.cta')} <Arrow />
               </Link>
               <span className="text-[13.8px] text-white/[0.65]">{t('hw.agencies.note')}</span>
-            </div>
+            </Reveal>
           </div>
         </section>
 
         {/* ---------- 5 · Transparency FAQ ---------- */}
         <section id="faq" className="py-[92px] max-sm:py-16" style={{ backgroundColor: 'var(--hw-sand)' }}>
           <div className="mx-auto max-w-[1200px] px-6">
-            <div className="mb-11 max-w-[720px]">
+            <Reveal className="mb-11 max-w-[720px]">
               <div className="text-xs font-bold uppercase tracking-[0.16em]" style={{ color: 'var(--hw-accent)' }}>
                 {t('hw.faq.eyebrow')}
               </div>
@@ -616,9 +597,10 @@ export default function LandingPage({
               <p className="text-[16.5px]" style={{ color: 'var(--hw-muted)' }}>
                 {t('hw.faq.intro')}
               </p>
-            </div>
+            </Reveal>
             <div className="flex max-w-[820px] flex-col gap-[14px]">
               {(['whoPay', 'whoRefund', 'charges', 'whenBook'] as const).map((key, i) => (
+                <Reveal key={key} delay={i * REVEAL_STAGGER_S}>
                 <details
                   key={key}
                   open={i === 0}
@@ -643,93 +625,16 @@ export default function LandingPage({
                     {t(`hw.faq.items.${key}.rest`)}
                   </div>
                 </details>
+                </Reveal>
               ))}
             </div>
           </div>
         </section>
       </main>
 
-      {/* ---------- 6 · Footer ---------- */}
-      <footer className="pb-[34px] pt-16 text-white/[0.78]" style={{ backgroundColor: DEEP }}>
-        <div className="mx-auto max-w-[1200px] px-6">
-          <div className="mb-12 grid grid-cols-2 gap-10 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-            <div className="max-lg:col-span-2">
-              <a href="#top" className="flex items-center gap-2.5 text-white" aria-label="Ouiboo">
-                <LogoLockup height={30} tone="on-dark" />
-              </a>
-              <p className="mt-[14px] max-w-[300px] text-[14.5px] leading-[1.6] text-white/[0.66]">{t('hw.footer.tagline')}</p>
-            </div>
-            <div>
-              <h4 className="mb-4 font-display text-sm font-bold uppercase tracking-[0.1em] text-white">{t('hw.footer.colExplore')}</h4>
-              <ul className="flex flex-col gap-[11px] text-[14.5px]">
-                <li>
-                  <Link href="/guides" className="hover:text-white">
-                    {t('hw.footer.guides')}
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="mb-4 font-display text-sm font-bold uppercase tracking-[0.1em] text-white">{t('hw.footer.colTrust')}</h4>
-              <ul className="flex flex-col gap-[11px] text-[14.5px]">
-                <li>
-                  <Link href="/verification" className="hover:text-white">
-                    {t('hw.footer.verification')}
-                  </Link>
-                </li>
-                <li>
-                  <a href="#how" className="hover:text-white">
-                    {t('hw.footer.payments')}
-                  </a>
-                </li>
-                <li>
-                  <a href="#faq" className="hover:text-white">
-                    {t('hw.footer.faq')}
-                  </a>
-                </li>
-                <li>
-                  <a href={`mailto:${supportEmail}`} className="hover:text-white">
-                    {t('hw.footer.support')}
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="mb-4 font-display text-sm font-bold uppercase tracking-[0.1em] text-white">{t('hw.footer.colAgencies')}</h4>
-              <ul className="flex flex-col gap-[11px] text-[14.5px]">
-                <li>
-                  <Link href="/agences" className="hover:text-white">
-                    {t('hw.footer.joinBeta')}
-                  </Link>
-                </li>
-                <li>
-                  <a href={`${agencyUrl}/login?lang=${currentLang}`} className="hover:text-white">
-                    {t('hw.footer.agencyLogin')}
-                  </a>
-                </li>
-                <li>
-                  <a href={`${travelerUrl}/login?lang=${currentLang}`} className="hover:text-white">
-                    {t('hw.footer.travellerLogin')}
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/[0.12] pt-6 text-[13.5px] text-white/[0.55]">
-            <span>{t('hw.footer.bottomLeft', { year: new Date().getFullYear() })}</span>
-            <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              <a href="/privacy" className="hover:text-white">
-                {t('footer.privacy')}
-              </a>
-              <a href={`${travelerUrl}/copyright-report?lang=${currentLang}`} className="hover:text-white">
-                {t('hw.footer.copyright')}
-              </a>
-              <CookiePreferencesButton className="hover:text-white" />
-              <span>{t('hw.footer.madeIn')}</span>
-            </span>
-          </div>
-        </div>
-      </footer>
+      {/* ---------- 6 · Footer: the ONE shared navy trust footer
+          (Council surface 3, Option A) ---------- */}
+      <SiteFooter />
 
       <style jsx global>{`
         /* #735 polish: theme variables for the Honest Window sections.

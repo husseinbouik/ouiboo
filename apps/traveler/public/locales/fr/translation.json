@@ -331,7 +331,13 @@
     "support": "Assistance",
     "privacy": "Confidentialité",
     "terms": "Conditions",
-    "help": "Centre d'aide"
+    "help": "Centre d'aide",
+    "colExplore": "Explorer",
+    "colTrust": "Confiance",
+    "colAgencies": "Agences",
+    "allTrips": "Tous les voyages",
+    "sellOnOuiboo": "Vendre sur Ouiboo",
+    "legalLine": "Ouiboo — un projet de Hussein Bouik · Tanger, Maroc"
   },
   "login": {
     "title": "Bon retour",

@@ -331,7 +331,13 @@
     "support": "الدعم",
     "privacy": "الخصوصية",
     "terms": "الشروط",
-    "help": "مركز المساعدة"
+    "help": "مركز المساعدة",
+    "colExplore": "استكشف",
+    "colTrust": "الثقة",
+    "colAgencies": "الوكالات",
+    "allTrips": "كل الرحلات",
+    "sellOnOuiboo": "البيع على Ouiboo",
+    "legalLine": "Ouiboo — مشروع حسين بويك · طنجة، المغرب"
   },
   "login": {
     "title": "مرحباً بعودتك",

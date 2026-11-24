@@ -5,7 +5,7 @@ import { I18nextProvider } from 'react-i18next';
 import initTranslations, { getInitialLanguage } from '../i18n';
 import { createInstance } from 'i18next';
 import { useEffect, useState } from 'react';
-import LoadingSpinner from './LoadingSpinner'; // Import the new component
+import PageSkeleton from './PageSkeleton'; // M6: layout skeleton, ex-bouncing-dots spinner
 
 const syncDocumentLanguage = (language) => {
   const lang = language?.split('-')[0] || 'en';
@@ -44,7 +44,7 @@ export default function TranslationsProvider({ children, locale = 'en' }) {
   }, [locale]);
 
   if (isLoading) {
-    return <LoadingSpinner />; // Use the new loading spinner
+    return <PageSkeleton />; // Use the new loading spinner
   }
 
   if (!i18n) {
