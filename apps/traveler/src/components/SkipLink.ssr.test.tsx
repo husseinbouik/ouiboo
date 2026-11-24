@@ -5,12 +5,14 @@ import React from 'react';
 import { renderToString } from 'react-dom/server';
 import { SkipLink } from './SkipLink';
 
-// i18n is READY in this mock on purpose: the regression being pinned
-// (#245) is that a ready i18n must not let the link into the first
-// render. Translations load over HTTP, so the server never has them
-// and renders nothing; if the client's first (hydration) render includes
-// the anchor, React throws hydration error #418 — which is exactly
-// what the production smoke suite caught on the staging homepage.
+// F1 regression pin (supersedes the #245 mount gate): the link renders
+// INSIDE <Providers>' I18nextProvider, whose instance is initialised
+// synchronously from the server-embedded dictionary. Server and client
+// first renders are therefore identical BY CONSTRUCTION — the anchor
+// belongs in the SSR HTML (translated), and hydration sees the same
+// anchor, so React error #418 cannot occur. Under the old design
+// translations loaded over HTTP, the server could never render the
+// link, and this test pinned exactly that emptiness.
 jest.mock('react-i18next', () => ({
     useTranslation: () => ({
         t: (key: string) => (key === 'common.skipToContent' ? 'Skip to content' : key),
@@ -19,8 +21,11 @@ jest.mock('react-i18next', () => ({
     }),
 }));
 
-describe('SkipLink SSR output (#245)', () => {
-    it('is empty even when i18n is ready', () => {
-        expect(renderToString(<SkipLink />)).toBe('');
+describe('SkipLink SSR output (F1)', () => {
+    it('renders the translated anchor in the server HTML', () => {
+        const html = renderToString(<SkipLink />);
+        expect(html).toContain('href="#main-content"');
+        expect(html).toContain('Skip to content');
+        expect(html).not.toContain('common.skipToContent');
     });
 });
