@@ -3,7 +3,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
@@ -134,16 +134,23 @@ export default function TravelerLoginPage() {
         <ThemeToggle />
       </div>
       
-      {/* Background Blobs */}
-      <div className="absolute top-0 end-0 -translate-y-1/2 translate-x-1/2 rtl:-translate-x-1/2 w-[40rem] h-[40rem] bg-sunset-orange/10 dark:bg-sunset-orange/5 rounded-full blur-3xl opacity-50 pointer-events-none" />
-      <div className="absolute bottom-0 start-0 translate-y-1/2 -translate-x-1/2 rtl:translate-x-1/2 w-[40rem] h-[40rem] bg-blue-100 dark:bg-blue-900/20 rounded-full blur-3xl opacity-50 pointer-events-none" />
-
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative w-full max-w-md bg-card backdrop-blur-xl border border-border shadow-2xl rounded-4xl p-8 md:p-12"
+        className="relative grid w-full max-w-4xl overflow-hidden rounded-4xl border border-border bg-card shadow-2xl md:grid-cols-[42%_58%]"
       >
+        {/* Phase 2 — Auth A: navy identity panel (admin-login model). */}
+        <div className="hidden flex-col gap-4 bg-deep-blue p-10 text-white md:flex">
+            <span className="font-display text-2xl font-bold">Ouiboo<span className="text-sunset-orange">.</span></span>
+            <p className="font-display text-3xl font-bold leading-snug">{t('login.brandHeadline')}</p>
+            <p className="text-sm leading-relaxed text-white/80">{t('login.brandBody')}</p>
+            <p className="mt-auto flex items-start gap-2 text-sm font-semibold text-sand">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-sunset-orange" aria-hidden="true" />
+                {t('login.brandMoneyLine')}
+            </p>
+        </div>
+        <div className="p-8 md:p-12">
         <div className="text-center mb-10">
             <Link href="/" className="inline-flex items-center justify-center gap-2 mb-8 group">
                 <AuthBrandLockup />
@@ -216,7 +223,7 @@ export default function TravelerLoginPage() {
             <Button 
               type="submit" 
               disabled={loginMutation.isPending}
-              className="w-full h-12 bg-sunset-orange-dark hover:bg-[#b03d11] text-white font-semibold rounded-lg transition-colors duration-200"
+              className="w-full h-12 bg-sunset-orange-dark hover:bg-sunset-orange-dark text-white font-semibold rounded-lg transition-colors duration-200"
             >
               {loginMutation.isPending ? t('login.loggingIn', 'Logging in...') : t('login.signIn', 'Sign In')}
               {!loginMutation.isPending && <ArrowRight className="ms-2 h-5 w-5 inline rtl:rotate-180" />}
@@ -230,6 +237,7 @@ export default function TravelerLoginPage() {
                 </Link>
             </p>
         </form>
+        </div>
       </motion.div>
     </div>
   );

@@ -8,6 +8,8 @@ import Image from 'next/image';
 import { BookingPaymentStatus, BookingStatus, RefundStatus, VerificationStatus, type BookingDetails } from '@ouiboo/types';
 import { Badge, Button, Card } from '@ouiboo/ui';
 import { BookingDetailSkeleton } from '@/components/Skeletons';
+import { JourneyTimeline, type JourneyStep } from '@/components/JourneyTimeline';
+import { ProofUploadFeedback } from '@/components/ProofUploadFeedback';
 import { cn } from '@ouiboo/ui/utils';
 import {
   Calendar,
@@ -319,19 +321,45 @@ export default function BookingDetailsPage() {
   );
   const retryHref = `/checkout/${booking.session.template.id}?session=${booking.session.id}&guests=${booking.guestsCount}&retryBooking=${booking.id}`;
 
+  // Phase 2 — Booking detail A: the two-stage payment journey as page
+  // structure (deposit -> agency/group confirmation -> balance).
+  const depositSettled = booking.paymentStatus === BookingPaymentStatus.Paid || booking.paymentStatus === BookingPaymentStatus.PartiallyPaid;
+  const fullyPaid = booking.paymentStatus === BookingPaymentStatus.Paid;
+  const journeySteps: JourneyStep[] = [
+    {
+      title: t('bookingDetail.journeyDepositTitle'),
+      description: depositSettled ? t('bookingDetail.journeyDepositDone') : booking.paymentProof ? t('bookingDetail.journeyDepositProof') : t('bookingDetail.journeyDepositTodo'),
+      state: depositSettled ? 'complete' : 'current',
+    },
+    {
+      title: t('bookingDetail.journeyConfirmTitle'),
+      description: booking.status === BookingStatus.Confirmed ? t('bookingDetail.journeyConfirmDone') : t('bookingDetail.journeyConfirmTodo'),
+      state: booking.status === BookingStatus.Confirmed ? 'complete' : depositSettled ? 'current' : 'upcoming',
+    },
+    {
+      title: t('bookingDetail.journeyBalanceTitle'),
+      description: fullyPaid ? t('bookingDetail.journeyBalanceDone') : t('bookingDetail.journeyBalanceTodo'),
+      state: fullyPaid ? 'complete' : depositSettled ? 'current' : 'upcoming',
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background px-6 pt-28 pb-20">
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('bookingDetail.reference')}</p>
-            <h1 className="text-4xl font-black font-display tracking-tight text-foreground">{booking.id}</h1>
+            <h1 className="text-3xl font-black font-display tracking-tight text-foreground">{booking.session.template.title}</h1>
             <p className="text-muted-foreground mt-2">{t('bookingDetail.subtitle')}</p>
+            <p className="text-xs text-muted-foreground mt-1"><span className="font-semibold">{t('bookingDetail.reference')}:</span> <span className="font-mono">{booking.id}</span></p>
           </div>
           <Button asChild variant="outline" className="rounded-xl font-bold">
               <Link href="/bookings">{t('bookingDetail.backToBookings')}</Link>
             </Button>
         </div>
+
+        <Card className="border border-border shadow-sm rounded-3xl bg-card p-6 sm:p-8">
+          <JourneyTimeline steps={journeySteps} />
+        </Card>
 
         <Card className="group border border-border shadow-sm rounded-3xl overflow-hidden bg-card">
           <div className="flex flex-col lg:flex-row">
@@ -359,7 +387,7 @@ export default function BookingDetailsPage() {
 
             <div className="p-8 flex-1 space-y-8">
               <div className="space-y-4">
-                <h2 className="text-3xl font-black text-foreground font-display tracking-tight">{booking.session.template.title}</h2>
+                <h2 className="sr-only">{booking.session.template.title}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
@@ -371,7 +399,7 @@ export default function BookingDetailsPage() {
                   </div>
                   <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-center gap-2 text-muted-foreground text-xs font-black uppercase tracking-widest">
-                      <MapPin className="h-4 w-4 text-blue-500" /> {t('bookingDetail.location')}
+                      <MapPin className="h-4 w-4 text-sunset-orange" /> {t('bookingDetail.location')}
                     </div>
                     <p className="mt-3 text-sm font-semibold text-foreground">{localizeLocationSuffix(booking.session.template.startLocation, t('countries.morocco'))}</p>
                   </div>
@@ -555,6 +583,7 @@ export default function BookingDetailsPage() {
                     </Button>
                   </label>
                 )}
+                <ProofUploadFeedback uploading={uploading || codeSubmitting} hasProof={Boolean(booking.paymentProof)} />
                 {showRetryPayment && (
                   <Button asChild variant="outline" className="h-12 px-6 rounded-xl text-xs font-black uppercase tracking-widest">
                     <Link href={retryHref}>

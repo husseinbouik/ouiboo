@@ -303,7 +303,8 @@ export default function WishlistPage() {
     }
     return (
       <div key={entry.trip.id} className="flex flex-col gap-2">
-        <TripCard trip={entry.trip} onWishlistToggle={handleWishlistToggle} />
+        <TripCard trip={entry.trip} variant="search" staticPhoto onWishlistToggle={handleWishlistToggle} />
+        <p className="text-xs text-muted-foreground">{t('wishlistPage.depositNote')}</p>
         <SaveStatus trip={entry.trip} />
         {entry.next ? (
           // Growth's G-K4 condition (#964): the anchored action is
@@ -354,14 +355,15 @@ export default function WishlistPage() {
             <span className="sr-only">{t('wishlistPage.loading')}</span>
           </div>
         ) : !user ? (
-          <div className="text-center py-28 bg-card/70 rounded-2xl border border-dashed border-border">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <Calendar className="h-8 w-8 text-muted-foreground" />
+          <div className="text-center py-28 bg-deep-blue rounded-2xl border border-deep-blue px-6">
+            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Calendar className="h-8 w-8 text-sand" />
             </div>
-            <h3 className="text-xl font-bold">{t('wishlistPage.signedOutTitle')}</h3>
-            <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
+            <h3 className="text-xl font-bold text-white">{t('wishlistPage.signedOutTitle')}</h3>
+            <p className="text-white/80 mt-2 max-w-sm mx-auto">
               {t('wishlistPage.signedOutBody')}
             </p>
+            <p className="text-sand mt-3 max-w-sm mx-auto text-sm font-semibold">{t('wishlistPage.signedOutBrand')}</p>
             <div className="mt-6 flex justify-center gap-3">
               <Button asChild>
               <Link href="/login">{t('wishlistPage.signIn')}</Link>
@@ -390,7 +392,7 @@ export default function WishlistPage() {
                 t('wishlistPage.summarySaved', { count: total }),
               ].join(' · ')}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-300">
               {upcoming.map(renderEntry)}
               {upcoming.length > 0 && noUpcoming.length > 0 && (
                 <div className="col-span-full flex items-center gap-3" role="separator" aria-label={t('wishlistPage.noUpcomingDivider')}>

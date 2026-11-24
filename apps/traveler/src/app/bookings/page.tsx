@@ -292,7 +292,7 @@ export default function MyBookingsPage() {
 
     if (!user) {
         return (
-            <div className="min-h-screen bg-background font-sans text-foreground overflow-hidden relative">
+            <div className="min-h-screen bg-background font-sans text-foreground">
                 <div className="max-w-5xl mx-auto px-6 pt-32 pb-20">
                     <div className="text-center py-20 bg-card/70 rounded-3xl border border-dashed border-border">
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -317,16 +317,13 @@ export default function MyBookingsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background font-sans text-foreground overflow-hidden relative">
-            <div aria-hidden="true" className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80 opacity-20 dark:opacity-10 pointer-events-none">
-                <div style={{ clipPath: 'polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)' }} className="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-sunset-orange sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]" />
-            </div>
+        <div className="min-h-screen bg-background font-sans text-foreground">
 
             <div className="max-w-5xl mx-auto px-6 pt-32 pb-20">
-                <div className="flex items-center justify-between mb-12">
+                <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h1 className="text-4xl md:text-5xl font-bold text-foreground tracking-tight mb-2">{t('bookings.title')}</h1>
-                        <p className="text-lg text-muted-foreground">{t('bookings.subtitle')}</p>
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight mb-1 font-display">{t('bookings.title')}</h1>
+                        <p className="text-base text-muted-foreground">{t('bookings.subtitle')}</p>
                     </div>
                 </div>
 
@@ -373,7 +370,7 @@ export default function MyBookingsPage() {
                                                         <h3 className="text-2xl font-black text-foreground group-hover:text-sunset-orange transition-colors line-clamp-2 leading-tight font-display tracking-tight">{booking.session.template.title}</h3>
                                                     </Link>
                                                     {shouldShowUploadAction(booking.status, hasPaymentProof, booking.paymentPlan?.status) && (
-                                                        <div className="shrink-0 flex items-center gap-2 px-3 py-1 bg-amber-500/10 text-amber-500 rounded-lg text-[10px] font-black uppercase tracking-tighter animate-pulse">
+                                                        <div className="shrink-0 flex items-center gap-2 px-3 py-1 bg-warning/10 text-warning-dark rounded-lg text-[10px] font-black uppercase tracking-tighter animate-pulse">
                                                             <Clock className="h-3 w-3" /> {t('bookings.actionRequired')}
                                                         </div>
                                                     )}
@@ -390,7 +387,7 @@ export default function MyBookingsPage() {
                                                     </div>
                                                     <div className="flex items-center gap-2.5">
                                                         <div className="w-8 h-8 rounded-lg bg-ocean-500/10 flex items-center justify-center">
-                                                            <MapPin className="h-4 w-4 text-blue-500 dark:text-blue-400" />
+                                                            <MapPin className="h-4 w-4 text-ocean-700 dark:text-ocean-300" />
                                                         </div>
                                                         <div className="flex flex-col">
                                                             <span className="text-[10px] text-muted-foreground font-bold uppercase">{t('bookingDetail.location')}</span>
@@ -400,11 +397,26 @@ export default function MyBookingsPage() {
                                                 </div>
                                             </div>
 
+                                            {/* Phase 2 — Bookings A: status-led next action,
+                                                scannable without opening the booking. */}
+                                            <p className="text-sm font-semibold text-foreground" data-testid="booking-next-step">
+                                              <span className="text-muted-foreground">{t('bookings.nextStep')}: </span>
+                                              {booking.paymentPlan?.status === BookingPaymentPlanStatus.BalanceDue
+                                                ? t('bookings.nextStepBalance')
+                                                : shouldShowUploadAction(booking.status, hasPaymentProof, booking.paymentPlan?.status)
+                                                  ? t('bookings.nextStepUploadProof')
+                                                  : hasPaymentProof && booking.paymentProof?.status !== 'VERIFIED'
+                                                    ? t('bookings.nextStepAwaitingAgency')
+                                                    : booking.status === BookingStatus.Confirmed
+                                                      ? t('bookings.nextStepConfirmed')
+                                                      : t('bookings.nextStepViewDetails')}
+                                            </p>
+
                                             {/* Batch F: payment-shape facts on the booking —
                                                 pay-later deadline (#696), pay-on-arrival (#697),
                                                 private departure (#694), pickup point (#701). */}
                                             {(booking.payLaterDeadline || booking.payOnArrival || booking.isPrivateSession || booking.pickupPointSnapshot) && (
-                                                <div className="rounded-2xl border border-sky-500/30 bg-sky-50 dark:bg-sky-950/20 px-5 py-4 space-y-1.5" data-testid="booking-batchf-strip">
+                                                <div className="rounded-2xl border border-ocean-500/30 bg-ocean-500/10 px-5 py-4 space-y-1.5" data-testid="booking-batchf-strip">
                                                     {booking.isPrivateSession && (
                                                         <p className="text-sm font-semibold text-foreground">{t('batchF.bookingPrivate')}</p>
                                                     )}
@@ -435,7 +447,7 @@ export default function MyBookingsPage() {
                                                 namespace (en/fr/ar parity) — it was hardcoded
                                                 English while the rest of the page localised. */}
                                             {booking.paymentPlan && (
-                                                <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 px-5 py-4 space-y-2">
+                                                <div className="rounded-2xl border border-warning/30 bg-warning/10 px-5 py-4 space-y-2">
                                                     {booking.paymentPlan.status === BookingPaymentPlanStatus.DepositDue && (
                                                         <p className="text-sm font-semibold text-foreground">
                                                             {t('paymentPlan.depositDue', {
@@ -491,7 +503,7 @@ export default function MyBookingsPage() {
                                                 The payment only counts once the agency confirms the
                                                 transfer in its bank account. */}
                                             {booking.paymentProof && booking.paymentProof.status !== VerificationStatus.Verified && booking.paymentProof.status !== VerificationStatus.Rejected && (
-                                                <div className="rounded-2xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 px-5 py-4">
+                                                <div className="rounded-2xl border border-warning/30 bg-warning/10 px-5 py-4">
                                                     <p className="text-sm font-semibold text-foreground">
                                                         {booking.paymentProof.status === VerificationStatus.Accepted
                                                             ? <>{t('refunds.proofAccepted', { agency: booking.session.template.agency?.companyName || t('refunds.defaultAgency') })}</>
@@ -568,7 +580,7 @@ export default function MyBookingsPage() {
                                                     {isReviewEligibleBooking(booking) && !booking.review && (
                                                         <Button
                                                             onClick={() => setReviewModalOpen(booking.id)}
-                                                            className="h-12 px-8 bg-deep-blue hover:bg-blue-900 rounded-xl text-xs font-black uppercase tracking-widest border-none"
+                                                            className="h-12 px-8 bg-deep-blue hover:bg-deep-blue/90 rounded-xl text-xs font-black uppercase tracking-widest border-none"
                                                         >
                                                             <Star className="h-4 w-4 mr-2" /> {t('bookings.writeReview')}
                                                         </Button>

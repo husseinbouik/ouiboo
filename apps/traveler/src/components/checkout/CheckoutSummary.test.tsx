@@ -190,8 +190,13 @@ describe('CheckoutSummary display currency (#619)', () => {
                 stagedAmounts={{ depositDue: 3, balanceDue: 8, total: 11 }}
             />,
         );
-        expect(await screen.findByText(/0\.28/)).toBeTruthy();
-        expect(await screen.findByText(/0\.73/)).toBeTruthy();
+        // Phase 2 (Checkout A deposit rail): the deposit-schedule
+        // visual repeats the deposit/balance amounts beside the
+        // summary lines, so the reconciled figures now appear twice —
+        // assert presence (and the #663 absence of €0.74) rather than
+        // uniqueness.
+        expect((await screen.findAllByText(/0\.28/)).length).toBeGreaterThan(0);
+        expect((await screen.findAllByText(/0\.73/)).length).toBeGreaterThan(0);
         expect(screen.queryByText(/0\.74/)).toBeNull();
     });
 

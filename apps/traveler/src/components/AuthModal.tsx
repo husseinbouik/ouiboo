@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock } from 'lucide-react';
-import { Button, Input, Logo } from '@ouiboo/ui';
+import { Mail, Lock, ShieldCheck } from 'lucide-react';
+import { Button, Input, Logo, Dialog, DialogContent, DialogTitle, DialogDescription } from '@ouiboo/ui';
 import { useAuth } from './AuthContext';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -29,6 +28,15 @@ type ApiError = {
     };
 };
 
+/**
+ * Design Council Phase 2 — Auth A (REDESIGN): branded split panel on
+ * the shared Radix Dialog from @ouiboo/ui (proper dialog semantics,
+ * focus trap, Escape/backdrop dismissal and focus restoration come
+ * from Radix — the previous hand-rolled modal had none of them). The
+ * navy identity panel follows the admin-login model: logo, platform
+ * headline and the money-story line a phishing clone cannot copy at
+ * a glance.
+ */
 export function AuthModal() {
     const { t } = useTranslation();
     const { showLoginModal, setShowLoginModal, refetch } = useAuth();
@@ -56,75 +64,60 @@ export function AuthModal() {
         loginMutation.mutate(data);
     };
 
-    if (!showLoginModal) return null;
-
     return (
-        <AnimatePresence>
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                {/* Backdrop */}
-                <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setShowLoginModal(false)}
-                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                />
-
-                {/* Modal Content */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="relative w-full max-w-md bg-card rounded-4xl shadow-2xl border border-white/20 dark:border-border overflow-hidden"
-                >
-                    <button 
-                        onClick={() => setShowLoginModal(false)}
-                        aria-label={t('authModal.close')}
-                        className="absolute top-6 end-6 p-2 rounded-full hover:bg-muted transition-colors z-10"
-                    >
-                        <X className="h-5 w-5 text-muted-foreground" />
-                    </button>
+        <Dialog open={showLoginModal} onOpenChange={setShowLoginModal}>
+            <DialogContent
+                closeLabel={t('authModal.close')}
+                className="max-w-2xl overflow-hidden rounded-3xl p-0 sm:rounded-3xl"
+            >
+                <div className="grid md:grid-cols-[42%_58%]">
+                    {/* Platform identity panel (admin-login model). */}
+                    <div className="hidden flex-col gap-4 bg-deep-blue p-8 text-white md:flex">
+                        <Logo size={44} tone="on-dark" aria-label="Ouiboo" />
+                        <p className="font-display text-2xl font-bold leading-snug">{t('authModal.brandHeadline')}</p>
+                        <p className="text-sm leading-relaxed text-white/80">{t('authModal.brandBody')}</p>
+                        <p className="mt-auto flex items-start gap-2 text-sm font-semibold text-sand">
+                            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-sunset-orange" aria-hidden="true" />
+                            {t('authModal.brandMoneyLine')}
+                        </p>
+                    </div>
 
                     <div className="p-8 md:p-10">
-                        <div className="text-center mb-8">
-                            {/* Brand lockup: the V1 Route-End symbol via the
-                                shared Logo component (symbol-alone is the
-                                sanctioned icon form). tone="auto" follows
-                                the modal's themed card — white ring on the
-                                dark surface, navy on light, arc + dot always
-                                sunset orange (settled colourways, #936). */}
-                            <div className="flex items-center justify-center mx-auto mb-4">
-                                <Logo size={48} tone="auto" aria-label="Ouiboo" />
+                        <div className="mb-8 text-center md:text-start">
+                            <div className="mb-4 flex items-center justify-center md:hidden">
+                                <Logo size={44} tone="auto" aria-label="Ouiboo" />
                             </div>
-                            <h2 className="text-2xl font-bold text-foreground">{t('authModal.title')}</h2>
-                            <p className="text-sm text-muted-foreground mt-2 font-medium">{t('authModal.subtitle')}</p>
+                            <DialogTitle className="text-2xl font-bold text-foreground">{t('authModal.title')}</DialogTitle>
+                            <DialogDescription className="mt-2 text-sm font-medium text-muted-foreground">{t('authModal.subtitle')}</DialogDescription>
                         </div>
 
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ms-1">{t('authModal.email')}</label>
+                                    <label htmlFor="auth-modal-email" className="ms-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">{t('authModal.email')}</label>
                                     <div className="relative">
-                                        <Mail className="absolute start-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Mail className="absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                         <Input
+                                            id="auth-modal-email"
                                             type="email"
                                             autoComplete="username"
                                             placeholder={t('authModal.emailPlaceholder')}
-                                            className="ps-11 h-12 bg-muted/50 border-border rounded-xl focus:bg-background transition-all"
+                                            className="h-12 rounded-xl border-border bg-muted/50 ps-11 transition-all focus:bg-background"
                                             {...register('email', { required: true })}
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-widest ms-1">{t('authModal.password')}</label>
+                                    <label htmlFor="auth-modal-password" className="ms-1 text-xs font-bold uppercase tracking-widest text-muted-foreground">{t('authModal.password')}</label>
                                     <div className="relative">
-                                        <Lock className="absolute start-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Lock className="absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                                         <Input
+                                            id="auth-modal-password"
                                             type="password"
                                             autoComplete="current-password"
                                             placeholder={t('authModal.passwordPlaceholder')}
-                                            className="ps-11 h-12 bg-muted/50 border-border rounded-xl focus:bg-background transition-all"
+                                            className="h-12 rounded-xl border-border bg-muted/50 ps-11 transition-all focus:bg-background"
                                             {...register('password', { required: true })}
                                         />
                                     </div>
@@ -132,23 +125,23 @@ export function AuthModal() {
                             </div>
 
                             {error && (
-                                <div className="p-3 bg-danger/10 text-danger text-xs font-bold rounded-xl border border-danger/20">
+                                <div className="rounded-xl border border-danger/20 bg-danger/10 p-3 text-xs font-bold text-danger">
                                     {error}
                                 </div>
                             )}
 
-                            <Button 
-                                type="submit" 
+                            <Button
+                                type="submit"
                                 disabled={loginMutation.isPending}
-                                className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-bold rounded-xl shadow-lg shadow-accent/20 transition-all active:scale-[0.98]"
+                                className="h-12 w-full rounded-xl bg-sunset-orange font-bold text-deep-blue shadow-lg shadow-sunset-orange/20 transition-all hover:bg-sunset-orange-dark hover:text-white"
                             >
                                 {loginMutation.isPending ? t('authModal.submitting') : t('authModal.signIn')}
                             </Button>
 
-                            <div className="text-center space-y-4">
+                            <div className="space-y-4 text-center">
                                 <div className="flex items-center gap-4 py-2">
                                     <div className="h-px flex-1 bg-border" />
-                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t('authModal.or')}</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t('authModal.or')}</span>
                                     <div className="h-px flex-1 bg-border" />
                                 </div>
                                 <p className="text-sm font-medium text-muted-foreground">
@@ -156,7 +149,7 @@ export function AuthModal() {
                                     <Link
                                         href="/signup"
                                         onClick={() => setShowLoginModal(false)}
-                                        className="text-accent font-bold hover:underline"
+                                        className="font-bold text-sunset-orange-dark hover:underline"
                                     >
                                         {t('authModal.signUp')}
                                     </Link>
@@ -164,9 +157,8 @@ export function AuthModal() {
                             </div>
                         </form>
                     </div>
-                </motion.div>
-            </div>
-        </AnimatePresence>
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }
-
