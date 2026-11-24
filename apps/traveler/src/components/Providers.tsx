@@ -1,15 +1,12 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { MotionConfig } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
+import { AppProviders, makeQueryClient } from '@ouiboo/auth';
 import { AuthProvider } from './AuthContext';
 import { DisplayCurrencyProvider } from '@/lib/display-currency';
 import { AuthModal } from './AuthModal';
 import { ToastProvider } from '@ouiboo/ui';
-import { ThemeProvider } from 'next-themes';
 import { createTravelerI18n, type SupportedLanguage } from '@/lib/i18n';
 import type { ResourceKey } from 'i18next';
 import { SkipLink } from './SkipLink';
@@ -37,16 +34,13 @@ export default function Providers({
     // the tree never blanks mid-switch either.
     const [i18n] = useState(() => createTravelerI18n(initialLanguage, initialResources));
 
+    // #1018 (D8): the QueryClient defaults, theme/motion nesting, the
+    // document-language (RTL) sync and the devtools now come from the
+    // shared `@ouiboo/auth` shell — this file keeps only the
+    // traveller-specific pieces: the persisted public cache (#333),
+    // the currency provider, the toast host and the auth modal.
     const [queryClient] = useState(() => {
-        const client = new QueryClient({
-            defaultOptions: {
-                queries: {
-                    staleTime: 60 * 1000,
-                    refetchOnWindowFocus: false,
-                    retry: 1,
-                },
-            },
-        });
+        const client = makeQueryClient();
         // #333: repeat visits paint instantly from the persisted public
         // catalog snapshot; fresh data refetches in the background.
         restorePublicQueryCache(client);
@@ -55,19 +49,6 @@ export default function Providers({
 
     useEffect(() => subscribePublicQueryCache(queryClient), [queryClient]);
 
-    useEffect(() => {
-        const syncDocumentLanguage = (language: string) => {
-            const lng = language.split('-')[0];
-            document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
-            document.documentElement.lang = lng;
-        };
-        syncDocumentLanguage(i18n.language);
-        i18n.on('languageChanged', syncDocumentLanguage);
-        return () => {
-            i18n.off('languageChanged', syncDocumentLanguage);
-        };
-    }, [i18n]);
-
     return (
         <I18nextProvider i18n={i18n}>
             {/* F1: SkipLink lives inside the provider now so it renders
@@ -75,28 +56,23 @@ export default function Providers({
                 behind its own #245 mount gate). It stays the first
                 focusable element in the body. */}
             <SkipLink />
-            <QueryClientProvider client={queryClient}>
-                <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-                    <MotionConfig reducedMotion="user">
-                        <AuthProvider>
-                            {/* #498 rework: display-currency context (profile
-                                value for signed-in travellers, local guest
-                                preference otherwise). Inside AuthProvider —
-                                it reads the profile — and inside the query
-                                client, which caches the FX rates. */}
-                            <DisplayCurrencyProvider>
-                            {/* #485: shared toast host (Undo actions, error
-                                surfacing for optimistic mutations). */}
-                            <ToastProvider>
-                                {children}
-                                <AuthModal />
-                            </ToastProvider>
-                            </DisplayCurrencyProvider>
-                        </AuthProvider>
-                    </MotionConfig>
-                </ThemeProvider>
-                {process.env.NODE_ENV === 'development' ? <ReactQueryDevtools initialIsOpen={false} /> : null}
-            </QueryClientProvider>
+            <AppProviders queryClient={queryClient} i18nInstance={i18n}>
+                <AuthProvider>
+                    {/* #498 rework: display-currency context (profile
+                        value for signed-in travellers, local guest
+                        preference otherwise). Inside AuthProvider —
+                        it reads the profile — and inside the query
+                        client, which caches the FX rates. */}
+                    <DisplayCurrencyProvider>
+                    {/* #485: shared toast host (Undo actions, error
+                        surfacing for optimistic mutations). */}
+                    <ToastProvider>
+                        {children}
+                        <AuthModal />
+                    </ToastProvider>
+                    </DisplayCurrencyProvider>
+                </AuthProvider>
+            </AppProviders>
         </I18nextProvider>
     );
 }
