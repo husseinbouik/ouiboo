@@ -22,8 +22,10 @@ const createRedis = (): RedisMock => ({
 })
 
 const createContext = (
-  request: Pick<Request, 'method' | 'url'> & Partial<Pick<Request, 'originalUrl'>>
+  request: Pick<Request, 'method' | 'url'> &
+    Partial<Pick<Request, 'originalUrl'>> & { headers?: Record<string, string> }
 ) => {
+  request = { headers: {}, ...request }
   const headers: Record<string, string> = {}
   const response = {
     setHeader: jest.fn((name: string, value: string) => {
@@ -63,7 +65,7 @@ describe('RedisResponseCacheInterceptor', () => {
     )
 
     expect(redis.get).toHaveBeenCalledWith(
-      'http-cache:/api/v1/trips?page=2&status=ACTIVE'
+      'http-cache:/api/v1/trips?page=2&status=ACTIVE|lang=default|auth=anon'
     )
     expect(result).toEqual({ data: ['cached'] })
     expect(headers['X-Cache']).toBe('HIT')
@@ -86,7 +88,7 @@ describe('RedisResponseCacheInterceptor', () => {
 
     expect(headers['X-Cache']).toBe('MISS')
     expect(redis.set).toHaveBeenCalledWith(
-      'http-cache:/api/v1/trips?page=1',
+      'http-cache:/api/v1/trips?page=1|lang=default|auth=anon',
       JSON.stringify(body),
       'EX',
       60
@@ -139,6 +141,163 @@ describe('RedisResponseCacheInterceptor', () => {
     expect(redis.unlink).toHaveBeenNthCalledWith(
       2,
       'http-cache:/api/v1/trips?page=2'
+    )
+  })
+
+  it('separates cache entries by the x-ouiboo-language header (#1017)', async () => {
+    const redis = createRedis()
+    redis.get.mockImplementation(async (key: string) =>
+      key.includes('lang=fr')
+        ? JSON.stringify({ data: ['fr'] })
+        : JSON.stringify({ data: ['default'] })
+    )
+    const interceptor = createInterceptor(redis)
+
+    const frContext = createContext({
+      method: 'GET',
+      url: '/api/v1/trips?page=1',
+      originalUrl: '/api/v1/trips?page=1',
+      headers: { 'x-ouiboo-language': 'fr' },
+    })
+    const frNext = { handle: jest.fn(() => of({ data: ['fresh'] })) }
+    const frResult = await lastValueFrom(
+      interceptor.intercept(frContext.context, frNext as CallHandler)
+    )
+
+    expect(redis.get).toHaveBeenCalledWith(
+      'http-cache:/api/v1/trips?page=1|lang=fr|auth=anon'
+    )
+    expect(frResult).toEqual({ data: ['fr'] })
+    expect(frNext.handle).not.toHaveBeenCalled()
+
+    const defaultContext = createContext({
+      method: 'GET',
+      url: '/api/v1/trips?page=1',
+      originalUrl: '/api/v1/trips?page=1',
+    })
+    const defaultNext = { handle: jest.fn(() => of({ data: ['fresh'] })) }
+    const defaultResult = await lastValueFrom(
+      interceptor.intercept(defaultContext.context, defaultNext as CallHandler)
+    )
+
+    expect(redis.get).toHaveBeenCalledWith(
+      'http-cache:/api/v1/trips?page=1|lang=default|auth=anon'
+    )
+    expect(defaultResult).toEqual({ data: ['default'] })
+    expect(defaultNext.handle).not.toHaveBeenCalled()
+  })
+
+  it('separates authenticated variants and keeps them out of shared caches (#1017)', async () => {
+    const redis = createRedis()
+    const interceptor = createInterceptor(redis)
+    const { context, headers } = createContext({
+      method: 'GET',
+      url: '/api/v1/trips?page=1',
+      originalUrl: '/api/v1/trips?page=1',
+      headers: { authorization: 'Bearer token-123' },
+    })
+    const next = { handle: jest.fn(() => of({ data: [] })) }
+
+    await lastValueFrom(interceptor.intercept(context, next as CallHandler))
+
+    expect(redis.get).toHaveBeenCalledWith(
+      'http-cache:/api/v1/trips?page=1|lang=default|auth=auth'
+    )
+    expect(headers['Cache-Control']).toBe('private, max-age=60')
+  })
+
+  it('caches destination inventory with its own TTL (#1017)', async () => {
+    const redis = createRedis()
+    const interceptor = createInterceptor(redis)
+    const { context, headers } = createContext({
+      method: 'GET',
+      url: '/api/v1/trips/destinations/tangier',
+      originalUrl: '/api/v1/trips/destinations/tangier',
+    })
+    const body = { slug: 'tangier', trips: [] }
+    const next = { handle: jest.fn(() => of(body)) }
+
+    await lastValueFrom(interceptor.intercept(context, next as CallHandler))
+    await Promise.resolve()
+
+    expect(headers['X-Cache']).toBe('MISS')
+    expect(headers['Cache-Control']).toBe(
+      'public, max-age=120, stale-while-revalidate=240'
+    )
+    expect(redis.set).toHaveBeenCalledWith(
+      'http-cache:/api/v1/trips/destinations/tangier|lang=default|auth=anon',
+      JSON.stringify(body),
+      'EX',
+      120
+    )
+  })
+
+  it('caches the agency public profile (#1017)', async () => {
+    const redis = createRedis()
+    const interceptor = createInterceptor(redis)
+    const { context, headers } = createContext({
+      method: 'GET',
+      url: '/api/v1/agencies/agency-1/public',
+      originalUrl: '/api/v1/agencies/agency-1/public',
+    })
+    const body = { id: 'agency-1', companyName: 'Atlas Tours' }
+    const next = { handle: jest.fn(() => of(body)) }
+
+    await lastValueFrom(interceptor.intercept(context, next as CallHandler))
+    await Promise.resolve()
+
+    expect(headers['X-Cache']).toBe('MISS')
+    expect(redis.set).toHaveBeenCalledWith(
+      'http-cache:/api/v1/agencies/agency-1/public|lang=default|auth=anon',
+      JSON.stringify(body),
+      'EX',
+      60
+    )
+  })
+
+  it('does not cache non-public agency routes', async () => {
+    const redis = createRedis()
+    const interceptor = createInterceptor(redis)
+    const { context, headers } = createContext({
+      method: 'GET',
+      url: '/api/v1/agencies/agency-1/bookings',
+      originalUrl: '/api/v1/agencies/agency-1/bookings',
+    })
+    const next = { handle: jest.fn(() => of({ data: [] })) }
+
+    await lastValueFrom(interceptor.intercept(context, next as CallHandler))
+
+    expect(headers['X-Cache']).toBeUndefined()
+    expect(redis.get).not.toHaveBeenCalled()
+    expect(next.handle).toHaveBeenCalledTimes(1)
+  })
+
+  it('invalidates cached agency profiles after an agency mutation (#1017)', async () => {
+    const redis = createRedis()
+    redis.scan.mockResolvedValue([
+      '0',
+      ['http-cache:/api/v1/agencies/agency-1/public|lang=default|auth=anon'],
+    ])
+    const interceptor = createInterceptor(redis)
+    const { context } = createContext({
+      method: 'PATCH',
+      url: '/api/v1/agency/profile',
+      originalUrl: '/api/v1/agency/profile',
+    })
+    const next = { handle: jest.fn(() => of({ id: 'agency-1' })) }
+
+    await lastValueFrom(interceptor.intercept(context, next as CallHandler))
+    await new Promise((resolve) => setImmediate(resolve))
+
+    expect(redis.scan).toHaveBeenCalledWith(
+      '0',
+      'MATCH',
+      'http-cache:/api/v1/agencies*',
+      'COUNT',
+      100
+    )
+    expect(redis.unlink).toHaveBeenCalledWith(
+      'http-cache:/api/v1/agencies/agency-1/public|lang=default|auth=anon'
     )
   })
 })
