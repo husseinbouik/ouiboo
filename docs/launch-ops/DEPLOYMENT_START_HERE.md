@@ -20,7 +20,7 @@ These deployment assets already exist:
 
 - promotion path: the gated manual checklist in [RELEASE_RUNBOOK.md](./RELEASE_RUNBOOK.md)
   (`.github/workflows/staging-release.yml` was retired on 2026-10-27 — see #502)
-- production workflow: `.github/workflows/production-release.yml`
+- production workflow: `.github/workflows/release.yml` (the sole promotion path — see `RELEASE.md`)
 - smoke validation script: `scripts/smoke-deploy.mjs`
 - health endpoints:
   - traveler `/api/health`

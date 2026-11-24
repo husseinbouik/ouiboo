@@ -12,7 +12,7 @@ name: Release — Promote Staging SHA to Production
 # Required secrets:
 #   VERCEL_TOKEN               Vercel API token (Account Settings → Tokens)
 #   PRODUCTION_DATABASE_URL    Production Postgres connection string
-# Required vars (already used by production-release.yml):
+# Required vars:
 #   PRODUCTION_API_URL, PRODUCTION_TRAVELER_URL, PRODUCTION_AGENCY_URL,
 #   PRODUCTION_ADMIN_URL, PRODUCTION_LANDING_URL
 
