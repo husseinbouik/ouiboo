@@ -9,6 +9,7 @@ import { TripCategory, TripStatus } from '@ouiboo/types';
 import type { CreateTripInput } from '@ouiboo/schemas';
 import { useTripWizardForm } from '@/components/trips/useTripWizardForm';
 import { TripForm } from '@/components/trips/TripForm';
+import { clearTripDraft, tripDraftKey } from '@/lib/trip-draft';
 
 type ApiError = {
   response?: {
@@ -46,6 +47,7 @@ export default function CreateTripPage() {
       return response.data;
     },
     onSuccess: () => {
+      clearTripDraft(tripDraftKey('create'));
       queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
       router.push('/dashboard/trips');
     },

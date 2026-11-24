@@ -75,7 +75,14 @@
     "refunds": "Refunds",
     "support": "Support",
     "crm": "Customers & Pipeline",
-    "messages": "Messages"
+    "messages": "Messages",
+    "groups": {
+      "operate": "Operate",
+      "money": "Money",
+      "grow": "Grow",
+      "account": "Account"
+    },
+    "proofsToReview": "{{count}} payment proofs to review"
   },
   "login": {
     "title": "Agency Portal",
@@ -507,8 +514,26 @@
       "completenessDay": "Day {{day}}: consider adding {{missing}} (optional — a suggestion, not a block).",
       "nudgeDriveTime": "drive time",
       "nudgeAccommodation": "accommodation",
-      "nudgeMeals": "meals"
-    }
+      "nudgeMeals": "meals",
+      "draftSaved": "Draft saved on this device",
+      "draftRestored": "Draft restored from this device",
+      "honestyPhotos": "Use your own photos — travellers see exactly these images. Do not use another agency’s photos.",
+      "honestyPrice": "Set the real price per person. The deposit shown to travellers is capped at 30% and is paid directly to you.",
+      "sessionsInsideTitle": "Sessions",
+      "sessionsInsideBodyCreate": "Sessions are the bookable dates for this trip. You add them in the final step right after saving — a trip cannot go live without a future session.",
+      "sessionsInsideBodyEdit": "Sessions are the bookable dates for this trip, with seats and meeting time. Manage them from the trip page after saving your changes.",
+      "sessionsOpenDetail": "Open session manager",
+      "missingTitle": "To publish, you still need:",
+      "missingTitleSave": "To save, you still need:",
+      "checkedBeforeListing": "Checked before listing",
+      "directPaymentNote": "Travellers pay the agency directly — Ouiboo never touches the money."
+    },
+    "completeness": "Listing completeness",
+    "completenessPhotos": "Photos",
+    "completenessInclusions": "Inclusions",
+    "completenessSessions": "Sessions",
+    "completenessPricing": "Pricing",
+    "viewAsTraveller": "View as traveller"
   },
   "payments": {
     "title": "Payments",
@@ -833,7 +858,17 @@
     "paymentsPending": "Payments to verify",
     "paymentsPendingCaption": "Traveller proofs uploaded, waiting for your bank confirmation",
     "grossBookedValueCaption": "Total value of confirmed and completed bookings — not money received yet",
-    "viewPayments": "View payments"
+    "viewPayments": "View payments",
+    "actionInbox": {
+      "title": "Action inbox",
+      "subtitle": "Proofs to review first, then bookings waiting on you.",
+      "proofsHeading": "Payment proofs awaiting review",
+      "bookingsHeading": "Bookings to confirm",
+      "empty": "Nothing needs your action right now.",
+      "reviewProof": "Review proof",
+      "openBooking": "Open booking",
+      "kpisHeading": "Overview"
+    }
   },
   "status": {
     "bookingPending": "Pending",
@@ -1015,7 +1050,11 @@
     "cashPlusBeneficiaryNameHint": "The name travellers will see at checkout — it must be your agency.",
     "cashPlusPhone": "Cash Plus phone number",
     "cashPlusPhonePlaceholder": "+212 6 00 00 00 00",
-    "cashPlusPhoneHint": "The number travellers send to at the Cash Plus point."
+    "cashPlusPhoneHint": "The number travellers send to at the Cash Plus point.",
+    "saveBankDetails": "Save bank details",
+    "saveCashPlusDetails": "Save Cash Plus details",
+    "reReviewNote": "Changing these details sends them for a new admin review. Travellers keep seeing the previously verified details until the new ones are approved.",
+    "paymentDirectNote": "Travellers pay you directly. Ouiboo never touches traveller money."
   },
   "analytics": {
     "dashboardTitle": "Analytics Dashboard",
@@ -1153,7 +1192,10 @@
     "methodCashPlus": "Cash Plus",
     "methodBankTransfer": "Bank transfer",
     "methodManual": "Manual payment",
-    "cashPlusCode": "Transaction code"
+    "cashPlusCode": "Transaction code",
+    "feedbackAccepted": "Proof accepted — not settled yet. Confirm the bank credit to settle this payment.",
+    "feedbackRejected": "Proof rejected. The traveller has been asked to upload a new proof.",
+    "feedbackConfirmed": "Bank credit confirmed — this payment is settled."
   },
   "bulkSession": {
     "helper": "Complete the dates, price, and seat count for every session.",
@@ -1521,5 +1563,14 @@
     "emptyThread": "No messages yet. Say hello to get started.",
     "noMessagesYet": "No messages yet",
     "blockedByTravelerNotice": "This traveller has paused new messages with your agency. Conversations about an existing booking stay available."
+  },
+  "authPanel": {
+    "paidDirectlyTitle": "You are paid directly — always.",
+    "paidDirectlyBody": "Travellers pay your bank or Cash Plus account. Ouiboo never touches your money. Any platform fee is only by written monthly invoice — never deducted from a traveller payment.",
+    "verifyTitle": "Before you can list trips, we check:",
+    "verifyLicence": "Agency licence / registration",
+    "verifyPayment": "Payment details in the agency’s name",
+    "verifyTrip": "A first trip with your own photos",
+    "verifyTiming": "Verification is manual. Most agencies are checked within 2 working days."
   }
 }

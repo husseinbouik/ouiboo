@@ -9,6 +9,7 @@ import type { CreateTripInput } from '@ouiboo/schemas';
 import { useTripWizardForm } from '@/components/trips/useTripWizardForm';
 import { TripForm } from '@/components/trips/TripForm';
 import { FormSkeleton } from '@/components/Skeletons';
+import { clearTripDraft, tripDraftKey } from '@/lib/trip-draft';
 import { tripToFormValues, type TripEditorData } from '@/components/trips/trip-form-values';
 
 export default function EditTripPage() {
@@ -40,6 +41,7 @@ export default function EditTripPage() {
       return response.data;
     },
     onSuccess: () => {
+      clearTripDraft(tripDraftKey('edit', String(id)));
       queryClient.invalidateQueries({ queryKey: ['agency-trips'] });
       queryClient.invalidateQueries({ queryKey: ['trip', id] });
       router.push(`/dashboard/trips/${id}`);
@@ -94,6 +96,7 @@ export default function EditTripPage() {
   return (
     <TripForm
       mode="edit"
+      tripId={String(id ?? '')}
       t={t}
       form={form}
       backHref={`/dashboard/trips/${id}`}

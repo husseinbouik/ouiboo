@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
-import { AuthSideWordmark } from '../../components/AuthSideWordmark';
+import { AgencyAuthPanel } from '../../components/AgencyAuthPanel';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -244,22 +244,7 @@ if (!isMounted) return <div className="min-h-screen bg-background" />;
             sizes="50vw"
           />
         </motion.div>
-        <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full h-full">
-          <div className="flex justify-end">
-             <AuthSideWordmark />
-          </div>
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8, duration: 0.8 }}
-            className="mb-12"
-          >
-            <h2 className="text-4xl font-bold mb-4 leading-tight">{t('login.heroTitle')}</h2>
-            <p className="text-lg text-gray-200 max-w-md">
-              {t('login.heroSubtitle')}
-            </p>
-          </motion.div>
-        </div>
+        <AgencyAuthPanel />
       </div>
     </div>
   );

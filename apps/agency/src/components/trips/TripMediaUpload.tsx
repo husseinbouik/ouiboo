@@ -83,6 +83,7 @@ export function TripMediaUpload({ t, form, mode }: Props) {
               <Info className="h-5 w-5 text-primary shrink-0" />
               <p className="text-xs text-muted-foreground leading-relaxed font-medium">
                 {t('trips.create.imageHint')}
+                <span className="block mt-1 font-semibold">{t('trips.create.honestyPhotos')}</span>
                 <span className="block mt-1">{t('trips.create.imageAltHint')}</span>
               </p>
             </div>

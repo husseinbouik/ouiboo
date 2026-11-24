@@ -22,6 +22,9 @@ import { formatCurrency } from '@ouiboo/utils';
 import { DeleteConfirmation } from '@/components/DeleteConfirmation';
 import { AgencyTripCardSkeletonGrid } from '@/components/Skeletons';
 import { TRAVELER_URL } from '@/lib/site';
+import { buildTripShareUrl } from '@ouiboo/utils';
+import { getTripCompleteness } from '@/lib/trip-completeness';
+import { Eye } from 'lucide-react';
 
 type AgencyTripSessionSummary = {
   id: string;
@@ -42,6 +45,7 @@ type AgencyTripSummary = {
   createdAt?: string;
   images?: string[] | null;
   imageAlts?: string[] | null;
+  inclusions?: string[] | null;
   sessions?: AgencyTripSessionSummary[];
 };
 
@@ -223,7 +227,7 @@ export default function AgencyTripsPage() {
                       disabled={updateStatusMutation.isPending}
                       aria-label={tripStatusLabel(trip.status)}
                       className={cn(
-                        "text-[10px] px-2.5 py-1.5 rounded-lg font-bold shadow-sm backdrop-blur-md uppercase tracking-wider transition-all hover:scale-105 active:scale-95",
+                        "text-[10px] px-2.5 py-1.5 rounded-lg font-bold shadow-sm backdrop-blur-md uppercase tracking-wider transition-colors",
                         trip.status === 'ACTIVE' ? "bg-success/90 text-success-foreground" : "bg-slate-500/90 text-white"
                       )}
                     >
@@ -249,6 +253,35 @@ export default function AgencyTripsPage() {
                       {t('trips.salesCount', { count: trip.sessions?.reduce((acc, session) => acc + (session._count?.bookings || 0), 0) || 0 })}
                    </div>
                 </div>
+
+                {(() => {
+                  const completeness = getTripCompleteness(trip);
+                  const signals = [
+                    { label: t('trips.completenessPhotos'), ok: completeness.photos },
+                    { label: t('trips.completenessInclusions'), ok: completeness.inclusions },
+                    { label: t('trips.completenessSessions'), ok: completeness.sessions },
+                    { label: t('trips.completenessPricing'), ok: completeness.pricing },
+                  ];
+                  return (
+                    <div className="mb-4 space-y-2" data-testid="trip-completeness">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-muted-foreground">{t('trips.completeness')}</span>
+                        <span className="text-foreground">{completeness.percent}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuenow={completeness.percent} aria-valuemin={0} aria-valuemax={100} aria-label={t('trips.completeness')}>
+                        <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${completeness.percent}%` }} />
+                      </div>
+                      <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                        {signals.map((signal) => (
+                          <li key={signal.label} className={signal.ok ? 'text-success-dark font-semibold' : ''}>{signal.ok ? '✓' : '○'} {signal.label}</li>
+                        ))}
+                      </ul>
+                      <a href={buildTripShareUrl(TRAVELER_URL, trip.id, 'agency-preview')} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+                        <Eye className="h-3.5 w-3.5" aria-hidden="true" /> {t('trips.viewAsTraveller')}
+                      </a>
+                    </div>
+                  );
+                })()}
 
                 <div className="mt-auto flex items-center justify-between">
                    <div>

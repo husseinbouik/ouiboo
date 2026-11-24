@@ -3,27 +3,10 @@
 import React, { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  BarChart3,
-  Calendar,
-  FileText,
-  ChevronLeft,
-  ChevronRight,
-  CreditCard,
-  LayoutDashboard, Sparkles,
-  LifeBuoy,
-  MessageSquare,
-  LogOut,
-  Map,
-  PlusCircle,
-  Receipt,
-  RotateCcw,
-  Settings,
-  ShieldCheck,
-  Star,
-  TicketPercent,
-  Users,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, LogOut, PlusCircle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import { getAgencyNavGroups } from './agency-nav';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@ouiboo/ui/utils';
@@ -43,36 +26,15 @@ export function AgencySidebar() {
     () => typeof window !== 'undefined' && window.localStorage.getItem('sidebar-collapsed') === 'true',
   );
 
-  const navigation = [
-    { name: t('sidebar.dashboard'), href: '/dashboard', icon: LayoutDashboard },
-    { name: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart3 },
-    { name: t('sidebar.myTrips'), href: '/dashboard/trips', icon: Map },
-    { name: t('sidebar.bookings'), href: '/dashboard/bookings', icon: Calendar },
-    // #786: CRM-lite — traveller contacts + booking pipeline.
-    { name: t('sidebar.crm'), href: '/dashboard/crm', icon: Users },
-    // #729 (Council S7-2): the agency messages inbox (reply side of
-    // traveller-initiated conversations).
-    { name: t('sidebar.messages'), href: '/dashboard/messages', icon: MessageSquare },
-    { name: t('sidebar.quotes'), href: '/dashboard/quotes', icon: FileText },
-    // #778: agency-funded promo codes (agency funds 100% of the discount).
-    { name: t('sidebar.promoCodes'), href: '/dashboard/promo-codes', icon: TicketPercent },
-    // #755: campaign/session pricing (automatic price rules, agency-funded).
-    { name: t('sidebar.priceRules'), href: '/dashboard/price-rules', icon: TicketPercent },
-    { name: t('batchF.customRequests'), href: '/dashboard/custom-requests', icon: Sparkles },
-    { name: t('sidebar.reviews'), href: '/dashboard/reviews', icon: Star },
-    { name: t('sidebar.wallet'), href: '/dashboard/wallet', icon: CreditCard },
-    // #370: refund cases the agency must act on (SLA-tracked).
-    { name: t('sidebar.refunds'), href: '/dashboard/refunds', icon: RotateCcw },
-    // #374: the billing page (subscription + platform service fee invoices)
-    // existed but was not linked from anywhere; surface it in the sidebar.
-    { name: t('sidebar.billing'), href: '/dashboard/settings/billing', icon: Receipt },
-    { name: t('sidebar.compliance'), href: '/dashboard/onboarding', icon: ShieldCheck },
-    { name: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
-    // #556 rework: the support page — reachable from the sidebar like
-    // every other workspace section (dashboard/refunds/onboarding also
-    // render the SupportBlock, which links here).
-    { name: t('sidebar.support'), href: '/dashboard/support', icon: LifeBuoy },
-  ];
+  // Phase 4 (Nav A): pending proof-review count from the stats payload
+  // the dashboard already consumes — shown as a badge on Bookings.
+  const { data: navStats } = useQuery<{ payments?: { pendingVerificationCount?: number } }>({
+    queryKey: ['agency-dashboard-stats'],
+    queryFn: async () => (await apiClient.get('/agency/stats')).data,
+    staleTime: 60_000,
+  });
+  const pendingProofs = navStats?.payments?.pendingVerificationCount ?? 0;
+  const navGroups = getAgencyNavGroups(t);
 
   const toggleCollapse = () => {
     const nextState = !isCollapsed;
@@ -117,41 +79,50 @@ export function AgencySidebar() {
         </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 relative',
-                isActive
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'text-muted-foreground hover:bg-muted hover:text-primary',
-              )}
-              title={isCollapsed ? item.name : ''}
-            >
-              <item.icon
-                className={cn(
-                  'h-5 w-5 flex-shrink-0 transition-colors',
-                  isCollapsed ? 'mx-auto' : 'ms-3',
-                  isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-primary',
-                )}
-              />
-
-              {!isCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="whitespace-nowrap"
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+        {navGroups.map((group) => (
+          <div key={group.label} className="space-y-1">
+            {!isCollapsed && (
+              <p className="px-3 pb-1 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{group.label}</p>
+            )}
+            {group.items.map((item) => {
+              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+              const showBadge = item.badgeKey === 'proofs' && pendingProofs > 0;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 relative',
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                      : 'text-muted-foreground hover:bg-muted hover:text-primary',
+                  )}
+                  title={isCollapsed ? item.name : ''}
+                  aria-label={showBadge ? t('sidebar.proofsToReview', { count: pendingProofs }) : undefined}
                 >
-                  {item.name}
-                </motion.span>
-              )}
-            </Link>
-          );
-        })}
+                  <item.icon
+                    className={cn(
+                      'h-5 w-5 flex-shrink-0 transition-colors',
+                      isCollapsed ? 'mx-auto' : 'ms-3',
+                      isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-primary',
+                    )}
+                  />
+                  {!isCollapsed && (
+                    <motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="whitespace-nowrap">
+                      {item.name}
+                    </motion.span>
+                  )}
+                  {showBadge && (
+                    <span data-testid="nav-proof-badge" className={cn('ms-auto inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-black text-accent-foreground', isCollapsed && 'absolute end-1 top-1 ms-0')}>
+                      {pendingProofs}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
 
         <div className={cn('pt-4 mt-4 border-t border-border', isCollapsed && 'items-center')}>
           <Link

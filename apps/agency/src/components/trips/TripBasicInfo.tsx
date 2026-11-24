@@ -51,26 +51,28 @@ export function TripBasicInfo({ t, form }: Props) {
           {isCanonicalLanguage(activeLanguage) ? (
             <>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">{t('trips.create.title')}</label>
-                <Input {...register('title')} placeholder={t('trips.create.titlePlaceholder')} className="h-12" dir="ltr" />
-                {errors.title && <p className="text-danger text-xs font-medium">{errors.title.message}</p>}
+                <label htmlFor="trip-title" className="text-sm font-semibold text-foreground">{t('trips.create.title')}</label>
+                <Input id="trip-title" {...register('title')} placeholder={t('trips.create.titlePlaceholder')} className="h-12" dir="auto" />
+                {errors.title && <p className="text-danger text-xs font-medium animate-in fade-in slide-in-from-top-1 duration-150 motion-reduce:animate-none">{errors.title.message}</p>}
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">{t('trips.create.description')}</label>
+                <label htmlFor="trip-description" className="text-sm font-semibold text-foreground">{t('trips.create.description')}</label>
                 <textarea
+                  id="trip-description"
                   {...register('description')}
                   className="w-full h-32 p-4 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-foreground"
                   placeholder={t('trips.create.descriptionPlaceholder')}
-                  dir="ltr"
+                  dir="auto"
                 ></textarea>
-                {errors.description && <p className="text-danger text-xs font-medium">{errors.description.message}</p>}
+                {errors.description && <p className="text-danger text-xs font-medium animate-in fade-in slide-in-from-top-1 duration-150 motion-reduce:animate-none">{errors.description.message}</p>}
               </div>
             </>
           ) : (
             <>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">{t('trips.create.title')}</label>
+                <label htmlFor="trip-title-translated" className="text-sm font-semibold text-foreground">{t('trips.create.title')}</label>
                 <Input
+                  id="trip-title-translated"
                   {...register(`translations.${activeLanguage}.title`)}
                   placeholder={t('trips.create.titlePlaceholder')}
                   className="h-12"
@@ -94,8 +96,8 @@ export function TripBasicInfo({ t, form }: Props) {
               placeholder mid-word (worst in FR/AR). */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1.3fr] gap-4">
             <div className="space-y-2 min-w-0">
-              <label className="text-sm font-semibold text-foreground">{t('trips.create.category')}</label>
-              <select {...register('category')} className="w-full h-12 px-4 bg-background border border-border rounded-xl text-sm focus:outline-none text-foreground">
+              <label htmlFor="trip-category" className="text-sm font-semibold text-foreground">{t('trips.create.category')}</label>
+              <select id="trip-category" {...register('category')} className="w-full h-12 px-4 bg-background border border-border rounded-xl text-sm focus:outline-none text-foreground">
                 <option value="ADVENTURE">{t('trips.create.categoryAdventure')}</option>
                 <option value="CULTURAL">{t('trips.create.categoryCultural')}</option>
                 <option value="LUXURY">{t('trips.create.categoryLuxury')}</option>
@@ -104,12 +106,12 @@ export function TripBasicInfo({ t, form }: Props) {
               </select>
             </div>
             <div className="space-y-2 min-w-0">
-              <label className="text-sm font-semibold text-foreground">{t('trips.create.startingLocation')}</label>
-              <Input {...register('startLocation')} placeholder={t('trips.create.startingLocationPlaceholder')} title={t('trips.create.startingLocationPlaceholder')} className="h-12 text-ellipsis" />
+              <label htmlFor="trip-start-location" className="text-sm font-semibold text-foreground">{t('trips.create.startingLocation')}</label>
+              <Input id="trip-start-location" {...register('startLocation')} placeholder={t('trips.create.startingLocationPlaceholder')} title={t('trips.create.startingLocationPlaceholder')} className="h-12 text-ellipsis" />
             </div>
             <div className="space-y-2 min-w-0">
-              <label className="text-sm font-semibold text-foreground">{t('trips.create.endLocation')}</label>
-              <Input {...register('endLocation')} placeholder={t('trips.create.endLocationPlaceholder')} title={t('trips.create.endLocationPlaceholder')} className="h-12 text-ellipsis" />
+              <label htmlFor="trip-end-location" className="text-sm font-semibold text-foreground">{t('trips.create.endLocation')}</label>
+              <Input id="trip-end-location" {...register('endLocation')} placeholder={t('trips.create.endLocationPlaceholder')} title={t('trips.create.endLocationPlaceholder')} className="h-12 text-ellipsis" />
             </div>
           </div>
           {/* #675: normalised destination from the beta-cluster
@@ -117,8 +119,9 @@ export function TripBasicInfo({ t, form }: Props) {
               by the API on save. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2 min-w-0">
-              <label className="text-sm font-semibold text-foreground">{t('trips.create.destination')}</label>
+              <label htmlFor="trip-destination" className="text-sm font-semibold text-foreground">{t('trips.create.destination')}</label>
               <select
+                id="trip-destination"
                 {...register('destinationSlug', {
                   setValueAs: (value) => (value ? value : undefined),
                 })}
@@ -144,8 +147,9 @@ export function TripBasicInfo({ t, form }: Props) {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">{t('trips.create.meetingAddress')}</label>
+                <label htmlFor="trip-meeting-address" className="text-sm font-semibold text-foreground">{t('trips.create.meetingAddress')}</label>
                 <Input
+                  id="trip-meeting-address"
                   {...register('meetingPoint.address', {
                     setValueAs: (value) => (typeof value === 'string' && value.trim() ? value : undefined),
                   })}
@@ -154,8 +158,9 @@ export function TripBasicInfo({ t, form }: Props) {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">{t('trips.create.meetingMapsUrl')}</label>
+                <label htmlFor="trip-meeting-maps" className="text-sm font-semibold text-foreground">{t('trips.create.meetingMapsUrl')}</label>
                 <Input
+                  id="trip-meeting-maps"
                   {...register('meetingPoint.mapsUrl', {
                     setValueAs: (value) => (typeof value === 'string' && value.trim() ? value.trim() : undefined),
                   })}
@@ -164,7 +169,7 @@ export function TripBasicInfo({ t, form }: Props) {
                   dir="ltr"
                 />
                 {(errors.meetingPoint as { mapsUrl?: { message?: string } } | undefined)?.mapsUrl?.message && (
-                  <p className="text-danger text-xs font-medium">{(errors.meetingPoint as { mapsUrl?: { message?: string } }).mapsUrl?.message}</p>
+                  <p className="text-danger text-xs font-medium animate-in fade-in slide-in-from-top-1 duration-150 motion-reduce:animate-none">{(errors.meetingPoint as { mapsUrl?: { message?: string } }).mapsUrl?.message}</p>
                 )}
               </div>
             </div>
@@ -173,7 +178,7 @@ export function TripBasicInfo({ t, form }: Props) {
               <span className="text-sm font-medium text-foreground">{t('trips.create.meetingPickup')}</span>
             </label>
             {(errors.meetingPoint as { message?: string } | undefined)?.message && (
-              <p className="text-danger text-xs font-medium">{(errors.meetingPoint as { message?: string }).message}</p>
+              <p className="text-danger text-xs font-medium animate-in fade-in slide-in-from-top-1 duration-150 motion-reduce:animate-none">{(errors.meetingPoint as { message?: string }).message}</p>
             )}
           </div>
 
@@ -194,7 +199,7 @@ export function TripBasicInfo({ t, form }: Props) {
                 placeholder={t('trips.create.currencyPlaceholder')}
                 className="h-12 uppercase"
               />
-              {errors.currency && <p className="text-danger text-xs font-medium">{errors.currency.message}</p>}
+              {errors.currency && <p className="text-danger text-xs font-medium animate-in fade-in slide-in-from-top-1 duration-150 motion-reduce:animate-none">{errors.currency.message}</p>}
             </div>
           </div>
         </CardContent>

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import type { BookingDetails } from '@ouiboo/types';
+import { VerificationStatus, type BookingDetails } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 import { apiClient } from '@/lib/api-client';
 import {
@@ -18,6 +18,7 @@ import { PaymentProofBookingCard } from './PaymentProofBookingCard';
 import { PaymentProofViewer } from './PaymentProofViewer';
 import { PaymentProofRejectionForm } from './PaymentProofRejectionForm';
 import { PaymentProofFooter } from './PaymentProofFooter';
+import { ProofReviewFeedback, type ProofReviewDecision } from './ProofReviewFeedback';
 import {
   PaymentProofBankConfirmation,
   type BankConfirmationPayload,
@@ -65,6 +66,21 @@ export function PaymentProofReviewModal({
   const [proofObjectUrl, setProofObjectUrl] = useState<string | null>(null);
   const [proofContentType, setProofContentType] = useState<string | null>(null);
   const [proofRetryCount, setProofRetryCount] = useState(0);
+
+  // Phase 4 (M5 agency side): when the open booking's proof status
+  // transitions as a result of a decision, show staged feedback.
+  const proofStatus = booking?.paymentProof?.status;
+  const prevProofStatusRef = React.useRef<string | undefined>(undefined);
+  const [decisionFeedback, setDecisionFeedback] = React.useState<ProofReviewDecision | null>(null);
+  React.useEffect(() => {
+    const prev = prevProofStatusRef.current;
+    prevProofStatusRef.current = proofStatus;
+    if (!isOpen || !prev || prev === proofStatus) return;
+    if (proofStatus === VerificationStatus.Accepted) setDecisionFeedback('accepted');
+    else if (proofStatus === VerificationStatus.Verified) setDecisionFeedback('confirmed');
+    else if (proofStatus === VerificationStatus.Rejected) setDecisionFeedback('rejected');
+  }, [isOpen, proofStatus]);
+  React.useEffect(() => { if (!isOpen) setDecisionFeedback(null); }, [isOpen]);
 
   const proofBookingId = booking?.id;
   const hasProof = Boolean(booking?.paymentProof?.imageUrl);
@@ -249,6 +265,7 @@ export function PaymentProofReviewModal({
 
             {/* Status Banner — final states and the accepted intermediate */}
             {(isFinalStage || isBankConfirmationStage) && <PaymentProofStatusBanner booking={booking} />}
+            <ProofReviewFeedback decision={decisionFeedback} />
 
             {/* Content */}
             <div className="p-6 space-y-6">

@@ -3,7 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button, Input, ThemeToggle, LanguageSwitcher } from '@ouiboo/ui';
-import { AuthSideWordmark } from '../../components/AuthSideWordmark';
+import { AgencyAuthPanel } from '../../components/AgencyAuthPanel';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, Mail, Lock, Building2, Eye, EyeOff, Calendar } from 'lucide-react';
@@ -281,22 +281,7 @@ export default function AgencySignupPage() {
         <div className="absolute -start-24 top-16 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute bottom-16 end-10 h-96 w-96 rounded-full bg-orange-400/20 blur-3xl" />
         <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.08)_0,rgba(255,255,255,0.08)_1px,transparent_1px,transparent_32px)]" />
-        <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full h-full">
-          <div className="flex justify-end">
-             <AuthSideWordmark />
-          </div>
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8, duration: 0.8 }}
-            className="mb-12"
-          >
-            <h2 className="text-4xl font-bold mb-4 leading-tight">{t('signup.heroTitle')}</h2>
-            <p className="text-lg text-muted-foreground max-w-md">
-              {t('signup.heroSubtitle')}
-            </p>
-          </motion.div>
-        </div>
+        <AgencyAuthPanel />
       </div>
     </div>
   );

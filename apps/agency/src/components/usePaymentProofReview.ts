@@ -25,6 +25,9 @@ export function usePaymentProofReview() {
   const queryClient = useQueryClient();
   const [reviewingBooking, setReviewingBooking] = useState<BookingDetails | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Phase 4 (M5 agency side): last completed decision, surfaced as
+  // staged feedback next to the review surface — never silent.
+  const [lastDecision, setLastDecision] = useState<'accepted' | 'rejected' | 'confirmed' | null>(null);
 
   const extractActionError = (error: unknown) => {
     const message = (error as { response?: { data?: { message?: string } } })?.response?.data
@@ -57,9 +60,11 @@ export function usePaymentProofReview() {
     onSuccess: (updated, variables) => {
       invalidateBookingQueries();
       if (!variables.approved) {
+        setLastDecision('rejected');
         setReviewingBooking(null);
         return;
       }
+      setLastDecision('accepted');
       setReviewingBooking((prev) =>
         prev ? applyProofDecision(prev, updated, VerificationStatus.Accepted) : prev,
       );
@@ -83,6 +88,7 @@ export function usePaymentProofReview() {
     },
     onSuccess: (updated) => {
       invalidateBookingQueries();
+      setLastDecision('confirmed');
       setReviewingBooking((prev) =>
         prev ? applyProofDecision(prev, updated, VerificationStatus.Verified) : prev,
       );
