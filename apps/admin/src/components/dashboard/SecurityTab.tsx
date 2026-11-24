@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AxiosError } from 'axios';
 import { KeyRound, ShieldCheck, ShieldAlert, Copy, Download, Ban } from 'lucide-react';
-import { Button, Card, Input } from '@ouiboo/ui';
+import { Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ouiboo/ui';
 import QRCode from 'qrcode';
 import { apiClient } from '@/lib/api-client';
 import type { AdminBreakGlassCredential, AdminMfaStatus, ApiErrorResponse } from './types';
@@ -382,29 +382,29 @@ export default function SecurityTab({ t }: SecurityTabProps) {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
-                <th className="py-2 pe-4">{t('security.colLabel')}</th>
-                <th className="py-2 pe-4">{t('security.colStatus')}</th>
-                <th className="py-2 pe-4">{t('security.colCreated')}</th>
-                <th className="py-2 pe-4">{t('security.colExpires')}</th>
-                <th className="py-2">{t('security.colActions')}</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col">{t('security.colLabel')}</TableHead>
+                <TableHead scope="col">{t('security.colStatus')}</TableHead>
+                <TableHead scope="col">{t('security.colCreated')}</TableHead>
+                <TableHead scope="col">{t('security.colExpires')}</TableHead>
+                <TableHead scope="col">{t('security.colActions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {credentials.map((credential) => (
-                <tr key={credential.id} className="border-t border-border">
-                  <td className="py-2 pe-4 font-medium">{credential.label}</td>
-                  <td className="py-2 pe-4">
+                <TableRow key={credential.id}>
+                  <TableCell className="font-medium">{credential.label}</TableCell>
+                  <TableCell>
                     {t(`security.status.${credential.status.toLowerCase()}`)}
                     {credential.usedByEmail && (
                       <span className="block text-xs text-muted-foreground">{credential.usedByEmail}</span>
                     )}
-                  </td>
-                  <td className="py-2 pe-4">{formatDateTime(credential.createdAt, t)}</td>
-                  <td className="py-2 pe-4">{formatDateTime(credential.expiresAt, t)}</td>
-                  <td className="py-2">
+                  </TableCell>
+                  <TableCell>{formatDateTime(credential.createdAt, t)}</TableCell>
+                  <TableCell>{formatDateTime(credential.expiresAt, t)}</TableCell>
+                  <TableCell>
                     {credential.status === 'ACTIVE' && (
                       revokeConfirmId === credential.id ? (
                         <span className="flex gap-2">
@@ -427,18 +427,18 @@ export default function SecurityTab({ t }: SecurityTabProps) {
                         </Button>
                       )
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               {credentials.length === 0 && !credentialsQuery.isLoading && (
-                <tr>
-                  <td colSpan={5} className="py-4 text-center text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     {t('security.noBreakGlass')}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </Card>
     </div>

@@ -9,6 +9,7 @@ import type { PaginationMeta } from '@ouiboo/utils';
 import type { AdminAgency, AdminTrip, FeedbackState } from './types';
 import { getAdminVerificationBadgeClass, getAdminVerificationBadgeLabel, getAdminSubscriptionBadgeLabel } from '../../app/status-mappers';
 import { canApproveAgency, canRejectAgency, canApproveTrip, canRejectTrip } from './formatters';
+import { getQueueAge } from './dashboard-utils';
 import SharePreviewCard from './SharePreviewCard';
 import ShareSignalPanel from './ShareSignalPanel';
 
@@ -56,6 +57,24 @@ export default function PendingTab({
 }: PendingTabProps) {
   // #561: per-trip OG/share preview toggle (admin/staging preview surface).
   const [previewTripId, setPreviewTripId] = React.useState<string | null>(null);
+  // Phase 5 (verdict #21): queue age per item, from the createdAt
+  // already in the payload — rendered through i18n, nothing shown when
+  // the timestamp is absent.
+  const ageBadge = (iso?: string | null) => {
+    const age = getQueueAge(iso);
+    if (!age) return null;
+    const unitKey =
+      age.unit === 'minutes'
+        ? 'dashboard.labels.ageMinutes'
+        : age.unit === 'hours'
+          ? 'dashboard.labels.ageHours'
+          : 'dashboard.labels.ageDays';
+    return (
+      <Badge variant="outline" className="text-[10px] font-bold">
+        {t(unitKey, { count: age.amount })}
+      </Badge>
+    );
+  };
   return (
 <div className="space-y-12">
    {/* #561 rework: always-rendered share-signal surface (see ShareSignalPanel). */}
@@ -82,6 +101,7 @@ export default function PendingTab({
                         <p className="text-sm text-muted-foreground">
                           {t('dashboard.labels.ice')}: {agency.ice} - {t('dashboard.labels.joined')} {agency.user?.createdAt ? new Date(agency.user.createdAt).toLocaleDateString() : t('dashboard.labels.na')}
                         </p>
+                        <div className="mt-1">{ageBadge(agency.user?.createdAt)}</div>
                      </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -138,6 +158,7 @@ export default function PendingTab({
                     <div>
                        <h3 className="font-bold text-foreground line-clamp-1">{trip.title}</h3>
                        <p className="text-xs text-muted-foreground">{trip.agency.companyName}</p>
+                       <div className="mt-1">{ageBadge(trip.createdAt)}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button

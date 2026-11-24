@@ -20,7 +20,7 @@ import {
   KeyRound,
   LifeBuoy,
 } from 'lucide-react';
-import { ConfirmDialog, CardListSkeleton } from '@ouiboo/ui';
+import { ConfirmDialog, CardListSkeleton, useToast } from '@ouiboo/ui';
 import { useAuth } from '@/components/AuthContext';
 import { toPaginatedList } from '@ouiboo/utils';
 import {
@@ -103,6 +103,11 @@ export default function AdminDashboard() {
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null);
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+  // M2 (Design Council 2026-11-24): key operator decisions also fire a
+  // toast through the shared host (Providers) — the inline feedback
+  // lines stay, the toast is the visible confirmation when the tab
+  // content re-renders or the modal closes.
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const invalidateOverviewCounts = () => {
     queryClient.invalidateQueries({ queryKey: ['admin-overview-counts'] });
@@ -243,18 +248,16 @@ export default function AdminDashboard() {
       invalidateOverviewCounts();
       queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
       queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
-      setAgencyFeedback({
-        type: 'success',
-        message: variables.status === VerificationStatus.Verified
-          ? t('dashboard.feedback.agencyApproved')
-          : t('dashboard.feedback.agencyRejected')
-      });
+      const message = variables.status === VerificationStatus.Verified
+        ? t('dashboard.feedback.agencyApproved')
+        : t('dashboard.feedback.agencyRejected');
+      setAgencyFeedback({ type: 'success', message });
+      toast({ title: message, variant: 'success' });
     },
     onError: (error: AxiosError<ApiErrorResponse>) => {
-      setAgencyFeedback({
-        type: 'error',
-        message: getErrorMessage(error, t('dashboard.feedback.agencyUpdateError'))
-      });
+      const message = getErrorMessage(error, t('dashboard.feedback.agencyUpdateError'));
+      setAgencyFeedback({ type: 'error', message });
+      toast({ title: message, variant: 'error' });
     }
   });
 
@@ -270,12 +273,11 @@ export default function AdminDashboard() {
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['pending-agencies'] });
       void queryClient.invalidateQueries({ queryKey: ['all-agencies'] });
-      setAgencyFeedback({
-        type: 'success',
-        message: variables.status === LicenceStatus.Verified
-          ? t('dashboard.feedback.licenceVerified')
-          : t('dashboard.feedback.licenceRejected')
-      });
+      const message = variables.status === LicenceStatus.Verified
+        ? t('dashboard.feedback.licenceVerified')
+        : t('dashboard.feedback.licenceRejected');
+      setAgencyFeedback({ type: 'success', message });
+      toast({ title: message, variant: 'success' });
     },
     onError: (error: AxiosError<ApiErrorResponse>) => {
       setAgencyFeedback({
@@ -431,21 +433,19 @@ export default function AdminDashboard() {
     onSuccess: (_data, variables) => {
       invalidateOverviewCounts();
       queryClient.invalidateQueries({ queryKey: ['pending-payments'] });
-      setPaymentProofFeedback({
-        type: 'success',
-        // #422: the VERIFIED wire value is the API's accept decision — the
-        // feedback copy (paymentProofApproved) says "accepted — pending
-        // bank confirmation", never that the payment is settled.
-        message: variables.status === VerificationStatus.Verified
-          ? t('dashboard.feedback.paymentProofApproved')
-          : t('dashboard.feedback.paymentProofRejected')
-      });
+      // #422: the VERIFIED wire value is the API's accept decision — the
+      // feedback copy (paymentProofApproved) says "accepted — pending
+      // bank confirmation", never that the payment is settled.
+      const message = variables.status === VerificationStatus.Verified
+        ? t('dashboard.feedback.paymentProofApproved')
+        : t('dashboard.feedback.paymentProofRejected');
+      setPaymentProofFeedback({ type: 'success', message });
+      toast({ title: message, variant: 'success' });
     },
     onError: (error: AxiosError<ApiErrorResponse>) => {
-      setPaymentProofFeedback({
-        type: 'error',
-        message: getErrorMessage(error, t('dashboard.feedback.paymentProofUpdateError'))
-      });
+      const message = getErrorMessage(error, t('dashboard.feedback.paymentProofUpdateError'));
+      setPaymentProofFeedback({ type: 'error', message });
+      toast({ title: message, variant: 'error' });
     }
   });
 

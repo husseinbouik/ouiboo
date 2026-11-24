@@ -56,3 +56,29 @@ export const resolveInvoiceGenerateErrorKey = (error: unknown): string => {
   if (tag.includes('Agency profile not found')) return INVOICE_GENERATE_ERROR_KEYS.agencyNotFound;
   return INVOICE_GENERATE_ERROR_KEYS.fallback;
 };
+
+/**
+ * Phase 5 (Design Council 2026-11-24, verdict #21 — Queue workbench):
+ * how long a queue item has been waiting, derived from the createdAt /
+ * uploadedAt timestamp already in the payload. Returns a coarse
+ * amount + unit so the call site renders it through i18n
+ * (`dashboard.labels.ageMinutes` / `ageHours` / `ageDays`); null when
+ * the timestamp is missing or unparseable (render nothing, never a
+ * fabricated age). Hours are kept up to 48h — the mockup's oldest
+ * queue item reads "26h", not "1d".
+ */
+export type QueueAgeUnit = 'minutes' | 'hours' | 'days';
+
+export const getQueueAge = (
+  iso: string | null | undefined,
+  now: Date = new Date(),
+): { amount: number; unit: QueueAgeUnit } | null => {
+  if (!iso) return null;
+  const start = new Date(iso).getTime();
+  if (Number.isNaN(start)) return null;
+  const elapsedMinutes = Math.max(0, Math.floor((now.getTime() - start) / 60000));
+  if (elapsedMinutes < 60) return { amount: elapsedMinutes, unit: 'minutes' };
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 48) return { amount: elapsedHours, unit: 'hours' };
+  return { amount: Math.floor(elapsedHours / 24), unit: 'days' };
+};

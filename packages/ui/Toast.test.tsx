@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import {
   Toast,
   ToastTitle,
@@ -70,6 +70,14 @@ function ToastHarness({ onUndo }: { onUndo: () => void }) {
 }
 
 describe('ToastProvider / useToast (#485)', () => {
+  // M2 exit timing is timer-driven; fake timers make it deterministic.
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('shows the toast in a polite live region without stealing focus, and Undo runs + dismisses', () => {
     const onUndo = jest.fn();
     render(
@@ -87,6 +95,25 @@ describe('ToastProvider / useToast (#485)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(onUndo).toHaveBeenCalledTimes(1);
+    // M2: dismissal plays the 150ms exit animation before the toast is
+    // removed from the stack (it no longer vanishes in the same frame).
+    expect(screen.getByText('Removed from your wishlist')).not.toBeNull();
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
     expect(screen.queryByText('Removed from your wishlist')).toBeNull();
+  });
+
+  it('animates toasts in over 200ms and out over 150ms (M2 timing)', () => {
+    const onUndo = jest.fn();
+    render(
+      <ToastProvider>
+        <ToastHarness onUndo={onUndo} />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'remove' }));
+    const toastText = screen.getByText('Removed from your wishlist');
+    const wrapper = toastText.closest('div[class*="animate-in"]');
+    expect(wrapper?.className).toContain('duration-200');
   });
 });
