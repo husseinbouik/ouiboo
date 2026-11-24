@@ -1,39 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Mail, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
 import { Button, OtpCodeInput } from '@ouiboo/ui';
 import { apiClient } from '@/lib/api-client';
-import { useMutation } from '@tanstack/react-query';
-import { setBrowserAccessToken } from '@ouiboo/api-client';
+import { useOtpVerification } from '@ouiboo/auth';
 import { useTranslation } from 'react-i18next';
 import '../../lib/i18n';
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
-type ApiError = {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
-};
-
 export default function VerifyEmailPage() {
   const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const email = searchParams.get('email');
   const reason = searchParams.get('reason');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const initialError = reason === 'unverified'
     ? t('verify.accountNotVerified')
     : null;
-  const [error, setError] = useState<string | null>(initialError);
-  const [success, setSuccess] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
     document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
@@ -65,69 +51,28 @@ export default function VerifyEmailPage() {
     }
   };
 
-  useEffect(() => {
-    if (!email) {
-      router.push('/signup');
-    }
-  }, [email, router]);
-
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const timer = window.setInterval(() => {
-      setCooldown((current) => Math.max(0, current - 1));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [cooldown]);
-
-  const verifyMutation = useMutation({
-    mutationFn: async (otpString: string) => {
-      const response = await apiClient.post('/auth/verify-email', {
-        email,
-        otp: otpString,
-      });
-      return response.data;
-    },
-    onSuccess: async (data) => {
-      try {
-        await setBrowserAccessToken(data.accessToken);
-      } catch {
-        setError('Verification succeeded but we could not start your session. Please try again.');
-        return;
-      }
-      setSuccess(true);
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
-    },
-    onError: (err: ApiError) => {
-      setError(getFriendlyError(err?.response?.data?.message));
-    },
+  // #1023 (D2): the OTP state machine (six-box state, verify/resend
+  // mutations, resend cooldown, session establishment) is shared with
+  // traveler via @ouiboo/auth; this page keeps its design and its
+  // verify.* wording (its key names differ from traveler's).
+  const {
+    otp,
+    setOtp,
+    error,
+    success,
+    cooldown,
+    handleSubmit,
+    resend,
+    isVerifying,
+    isResending,
+  } = useOtpVerification({
+    apiClient,
+    email,
+    initialError,
+    mapError: (message) => getFriendlyError(message),
+    enterAllDigitsMessage: t('verify.enterAllDigits'),
+    successRedirect: '/dashboard',
   });
-
-  const resendMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiClient.post('/auth/resend-otp', { email });
-      return response.data;
-    },
-    onSuccess: () => {
-      setError(null);
-      setCooldown(RESEND_COOLDOWN_SECONDS);
-    },
-    onError: (err: ApiError) => {
-      setError(getFriendlyError(err?.response?.data?.message));
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const otpString = otp.join('');
-    if (otpString.length === 6) {
-      setError(null);
-      verifyMutation.mutate(otpString);
-    } else {
-      setError(t('verify.enterAllDigits'));
-    }
-  };
 
   if (success) {
     return (
@@ -188,11 +133,11 @@ export default function VerifyEmailPage() {
 
           <Button 
             type="submit" 
-            disabled={verifyMutation.isPending}
+            disabled={isVerifying}
             className="w-full h-14 bg-primary hover:bg-primary/90 text-white font-bold rounded-xl shadow-lg shadow-primary/20"
           >
-            {verifyMutation.isPending ? t('verify.verifying') : t('verify.verifyAccount')}
-            {!verifyMutation.isPending && <ArrowRight className="ms-2 h-5 w-5 inline rtl:rotate-180" />}
+            {isVerifying ? t('verify.verifying') : t('verify.verifyAccount')}
+            {!isVerifying && <ArrowRight className="ms-2 h-5 w-5 inline rtl:rotate-180" />}
           </Button>
         </form>
 
@@ -202,11 +147,11 @@ export default function VerifyEmailPage() {
           </p>
           <button 
             type="button" 
-            onClick={() => resendMutation.mutate()}
-            disabled={resendMutation.isPending || cooldown > 0}
+            onClick={resend}
+            disabled={isResending || cooldown > 0}
             className="flex items-center gap-2 mx-auto text-primary dark:text-accent font-bold hover:underline disabled:opacity-50"
           >
-            <RefreshCw className={`h-4 w-4 ${resendMutation.isPending ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${isResending ? 'animate-spin' : ''}`} />
             {cooldown > 0 ? t('verify.resendIn', { seconds: cooldown }) : t('verify.resendCode')}
           </button>
           {cooldown > 0 && (
