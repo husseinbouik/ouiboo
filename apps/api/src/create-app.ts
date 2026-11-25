@@ -10,41 +10,17 @@ import { RedisResponseCacheInterceptor } from './common/redis-response-cache.int
 import { ResponseInterceptor } from './common/response.interceptor'
 import { RequestLoggingInterceptor } from './monitoring/request-logging.interceptor'
 import { getTrustedOrigins } from './common/trusted-origins.util'
+import { env, parseEnv } from './config/env'
 import type { NextFunction, Request, Response } from 'express'
 
-const REQUIRED_ENV_VARS = [
-  'JWT_SECRET',
-  'JWT_REFRESH_SECRET',
-  'CORS_ORIGINS',
-  'DATABASE_URL',
-  'REDIS_URL',
-  'SMTP_HOST',
-  'SMTP_PORT',
-  'SMTP_USER',
-  'SMTP_PASS',
-  'TRUST_PROXY_HOPS',
-]
-
+// #1030 (B4 + A12): environment validation lives in the zod env schema
+// (src/config/env.ts), parsed once at boot and exported typed. The
+// schema's production rules mirror this function's old semantics —
+// the same 10 required variables and the same JWT length / placeholder
+// / distinctness rules — and importing the module already parses once;
+// this wrapper re-parses so the boot check stays explicit.
 export const validateRequiredEnv = () => {
-  if (process.env.NODE_ENV !== 'production') return
-
-  const missing = REQUIRED_ENV_VARS.filter((name) => !process.env[name])
-  if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}`
-    )
-  }
-
-  const jwtSecret = process.env.JWT_SECRET || ''
-  const refreshSecret = process.env.JWT_REFRESH_SECRET || ''
-  const placeholderPattern = /(?:demo|change|replace|secret|password)/i
-  if (jwtSecret.length < 32 || refreshSecret.length < 32
-    || placeholderPattern.test(jwtSecret) || placeholderPattern.test(refreshSecret)) {
-    throw new Error('JWT secrets must be at least 32 characters and non-placeholder values in production')
-  }
-  if (jwtSecret === refreshSecret) {
-    throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be different in production')
-  }
+  parseEnv()
 }
 
 const getCorsOrigins = () => getTrustedOrigins()
@@ -58,7 +34,7 @@ export async function createApp(): Promise<INestApplication> {
   validateRequiredEnv()
   const app = await NestFactory.create(AppModule, { rawBody: true })
   const corsOrigins = getCorsOrigins()
-  const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS)
+  const trustProxyHops = Number(env.TRUST_PROXY_HOPS)
   if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
     app.getHttpAdapter().getInstance().set('trust proxy', trustProxyHops)
   }
@@ -66,7 +42,7 @@ export async function createApp(): Promise<INestApplication> {
   app.use(
     helmet({
       contentSecurityPolicy:
-        process.env.NODE_ENV === 'production'
+        env.NODE_ENV === 'production'
           ? {
               useDefaults: false,
               directives: {
@@ -83,7 +59,7 @@ export async function createApp(): Promise<INestApplication> {
       frameguard: { action: 'deny' },
       referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
       hsts:
-        process.env.NODE_ENV === 'production'
+        env.NODE_ENV === 'production'
           ? { maxAge: 31536000, includeSubDomains: true }
           : false,
     }),
@@ -99,7 +75,7 @@ export async function createApp(): Promise<INestApplication> {
 
   app.enableCors({
     origin:
-      process.env.NODE_ENV === 'production' && corsOrigins.length === 0
+      env.NODE_ENV === 'production' && corsOrigins.length === 0
         ? false
         : corsOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -131,8 +107,8 @@ export async function createApp(): Promise<INestApplication> {
     .build()
 
   if (
-    process.env.NODE_ENV !== 'production' ||
-    process.env.ENABLE_SWAGGER === 'true'
+    env.NODE_ENV !== 'production' ||
+    env.ENABLE_SWAGGER === 'true'
   ) {
     const document = SwaggerModule.createDocument(app, config)
     SwaggerModule.setup('docs', app, document)
