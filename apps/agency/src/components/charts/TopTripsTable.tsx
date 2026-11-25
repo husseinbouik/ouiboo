@@ -5,9 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { Card, Select } from '@ouiboo/ui';
 import { Star } from 'lucide-react';
 import { formatCurrency } from '@ouiboo/utils';
+import type { AgencyTopTripRow } from '@ouiboo/types';
 import type { ChangeEvent } from 'react';
 
-type Trip = { id: string; title: string; bookings: number; revenue: number; avgRating: number; reviewCount: number };
+/** #1025 (A4): row shape is the shared AgencyTopTripRow. */
+type Trip = AgencyTopTripRow;
 
 export default function TopTripsTable({ data = [], limit = 5, onLimitChange }: { data?: Trip[]; limit?: number; onLimitChange?: (n: number) => void }) {
   const { t, i18n } = useTranslation();

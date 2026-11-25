@@ -30,7 +30,7 @@ import VerificationRecord from '@/components/VerificationRecord';
 import MessageAgencyButton from '@/components/MessageAgencyButton';
 import { TRAVELER_URL } from '@/lib/site';
 import { tripCoverViewTransitionName } from '@/lib/view-transition';
-import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType } from '@ouiboo/types';
+import { SessionStatus, type CancellationScaleSnapshot, type SessionStatusType, type TripSession as SharedTripSession } from '@ouiboo/types';
 import { formatCurrency } from '@ouiboo/utils';
 import { CancellationScaleCard } from '@/components/CancellationScaleCard';
 import { CancellationOneLiner } from '@/components/CancellationOneLiner';
@@ -63,23 +63,18 @@ type TripDay = {
   notes?: Record<string, string> | null;
 };
 
-type TripSession = {
-  id: string;
-  startDate: string;
-  endDate: string;
+/** #1025 (A4): the detail page's session shape extends the shared
+ * TripSession — money may arrive as number|string on this payload, the
+ * staged-payment enums are still plain strings here, and the shared
+ * templateId/totalSeats are not part of this response. */
+type TripSession = Omit<SharedTripSession, 'templateId' | 'totalSeats' | 'price' | 'deposit' | 'groupStatus' | 'sessionKind' | 'confirmationDeadline'> & {
   price: number | string;
   deposit: number | string;
-  currency: string;
-  availableSeats: number;
-  status: SessionStatusType;
   /** #369: staged-payment configuration (minimum-group trips). */
-  minBookings?: number;
   confirmationDeadline?: string | null;
   groupStatus?: string;
   /** Batch F: #694 private kind, #696 pay-later election. */
   sessionKind?: string;
-  allowPayLater?: boolean;
-  payLaterHoldHours?: number | null;
 };
 
 /** #369: a session is staged when it needs a minimum group and a deposit. */

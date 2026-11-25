@@ -1,14 +1,10 @@
 'use client';
 
 import { createAuthContext } from '@ouiboo/auth';
-import type { VerificationStatusType } from '@ouiboo/types';
+import type { AuthUser, SubscriptionStatus, TravelLicenceType, VerificationStatusType } from '@ouiboo/types';
 
-interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    avatar?: string;
+/** #1025 (A4): agency session user = shared AuthUser base + agency profile. */
+interface User extends AuthUser {
     agencyProfile?: {
         id: string;
         companyName: string;
@@ -19,7 +15,7 @@ interface User {
         verificationStatus: VerificationStatusType;
         bio?: string;
         logo?: string;
-        subscriptionStatus?: string;
+        subscriptionStatus?: SubscriptionStatus;
         trialEndsAt?: string;
         subscriptionEndsAt?: string;
         subscriptionTermsVersion?: string;
@@ -36,7 +32,7 @@ interface User {
         // #691: storefront about (language-keyed) + languages.
         aboutTranslations?: Record<string, string> | null;
         languages?: string[];
-        travelLicenceType?: string;
+        travelLicenceType?: TravelLicenceType;
         travelLicenceNumber?: string;
         travelLicenceStatus?: string;
         licenceVerifiedAt?: string;

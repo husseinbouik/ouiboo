@@ -1,5 +1,7 @@
 'use client';
 
+import type { Review } from '@ouiboo/types';
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -20,29 +22,6 @@ interface ReviewListProps {
   tripId: string;
 }
 
-interface Review {
-  id: string;
-  rating: number;
-  comment?: string;
-  response?: string;
-  /** #776: optional sub-scores stored on the review (null = not scored). */
-  organisationRating?: number | null;
-  guideRating?: number | null;
-  valueRating?: number | null;
-  accuracyRating?: number | null;
-  /** #776: API-relative, visibility-gated photo paths (VISIBLE reviews only). */
-  photos?: string[];
-  /** #783: API-relative, visibility-gated video path (VISIBLE reviews
-   * with a video only); null/absent = no video. Never a storage key. */
-  video?: string | null;
-  isVerifiedBooking: boolean;
-  createdAt: string;
-  traveler?: {
-    id: string;
-    name: string;
-    avatar?: string;
-  };
-}
 
 type SortBy = 'recent' | 'highest' | 'lowest';
 

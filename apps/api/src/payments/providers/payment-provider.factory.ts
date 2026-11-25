@@ -4,7 +4,10 @@ import { CmiProviderNotImplementedError } from './cmi-payment.provider';
 import { StripePaymentProvider } from './stripe-payment.provider';
 import { CashPlusPaymentProvider } from './cashplus-payment.provider';
 
-export type PaymentProviderType = 'CMI' | 'STRIPE' | 'CASHPLUS';
+// #1025 (A3): the provider type's single source is @ouiboo/types
+// (PaymentProviderType = PaymentProvider); re-exported for existing imports.
+export type { PaymentProviderType } from '@ouiboo/types';
+import type { PaymentProviderType } from '@ouiboo/types';
 
 /**
  * Factory for creating payment provider instances

@@ -1,32 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
-
-/**
- * Council S6 (#674 + #676) — publish-time guardrails for trip content.
- *
- * #674: a published trip carries exactly ONE cancellation scale — the
- * platform-structured bands stored on TripTemplate.cancellationPolicy
- * (validated by cancellation.util, snapshotted onto every booking at
- * creation, #417). Free-text agency cancellation/payment terms anywhere
- * in the trip's traveller-facing text are prohibited: they contradict
- * the structured scale on the same page (the Eden Voyages failure mode
- * that motivated the issue — a platform ladder beside pasted text
- * saying "ferme, non remboursable et non annulable" with 50%-deposit
- * terms). The checks here run at publish (and on edits that keep a
- * published trip published); drafts may be incomplete while composed,
- * but the agency editor flags the same patterns before submit.
- *
- * #676: a trip also cannot publish with neither a structured meeting
- * address nor pickupAvailable=true — a traveller who booked must have a
- * way to find the departure. Everything else about itinerary depth
- * (drive time, accommodation, meals) is a non-blocking completeness
- * nudge, computed here and surfaced by the publish responses/editor.
- */
-
-export interface MeetingPoint {
-    address?: string | null;
-    mapsUrl?: string | null;
-    pickupAvailable: boolean;
-}
+import type { MeetingPoint } from '@ouiboo/types';
+export type { MeetingPoint } from '@ouiboo/types';
 
 /** Normalize untrusted meeting-point input (DTO / stored Json). */
 export function normalizeMeetingPoint(raw: unknown): MeetingPoint | null {
