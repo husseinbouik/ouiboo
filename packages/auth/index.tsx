@@ -140,3 +140,5 @@ export function createAuthContext<TUser extends AuthBaseUser>(options: AuthConte
 
     return { AuthProvider, useAuth };
 }
+export { AppProviders, makeQueryClient } from './AppProviders';
+export type { AppProvidersProps } from './AppProviders';

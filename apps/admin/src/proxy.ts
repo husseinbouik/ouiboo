@@ -1,55 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifySession, SESSION_COOKIE_NAME } from '@ouiboo/session';
+import { createProxy } from '@ouiboo/session';
 
-const supportedLanguages = ['en', 'fr', 'ar'];
-
-function normalizeLanguage(value?: string | null) {
-  const language = value?.split('-')[0]?.toLowerCase();
-
-  return language && supportedLanguages.includes(language) ? language : null;
-}
-
-export async function proxy(request: NextRequest) {
-  const requestHeaders = new Headers(request.headers);
-  const queryLanguage = normalizeLanguage(request.nextUrl.searchParams.get('lang'));
-  const cookieLanguage = normalizeLanguage(request.cookies.get('i18nextLng')?.value);
-  const language = queryLanguage || cookieLanguage;
-
-  if (language) {
-    requestHeaders.set('x-ouiboo-language', language);
-  }
-
-
-  // Auth gate: redirect unauthenticated users.
-  // Validates the signed BFF session cookie (ouiboo_session) with ADMIN role (#208).
-  const ADMIN_PUBLIC = ['/login'];
-  const adminPath = request.nextUrl.pathname;
-  const adminIsPublic = ADMIN_PUBLIC.some((p) => adminPath === p || adminPath.startsWith(p + '/'));
-  if (!adminIsPublic) {
-    const session = await verifySession(request.cookies.get(SESSION_COOKIE_NAME)?.value);
-    if (!session || session.role !== 'ADMIN') {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('redirect', adminPath);
-      return NextResponse.redirect(loginUrl);
-    }
-  }
-
-  const response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-
-  if (queryLanguage) {
-    response.cookies.set('i18nextLng', queryLanguage, {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: 'lax',
-    });
-  }
-
-  return response;
-}
+/**
+ * Admin proxy — configuration only since #1018 (finding D8).
+ * The language preamble, the signed-BFF-cookie gate (#208) and the
+ * sliding session renewal (#982) are implemented once in
+ * `@ouiboo/session`'s `createProxy`; this file declares only what is
+ * admin-specific: everything except /login is gated, and the session
+ * must carry the ADMIN role (#257 portal isolation).
+ *
+ * Behaviour change in #1018, flagged deliberately: the shared factory
+ * renews a verified session cookie past half its lifetime on every
+ * matched path. Traveler had this since #982; the admin clone never
+ * did, so operators could be walled at /login mid-session while their
+ * API refresh session was still valid. Renewal only ever extends a
+ * currently valid, signature-verified cookie.
+ */
+export const proxy = createProxy({
+  gate: {
+    role: 'ADMIN',
+    publicPaths: ['/login'],
+  },
+});
 
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'],
