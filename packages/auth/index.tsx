@@ -142,3 +142,10 @@ export function createAuthContext<TUser extends AuthBaseUser>(options: AuthConte
 }
 export { AppProviders, makeQueryClient } from './AppProviders';
 export type { AppProvidersProps } from './AppProviders';
+
+export { AuthShell } from './AuthShell';
+export type { AuthShellProps } from './AuthShell';
+export { ForgotPasswordForm, ResetPasswordForm } from './AuthForms';
+export type { AuthFormProps, AuthFormVariant } from './AuthForms';
+export { useOtpVerification } from './useOtpVerification';
+export type { UseOtpVerificationOptions } from './useOtpVerification';
