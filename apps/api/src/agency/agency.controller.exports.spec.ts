@@ -2,6 +2,8 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AgencyController } from './agency.controller';
+import { AgencyProfileService } from './agency-profile.service';
+import { AgencyDashboardService } from './agency-dashboard.service';
 import { DatabaseService } from '../database/database.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -133,6 +135,8 @@ describe('AgencyController CSV exports (#780 tenant isolation)', () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [AgencyController],
             providers: [
+                AgencyProfileService,
+                AgencyDashboardService,
                 TenantGuard,
                 RolesGuard,
                 { provide: DatabaseService, useValue: dbMock },

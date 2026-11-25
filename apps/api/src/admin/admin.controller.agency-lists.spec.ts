@@ -1,4 +1,6 @@
 import { AdminController } from './admin.controller';
+import { AdminQueryService } from './admin-query.service';
+import { AdminVerificationService } from './admin-verification.service';
 
 /**
  * #447: the admin agency lists (pending + all) serve the agency logo and
@@ -49,14 +51,7 @@ describe('AdminController agency lists public media derivation (#447)', () => {
                 count: jest.fn().mockResolvedValue(1),
             },
         };
-        return new AdminController(
-            db as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            { log: jest.fn().mockResolvedValue(undefined) } as any,
-            {} as any,
-        );
+        return new AdminController(new AdminQueryService(db as any, { log: jest.fn().mockResolvedValue(undefined) } as any), new AdminVerificationService(db as any, {} as any, {} as any, {} as any, { log: jest.fn().mockResolvedValue(undefined) } as any, {} as any));
     };
 
     it('getAgencies re-derives the logo and the owner avatar', async () => {

@@ -2,6 +2,8 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AdminController } from '../admin/admin.controller';
+import { AdminQueryService } from '../admin/admin-query.service';
+import { AdminVerificationService } from '../admin/admin-verification.service';
 import { DatabaseService } from '../database/database.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -48,6 +50,8 @@ describe('Admin audit smoke', () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [AdminController],
             providers: [
+                AdminQueryService,
+                AdminVerificationService,
                 { provide: DatabaseService, useValue: databaseService },
                 { provide: ExternalPaymentsService, useValue: externalPaymentsService },
                 { provide: StagedPaymentsService, useValue: {} },

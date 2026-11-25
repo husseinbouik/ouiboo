@@ -6,52 +6,10 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
-import { DatabaseService } from '../database/database.service';
-import { ExternalPaymentsService } from '../external-payments/external-payments.service';
-import { BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT, mapBookingDetails } from '../bookings/booking-response.util';
-import { serializeDuplicateCreditFlag } from '../bookings/bookings.service';
-import { toMoneyString } from '../common/money.util';
 import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
-import { getAgencyActivationBlock } from '../common/agency-licence.util';
-import { isBankDestinationVerified } from '../common/bank-details.util';
-import { Prisma } from '@ouiboo/database';
-import { derivePublicMediaUrl } from '../upload/media-url.util';
-import { bookingsToCsv, reviewsToCsv, tripsToCsv } from './agency-export.util';
-import {
-    aggregateCrmContacts,
-    aggregateCrmPipeline,
-    CRM_PIPELINE_STATUSES,
-} from './agency-crm.util';
+import { AgencyProfileService } from './agency-profile.service';
+import { AgencyDashboardService } from './agency-dashboard.service';
 import type { AuthenticatedRequest } from '../auth/authenticated-request';
-
-// #786: cap for the CRM contacts derivation — same generous bound as
-// the #780 exports; beta agencies are far below it.
-const CRM_MAX_BOOKINGS = 10000;
-
-// #780: a generous row cap keeps a self-serve export from becoming an
-// unbounded full-table scan; beta agencies are far below it.
-const EXPORT_MAX_ROWS = 10000;
-
-const sendCsv = (res: Response, filename: string, csv: string) => {
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    return res.send(csv);
-};
-
-const exportFilename = (kind: string) =>
-    `ouiboo-${kind}-${new Date().toISOString().slice(0, 10)}.csv`;
-
-const clampListLimit = (value?: string, fallback = 50, max = 200) => {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) return fallback;
-    return Math.min(Math.max(Math.floor(parsed), 1), max);
-};
-
-const parsePage = (value?: string) => {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) return 1;
-    return Math.max(Math.floor(parsed), 1);
-};
 
 @ApiTags('Agency')
 @Controller('agency')
@@ -60,237 +18,59 @@ const parsePage = (value?: string) => {
 @Roles(UserRole.Agency)
 export class AgencyController {
     constructor(
-        private readonly prisma: DatabaseService,
-        private readonly externalPaymentsService: ExternalPaymentsService,
+        private readonly agencyProfileService: AgencyProfileService,
+        private readonly agencyDashboardService: AgencyDashboardService,
     ) { }
+
 
     @Get('duplicate-credit-flags')
     @ApiOperation({ summary: 'List this agency\'s duplicate-credit flags (#494)' })
     async listDuplicateCreditFlags(@Request() req: AuthenticatedRequest) {
-        const flags = await this.prisma.duplicateCreditFlag.findMany({
-            where: { agencyId: req.tenantId },
-            orderBy: { createdAt: 'desc' },
-            take: 200,
-        });
-        return flags.map(serializeDuplicateCreditFlag);
+        return this.agencyDashboardService.listDuplicateCreditFlags(req);
     }
+
 
     @Post('subscription/cancel')
     @ApiOperation({ summary: 'Cancel the agency subscription at the end of the current period (#324)' })
     async cancelSubscription(@Request() req: AuthenticatedRequest) {
-        const agencyId = req.tenantId;
-        const profile = await this.prisma.agencyProfile.findUnique({
-            where: { id: agencyId },
-            select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true },
-        });
-        if (!profile) throw new NotFoundException('Agency profile not found');
-        if (profile.subscriptionStatus !== 'TRIAL' && profile.subscriptionStatus !== 'ACTIVE') {
-            throw new BadRequestException('Only a trial or active subscription can be cancelled');
-        }
-        const updated = await this.prisma.agencyProfile.update({
-            where: { id: agencyId },
-            data: { cancelAtPeriodEnd: true, cancellationRequestedAt: new Date() },
-            select: { cancelAtPeriodEnd: true, cancellationRequestedAt: true, trialEndsAt: true, subscriptionEndsAt: true },
-        });
-        return {
-            cancelAtPeriodEnd: updated.cancelAtPeriodEnd,
-            cancellationRequestedAt: updated.cancellationRequestedAt,
-            // Access continues until this boundary; the SubscriptionGuard ends it there.
-            effectiveAt: updated.subscriptionEndsAt ?? updated.trialEndsAt,
-        };
+        return this.agencyDashboardService.cancelSubscription(req);
     }
+
 
     @Post('subscription/resume')
     @ApiOperation({ summary: 'Undo a scheduled subscription cancellation (#324)' })
     async resumeSubscription(@Request() req: AuthenticatedRequest) {
-        const agencyId = req.tenantId;
-        const profile = await this.prisma.agencyProfile.findUnique({
-            where: { id: agencyId },
-            select: { id: true },
-        });
-        if (!profile) throw new NotFoundException('Agency profile not found');
-        const updated = await this.prisma.agencyProfile.update({
-            where: { id: agencyId },
-            data: { cancelAtPeriodEnd: false, cancellationRequestedAt: null },
-            select: { cancelAtPeriodEnd: true },
-        });
-        return { cancelAtPeriodEnd: updated.cancelAtPeriodEnd };
+        return this.agencyDashboardService.resumeSubscription(req);
     }
+
 
     @Get('stats')
     @ApiOperation({ summary: 'Get agency dashboard stats' })
     async getStats(@Request() req: AuthenticatedRequest) {
-        const agencyId = req.tenantId!;
-
-        const [tripsCount, bookings, payments] = await Promise.all([
-            this.prisma.tripTemplate.count({
-                where: { agencyId, status: 'ACTIVE' },
-            }),
-            this.prisma.booking.groupBy({
-                by: ['travelerId'],
-                where: {
-                    session: {
-                        template: { agencyId }
-                    },
-                },
-            }),
-            this.externalPaymentsService.getAgencyPaymentsOverview(agencyId),
-        ]);
-
-        const [bookingCount, revenueAggregate] = await Promise.all([
-            this.prisma.booking.count({
-                where: {
-                    session: { template: { agencyId } },
-                },
-            }),
-            this.prisma.booking.aggregate({
-                where: {
-                    status: { in: ['CONFIRMED', 'COMPLETED'] },
-                    session: { template: { agencyId } },
-                },
-                _sum: { totalAmount: true },
-            }),
-        ]);
-
-        return {
-            revenue: toMoneyString(revenueAggregate._sum.totalAmount) || '0.00',
-            activeTrips: tripsCount,
-            totalBookings: bookingCount,
-            totalCustomers: bookings.length,
-            // #368: payment facts about money held by the agency / its PSP.
-            // There is no OuiBoo balance for traveller money anymore.
-            payments,
-        };
+        return this.agencyDashboardService.getStats(req);
     }
+
 
     @Get('trips')
     @ApiOperation({ summary: 'Get agency trips' })
     async getTrips(@Request() req: AuthenticatedRequest, @Query('page') page?: string, @Query('limit') limit?: string) {
-        const agencyId = req.tenantId;
-        const take = clampListLimit(limit);
-        const currentPage = parsePage(page);
-        const skip = (currentPage - 1) * take;
-        const where = { agencyId };
-
-        const [data, total] = await Promise.all([
-            this.prisma.tripTemplate.findMany({
-                where,
-                include: {
-                    sessions: {
-                        include: {
-                            _count: {
-                                select: { bookings: true }
-                            }
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take,
-            }),
-            this.prisma.tripTemplate.count({ where }),
-        ]);
-
-        return {
-            data,
-            pagination: {
-                page: currentPage,
-                limit: take,
-                total,
-                totalPages: Math.ceil(total / take),
-            },
-        };
+        return this.agencyDashboardService.getTrips(req, page, limit);
     }
+
 
     @Get('trips/:id')
     @ApiOperation({ summary: 'Get one agency-owned trip' })
     async getTrip(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-        const trip = await this.prisma.tripTemplate.findFirst({
-            where: { id, agencyId: req.tenantId },
-            include: {
-                sessions: {
-                    include: {
-                        _count: { select: { bookings: true } },
-                    },
-                    orderBy: { startDate: 'asc' },
-                },
-                itinerary: { orderBy: { dayNumber: 'asc' } },
-            },
-        });
-        if (!trip) {
-            throw new NotFoundException('Trip template not found');
-        }
-        return trip;
+        return this.agencyDashboardService.getTrip(req, id);
     }
+
 
     @Get('bookings')
     @ApiOperation({ summary: 'Get agency bookings' })
     async getBookings(@Request() req: AuthenticatedRequest, @Query('page') page?: string, @Query('limit') limit?: string, @Query('status') status?: string) {
-        const agencyId = req.tenantId;
-        const take = clampListLimit(limit);
-        const currentPage = parsePage(page);
-        const skip = (currentPage - 1) * take;
-
-        // #786: optional pipeline-stage filter used by the CRM board.
-        // Validated against the booking status enum — an unknown value
-        // is a client error, never silently ignored.
-        if (status !== undefined && !(CRM_PIPELINE_STATUSES as readonly string[]).includes(status)) {
-            throw new BadRequestException(`Unknown booking status: ${status}`);
-        }
-
-        const bookingsWhere: any = {
-            session: {
-                template: { agencyId }
-            },
-        };
-        if (status !== undefined) {
-            bookingsWhere.status = status;
-        }
-
-        const [bookings, total] = await Promise.all([
-            this.prisma.booking.findMany({
-                where: bookingsWhere,
-                include: {
-                    session: {
-                        include: {
-                            template: {
-                                include: {
-                                    agency: true,
-                                },
-                            },
-                        }
-                    },
-                    traveler: {
-                        select: {
-                            name: true,
-                            email: true,
-                        }
-                    },
-                    paymentProof: true,
-                    paymentPlan: true,
-                    // #422: lets mapBookingDetails embed the proof's
-                    // bank-confirmation state (see booking-response.util).
-                    externalPayments: { select: BANK_CONFIRMATION_EXTERNAL_PAYMENT_SELECT }
-                },
-                orderBy: {
-                    bookingDate: 'desc'
-                },
-                skip,
-                take,
-            }),
-            this.prisma.booking.count({ where: bookingsWhere }),
-        ]);
-
-        return {
-            data: bookings.map((booking) => mapBookingDetails(booking)),
-            pagination: {
-                total,
-                page: currentPage,
-                limit: take,
-                totalPages: Math.ceil(total / take),
-            },
-        };
+        return this.agencyDashboardService.getBookings(req, page, limit, status);
     }
+
     // #786 (Council S6 Phase 3, smallest useful slice): agency CRM —
     // contacts + booking pipeline derived from the agency's OWN
     // bookings. Tenant isolation is structural, exactly like the #780
@@ -310,79 +90,16 @@ export class AgencyController {
         @Query('limit') limit?: string,
         @Query('search') search?: string,
     ) {
-        const agencyId = req.tenantId;
-        const take = clampListLimit(limit);
-        const currentPage = parsePage(page);
-
-        const bookings = await this.prisma.booking.findMany({
-            where: { agencyId },
-            select: {
-                travelerId: true,
-                status: true,
-                totalAmount: true,
-                bookingDate: true,
-                fullName: true,
-                phoneNumber: true,
-                traveler: { select: { name: true, email: true } },
-                session: { select: { templateId: true } },
-            },
-            orderBy: { bookingDate: 'desc' },
-            take: CRM_MAX_BOOKINGS,
-        });
-
-        let contacts = aggregateCrmContacts(bookings as any);
-        const needle = search?.trim().toLowerCase();
-        if (needle) {
-            contacts = contacts.filter((contact) =>
-                [contact.name, contact.email, contact.phone]
-                    .filter(Boolean)
-                    .some((value) => value!.toLowerCase().includes(needle)),
-            );
-        }
-
-        const total = contacts.length;
-        const skip = (currentPage - 1) * take;
-        return {
-            data: contacts.slice(skip, skip + take),
-            pagination: {
-                total,
-                page: currentPage,
-                limit: take,
-                totalPages: Math.ceil(total / take),
-            },
-        };
+        return this.agencyDashboardService.getCrmContacts(req, page, limit, search);
     }
+
 
     @Get('crm/pipeline')
     @ApiOperation({ summary: 'Get this agency\'s booking pipeline grouped by status (#786)' })
     async getCrmPipeline(@Request() req: AuthenticatedRequest) {
-        const agencyId = req.tenantId;
-
-        const [grouped, refundTotal, refundOpen] = await Promise.all([
-            this.prisma.booking.groupBy({
-                by: ['status'],
-                where: { agencyId },
-                _count: { _all: true },
-                _sum: { totalAmount: true },
-            }),
-            this.prisma.refundCase.count({ where: { agencyId } }),
-            this.prisma.refundCase.count({
-                where: {
-                    agencyId,
-                    status: { notIn: ['REFUND_COMPLETED', 'REFUND_REJECTED'] },
-                },
-            }),
-        ]);
-
-        return aggregateCrmPipeline(
-            grouped.map((row: any) => ({
-                status: row.status,
-                count: row._count?._all ?? 0,
-                totalAmount: row._sum?.totalAmount ?? null,
-            })),
-            { open: refundOpen, total: refundTotal },
-        );
+        return this.agencyDashboardService.getCrmPipeline(req);
     }
+
 
     // #780 (Council S6 Phase 3): self-serve CSV export of the agency's OWN
     // data. Tenant isolation is structural: every query is scoped by
@@ -392,422 +109,54 @@ export class AgencyController {
     @Get('exports/bookings')
     @ApiOperation({ summary: 'Export this agency\'s bookings as CSV (#780)' })
     async exportBookings(@Request() req: AuthenticatedRequest, @Res() res: Response) {
-        const agencyId = req.tenantId;
-        const bookings = await this.prisma.booking.findMany({
-            where: { agencyId },
-            include: {
-                session: {
-                    include: {
-                        template: { select: { title: true } },
-                    },
-                },
-                traveler: {
-                    select: {
-                        name: true,
-                        email: true,
-                    },
-                },
-                paymentPlan: {
-                    select: {
-                        depositAmount: true,
-                        balanceAmount: true,
-                    },
-                },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: EXPORT_MAX_ROWS,
-        });
-        return sendCsv(res, exportFilename('bookings'), bookingsToCsv(bookings as any));
+        return this.agencyDashboardService.exportBookings(req, res);
     }
+
 
     @Get('exports/trips')
     @ApiOperation({ summary: 'Export this agency\'s trips as CSV (#780)' })
     async exportTrips(@Request() req: AuthenticatedRequest, @Res() res: Response) {
-        const agencyId = req.tenantId;
-        const trips = await this.prisma.tripTemplate.findMany({
-            where: { agencyId },
-            include: {
-                _count: { select: { sessions: true } },
-                sessions: {
-                    select: { price: true },
-                    orderBy: { startDate: 'asc' },
-                    take: 1,
-                },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: EXPORT_MAX_ROWS,
-        });
-        return sendCsv(res, exportFilename('trips'), tripsToCsv(trips as any));
+        return this.agencyDashboardService.exportTrips(req, res);
     }
+
 
     @Get('exports/reviews')
     @ApiOperation({ summary: 'Export this agency\'s reviews as CSV (#780)' })
     async exportReviews(@Request() req: AuthenticatedRequest, @Res() res: Response) {
-        const agencyId = req.tenantId;
-        // Unlike the on-screen list (VISIBLE only), the export is the
-        // agency's own record of every review it received, so all
-        // moderation states are included and labelled in the CSV.
-        const reviews = await this.prisma.review.findMany({
-            where: { agencyId },
-            include: {
-                traveler: {
-                    select: {
-                        name: true,
-                    },
-                },
-                tripTemplate: {
-                    select: {
-                        title: true,
-                    },
-                },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: EXPORT_MAX_ROWS,
-        });
-        return sendCsv(res, exportFilename('reviews'), reviewsToCsv(reviews as any));
+        return this.agencyDashboardService.exportReviews(req, res);
     }
+
 
     @Get('payments/overview')
     @ApiOperation({ summary: 'Get agency payments overview (external payment facts, no OuiBoo balance)' })
     async getPaymentsOverview(@Request() req: AuthenticatedRequest) {
-        return this.externalPaymentsService.getAgencyPaymentsOverview(req.tenantId!);
+        return this.agencyDashboardService.getPaymentsOverview(req);
     }
+
 
     @Get('payments')
     @ApiOperation({ summary: 'List agency external payments (traveller payments held by the agency / its PSP)' })
     async getPayments(@Request() req: AuthenticatedRequest, @Query('page') page?: string, @Query('limit') limit?: string) {
-        return this.externalPaymentsService.listAgencyPayments(
-            req.tenantId!,
-            parsePage(page),
-            clampListLimit(limit, 20),
-        );
+        return this.agencyDashboardService.getPayments(req, page, limit);
     }
+
 
     @Get('reviews')
     @ApiOperation({ summary: 'Get agency reviews' })
     async getReviews(@Request() req: AuthenticatedRequest, @Query('page') page?: string, @Query('limit') limit?: string) {
-        const agencyId = req.tenantId;
-        const take = clampListLimit(limit);
-        const skip = (parsePage(page) - 1) * take;
-        // #393: rating aggregates and lists count VISIBLE reviews only;
-        // HIDDEN / REMOVED reviews are excluded everywhere.
-        const where = {
-            tripTemplate: { agencyId },
-            status: 'VISIBLE' as const
-        };
-
-        const [reviews, aggregate, pendingResponses] = await Promise.all([
-            this.prisma.review.findMany({
-                where,
-                include: {
-                    traveler: {
-                        select: {
-                            id: true,
-                            name: true,
-                            avatar: true
-                        }
-                    },
-                    booking: {
-                        include: {
-                            session: {
-                                include: {
-                                    template: true
-                                }
-                            }
-                        }
-                    }
-                },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take,
-            }),
-            this.prisma.review.aggregate({
-                where,
-                _avg: { rating: true },
-                _count: { _all: true },
-            }),
-            this.prisma.review.count({
-                where: { ...where, response: null },
-            }),
-        ]);
-
-        // Transform to match frontend expectations
-        const transformedReviews = reviews.map(r => ({
-            id: r.id,
-            rating: r.rating,
-            comment: r.comment,
-            response: r.response,
-            // #692: the reply's moderation state — the agency sees its
-            // reply as PENDING until an admin approves it to VISIBLE.
-            responseStatus: r.responseStatus ?? null,
-            isVerifiedBooking: r.isVerifiedBooking,
-            createdAt: r.createdAt,
-            // #447: the traveller avatar is a stored file reference —
-            // re-derive it against the current public media base.
-            traveler: r.traveler
-                ? { ...r.traveler, avatar: derivePublicMediaUrl(r.traveler.avatar) }
-                : r.traveler,
-            trip: {
-                id: r.booking.session.template.id,
-                title: r.booking.session.template.title
-            }
-        }));
-
-        const totalReviews = aggregate._count._all;
-        const averageRating = aggregate._avg.rating || 0;
-        const respondedCount = totalReviews - pendingResponses;
-        const responseRate = totalReviews > 0 ? Math.round((respondedCount / totalReviews) * 100) : 0;
-
-        return {
-            reviews: transformedReviews,
-            stats: {
-                totalReviews,
-                averageRating: Number(averageRating.toFixed(1)),
-                pendingResponses,
-                responseRate
-            }
-        };
+        return this.agencyDashboardService.getReviews(req, page, limit);
     }
+
 
     @Get('reviews/stats')
     @ApiOperation({ summary: 'Get agency review statistics' })
     async getReviewStats(@Request() req: AuthenticatedRequest) {
-        const agencyId = req.tenantId;
-        // #393: VISIBLE reviews only (see getReviews above).
-        const where = {
-            tripTemplate: { agencyId },
-            status: 'VISIBLE' as const
-        };
-        const [aggregate, pendingResponses] = await Promise.all([
-            this.prisma.review.aggregate({
-                where,
-                _avg: { rating: true },
-                _count: { _all: true },
-            }),
-            this.prisma.review.count({
-                where: { ...where, response: null },
-            }),
-        ]);
-
-        const totalReviews = aggregate._count._all;
-        const averageRating = aggregate._avg.rating || 0;
-        const respondedCount = totalReviews - pendingResponses;
-        const responseRate = totalReviews > 0 ? Math.round((respondedCount / totalReviews) * 100) : 0;
-
-        return {
-            totalReviews,
-            averageRating: Number(averageRating.toFixed(1)),
-            pendingResponses,
-            responseRate
-        };
+        return this.agencyDashboardService.getReviewStats(req);
     }
+
     @Patch('profile') // Use Patch/Put, no ID param needed as we use req.user
     @ApiOperation({ summary: 'Update agency profile' })
     async updateProfile(@Request() req: AuthenticatedRequest, @Body() data: UpdateAgencyProfileDto) {
-        const existing = await this.prisma.agencyProfile.findUnique({
-            where: { id: req.tenantId },
-            select: {
-                bankDetails: true,
-                pendingBankDetails: true,
-                bankDetailsStatus: true,
-                bankDetailsVerifiedAt: true,
-                // #419 fix: the activation gate below compares the
-                // submitted holder name / attestation against the stored
-                // values, so they must be selected — previously the
-                // controller could not tell "present but unchanged" from
-                // "changed" for these fields at all.
-                bankAccountHolderName: true,
-                bankAttestationUrl: true,
-                // #988: Cash Plus destination review state.
-                cashPlusBeneficiaryName: true,
-                cashPlusPhone: true,
-                pendingCashPlusBeneficiaryName: true,
-                pendingCashPlusPhone: true,
-                cashPlusEnabled: true,
-                cashPlusStatus: true,
-                cashPlusVerifiedAt: true,
-                verificationStatus: true,
-                travelLicenceStatus: true,
-                licenceExpiry: true,
-                // #415: the activation block also requires verified RC
-                // insurance (first bank-destination submission = payment
-                // activation), so the gate needs the insurance fields.
-                insuranceStatus: true,
-                insuranceExpiry: true,
-            },
-        });
-        if (!existing) throw new NotFoundException('Agency profile not found');
-
-        // #419 fix: the #371/#415 activation gate guards CHANGES to the
-        // payment destination — it must not reject the whole profile
-        // PATCH just because bank fields are present in the payload.
-        // The agency Settings form always submits every field bundled
-        // together, so the old placement (gate inside the bankDetails
-        // branch, whose no-change exemption only recognised a
-        // resubmission of the pending value, or of the live value while
-        // the destination was verified) meant an agency whose RC
-        // insurance was not yet verified could not save ANY setting —
-        // emergency contacts, bio, company name — whenever the bundled
-        // bankDetails did not exactly match the pending submission.
-        // Scoped rule: compare each payment-destination field against
-        // what is stored; only an actual change is gated, and only
-        // while the agency has no verified destination yet (replacing
-        // a verified destination stays review-gated, not agency-gated,
-        // as before). Clearing the details is a deactivation, not an
-        // activation, and stays ungated.
-        const normalized = (value?: string | null) => (value ?? '').trim();
-        const submittedBankDetails =
-            data.bankDetails !== undefined ? data.bankDetails.trim() : undefined;
-        const bankDetailsChanged =
-            submittedBankDetails !== undefined &&
-            submittedBankDetails !== '' &&
-            submittedBankDetails !== normalized(existing.pendingBankDetails) &&
-            submittedBankDetails !== normalized(existing.bankDetails);
-        const holderNameChanged =
-            data.bankAccountHolderName !== undefined &&
-            normalized(data.bankAccountHolderName) !==
-                normalized(existing.bankAccountHolderName);
-        const attestationChanged =
-            data.bankAttestationUrl !== undefined &&
-            normalized(data.bankAttestationUrl) !==
-                normalized(existing.bankAttestationUrl);
-        if (
-            (bankDetailsChanged || holderNameChanged || attestationChanged) &&
-            !isBankDestinationVerified(existing)
-        ) {
-            const block = getAgencyActivationBlock(existing);
-            if (block) throw new ForbiddenException(block);
-        }
-
-        // #421 (Council P0-19): bank details are a payment DESTINATION,
-        // not free text that goes live on save. A submission is stored in
-        // pendingBankDetails (with holder name + bank attestation) and
-        // only an admin verification promotes it to the live bankDetails
-        // travellers see. While a replacement is under review the
-        // previously verified instructions stay live, and a submission no
-        // longer resets the whole-agency verificationStatus — destination
-        // review replaces that side effect.
-        const destination: Prisma.AgencyProfileUpdateInput = {};
-        if (data.bankDetails !== undefined) {
-            const submitted = data.bankDetails.trim();
-            if (!submitted) {
-                // Clearing the instructions deactivates the destination:
-                // nothing remains traveller-visible and the status resets.
-                destination.bankDetails = null;
-                destination.pendingBankDetails = null;
-                destination.bankDetailsStatus = 'UNVERIFIED';
-                destination.bankDetailsVerifiedAt = null;
-                destination.bankDetailsVerifiedBy = null;
-                destination.bankDetailsRejectionReason = null;
-            } else if (
-                submitted !== existing.pendingBankDetails &&
-                submitted !== existing.bankDetails
-            ) {
-                // A genuinely new destination submission. The #371/#415
-                // activation gate (verified identity + licence + RC
-                // insurance) has already been applied above, scoped to
-                // actual destination changes (#419 fix) — a submission
-                // identical to the stored live details is a no-op here
-                // regardless of the destination's verification state, so
-                // it can never re-gate or re-pend what is already stored.
-                destination.pendingBankDetails = submitted;
-                destination.bankDetailsStatus = 'PENDING_REVIEW';
-                destination.bankDetailsRejectionReason = null;
-            }
-        }
-        if (data.bankAccountHolderName !== undefined) {
-            destination.bankAccountHolderName = data.bankAccountHolderName.trim() || null;
-        }
-        if (data.bankAttestationUrl !== undefined) {
-            destination.bankAttestationUrl = data.bankAttestationUrl.trim() || null;
-        }
-
-        // #988: Cash Plus infos follow the same rule as bank details —
-        // a submission pends for admin review and only verification
-        // promotes it to the live traveller-visible destination. The
-        // toggle is the agency's own switch and applies immediately;
-        // turning it off hides the method at checkout without erasing
-        // the verified infos.
-        const cashPlus: Prisma.AgencyProfileUpdateInput = {};
-        if (data.cashPlusEnabled !== undefined) {
-            cashPlus.cashPlusEnabled = data.cashPlusEnabled;
-        }
-        const submittedCpName =
-            data.cashPlusBeneficiaryName !== undefined ? data.cashPlusBeneficiaryName.trim() : undefined;
-        const submittedCpPhone =
-            data.cashPlusPhone !== undefined ? data.cashPlusPhone.trim() : undefined;
-        if (submittedCpName !== undefined || submittedCpPhone !== undefined) {
-            const nextName = submittedCpName || normalized(existing.pendingCashPlusBeneficiaryName) || normalized(existing.cashPlusBeneficiaryName);
-            const nextPhone = submittedCpPhone || normalized(existing.pendingCashPlusPhone) || normalized(existing.cashPlusPhone);
-            if (!nextName && !nextPhone) {
-                // Clearing both infos deactivates the destination.
-                cashPlus.cashPlusBeneficiaryName = null;
-                cashPlus.cashPlusPhone = null;
-                cashPlus.pendingCashPlusBeneficiaryName = null;
-                cashPlus.pendingCashPlusPhone = null;
-                cashPlus.cashPlusStatus = 'UNVERIFIED';
-                cashPlus.cashPlusVerifiedAt = null;
-                cashPlus.cashPlusVerifiedBy = null;
-                cashPlus.cashPlusRejectionReason = null;
-            } else if (
-                (nextName !== normalized(existing.pendingCashPlusBeneficiaryName) &&
-                    nextName !== normalized(existing.cashPlusBeneficiaryName)) ||
-                (nextPhone !== normalized(existing.pendingCashPlusPhone) &&
-                    nextPhone !== normalized(existing.cashPlusPhone))
-            ) {
-                // A genuinely new submission (name or phone changed
-                // versus both the pending and the live values).
-                if (!nextName || !nextPhone) {
-                    throw new BadRequestException('Cash Plus beneficiary name and phone number are both required');
-                }
-                cashPlus.pendingCashPlusBeneficiaryName = nextName;
-                cashPlus.pendingCashPlusPhone = nextPhone;
-                cashPlus.cashPlusStatus = 'PENDING_REVIEW';
-                cashPlus.cashPlusRejectionReason = null;
-            }
-        }
-
-        return this.prisma.agencyProfile.update({
-            where: { id: req.tenantId },
-            data: {
-                companyName: data.companyName?.trim(),
-                bio: data.bio?.trim(),
-                // #691: storefront about (language-keyed) + languages —
-                // undefined skips, an empty map/array clears.
-                aboutTranslations:
-                    data.aboutTranslations !== undefined
-                        ? (data.aboutTranslations as unknown as Prisma.InputJsonValue)
-                        : undefined,
-                languages:
-                    data.languages !== undefined
-                        ? data.languages.map((l) => l.trim().toLowerCase()).filter(Boolean).slice(0, 20)
-                        : undefined,
-                logo: data.logo?.trim(),
-                legalName: data.legalName?.trim(),
-                rc: data.rc?.trim(),
-                taxId: data.taxId?.trim(),
-                legalRepresentative: data.legalRepresentative?.trim(),
-                businessAddress: data.businessAddress?.trim(),
-                // #700: public seller phone — same undefined-skips /
-                // empty-clears semantics as the emergency contact below.
-                businessPhone:
-                    data.businessPhone !== undefined
-                        ? data.businessPhone.trim() || null
-                        : undefined,
-                // #419: emergency contact — undefined skips the field,
-                // an empty string clears it (same semantics as the
-                // nullable profile fields above).
-                emergencyContactName:
-                    data.emergencyContactName !== undefined
-                        ? data.emergencyContactName.trim() || null
-                        : undefined,
-                emergencyContactPhone:
-                    data.emergencyContactPhone !== undefined
-                        ? data.emergencyContactPhone.trim() || null
-                        : undefined,
-                ...destination,
-                ...cashPlus,
-            }
-        });
+        return this.agencyProfileService.updateProfile(req, data);
     }
 }

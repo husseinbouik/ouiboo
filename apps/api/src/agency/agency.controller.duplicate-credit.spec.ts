@@ -1,4 +1,6 @@
 import { AgencyController } from './agency.controller';
+import { AgencyProfileService } from './agency-profile.service';
+import { AgencyDashboardService } from './agency-dashboard.service';
 
 /** #494 (B16): the agency flag list is scoped to req.tenantId. */
 describe('AgencyController duplicate-credit flags (#494)', () => {
@@ -27,7 +29,7 @@ describe('AgencyController duplicate-credit flags (#494)', () => {
                 findMany: jest.fn(async () => [flagRow()]),
             },
         };
-        const controller = new AgencyController(db, {} as any);
+        const controller = new AgencyController(new AgencyProfileService(db), new AgencyDashboardService(db, {} as any));
 
         const result = await controller.listDuplicateCreditFlags({ tenantId: 'agency-1' } as any);
 
@@ -46,7 +48,7 @@ describe('AgencyController duplicate-credit flags (#494)', () => {
                 findMany: jest.fn(async () => []),
             },
         };
-        const controller = new AgencyController(db, {} as any);
+        const controller = new AgencyController(new AgencyProfileService(db), new AgencyDashboardService(db, {} as any));
 
         await expect(
             controller.listDuplicateCreditFlags({ tenantId: 'agency-2' } as any),

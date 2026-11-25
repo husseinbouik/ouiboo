@@ -1,4 +1,6 @@
 import { AgencyController } from './agency.controller';
+import { AgencyProfileService } from './agency-profile.service';
+import { AgencyDashboardService } from './agency-dashboard.service';
 
 /**
  * #419 (Council P0-16): PATCH /agency/profile emergency-contact
@@ -30,7 +32,7 @@ describe('AgencyController.updateProfile emergency contact (#419)', () => {
                 update: jest.fn(async ({ data }: any) => ({ id: 'agency-1', ...data })),
             },
         };
-        const controller = new AgencyController(db, {} as any);
+        const controller = new AgencyController(new AgencyProfileService(db), new AgencyDashboardService(db, {} as any));
         return { controller, db };
     }
 

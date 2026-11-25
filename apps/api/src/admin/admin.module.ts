@@ -4,6 +4,8 @@ import { AdminDiagnosticsController } from './admin-diagnostics.controller';
 import { AdminInterventionsController } from './admin-interventions.controller';
 import { AdminInterventionsService } from './admin-interventions.service';
 import { AdminSeedService } from './admin-seed.service';
+import { AdminQueryService } from './admin-query.service';
+import { AdminVerificationService } from './admin-verification.service';
 import { AuditLogService } from './audit-log.service';
 import { DatabaseModule } from '../database/database.module';
 import { ExternalPaymentsModule } from '../external-payments/external-payments.module';
@@ -14,6 +16,6 @@ import { PaymentsModule } from '../payments/payments.module';
 @Module({
     imports: [DatabaseModule, ExternalPaymentsModule, StagedPaymentsModule, RefundsModule, PaymentsModule],
     controllers: [AdminController, AdminInterventionsController, AdminDiagnosticsController],
-    providers: [AdminSeedService, AuditLogService, AdminInterventionsService],
+    providers: [AdminSeedService, AuditLogService, AdminInterventionsService, AdminQueryService, AdminVerificationService],
 })
 export class AdminModule { }

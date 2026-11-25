@@ -1,4 +1,6 @@
 import { AdminController } from './admin.controller';
+import { AdminQueryService } from './admin-query.service';
+import { AdminVerificationService } from './admin-verification.service';
 
 /**
  * #422 (Council P0-20) follow-up: the admin payment responses must carry
@@ -103,9 +105,7 @@ describe('AdminController payment responses (#422 bank confirmation)', () => {
                 count: jest.fn(async () => bookings.length),
             },
         };
-        const controller = new AdminController(
-            db as any, {} as any, {} as any, {} as any, { log: jest.fn() } as any, {} as any,
-        );
+        const controller = new AdminController(new AdminQueryService(db as any, { log: jest.fn() } as any), new AdminVerificationService(db as any, {} as any, {} as any, {} as any, { log: jest.fn() } as any, {} as any));
         return { controller, db };
     }
 

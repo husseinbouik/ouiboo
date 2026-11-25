@@ -6,6 +6,8 @@ import { TripsService } from '../../trips/trips.service';
 import { AuthController } from '../../auth/auth.controller';
 import { AuthService } from '../../auth/auth.service';
 import { AdminController } from '../../admin/admin.controller';
+import { AdminQueryService } from '../../admin/admin-query.service';
+import { AdminVerificationService } from '../../admin/admin-verification.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { MfaEnrollmentGuard } from '../../auth/guards/mfa-enrollment.guard';
@@ -55,6 +57,8 @@ describe('API contract', () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [TripsController, AuthController, AdminController],
             providers: [
+                AdminQueryService,
+                AdminVerificationService,
                 { provide: TripsService, useValue: tripsService },
                 { provide: AuthService, useValue: authService },
                 // Admin controller deps — stubbed; guards block unauthenticated access anyway

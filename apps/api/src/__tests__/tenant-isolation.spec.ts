@@ -2,6 +2,8 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AgencyController } from '../agency/agency.controller';
+import { AgencyProfileService } from '../agency/agency-profile.service';
+import { AgencyDashboardService } from '../agency/agency-dashboard.service';
 import { DatabaseService } from '../database/database.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -56,6 +58,8 @@ describe('Tenant isolation (agency scope)', () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [AgencyController],
             providers: [
+                AgencyProfileService,
+                AgencyDashboardService,
                 TenantGuard,
                 { provide: DatabaseService, useValue: dbMock },
                 { provide: ExternalPaymentsService, useValue: externalPaymentsService },
