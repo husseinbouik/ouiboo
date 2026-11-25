@@ -1,16 +1,20 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { AppProviders, makeQueryClient } from '@ouiboo/auth';
 import { AuthProvider } from './AuthContext';
 import { DisplayCurrencyProvider } from '@/lib/display-currency';
-import { AuthModal } from './AuthModal';
 import { ToastProvider } from '@ouiboo/ui';
 import { createTravelerI18n, type SupportedLanguage } from '@/lib/i18n';
 import type { ResourceKey } from 'i18next';
 import { SkipLink } from './SkipLink';
 import { restorePublicQueryCache, subscribePublicQueryCache } from '@/lib/query-persistence';
+
+// #1027 (F2): AuthModal is interaction-only chrome — split it out of
+// the shared first-load bundle and fetch its chunk on mount instead.
+const AuthModal = dynamic(() => import('./AuthModal').then((m) => m.AuthModal), { ssr: false });
 
 export default function Providers({
     children,

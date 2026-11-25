@@ -104,6 +104,14 @@ jobs:
         if: steps.changes.outputs.code == 'true'
         run: npm run build
 
+      # #1027 (F2): enforce the 600 KB home first-load JS budget — the
+      # gate boots the production build and measures the JS the home
+      # page actually ships. Fails the job when the cap is exceeded.
+      - name: Traveller bundle budget (#1027)
+        if: steps.changes.outputs.code == 'true'
+        working-directory: apps/traveler
+        run: node scripts/check-bundle-budget.mjs 600
+
       - name: Dependency vulnerability audit
         if: steps.changes.outputs.code == 'true'
         # --omit=dev: braces (HIGH) affects all published versions incl. 3.0.3

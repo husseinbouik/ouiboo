@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { Button, EmptyState, SafeImage } from '@ouiboo/ui';
-import { motion, Variants } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { BETA_DESTINATIONS } from '@ouiboo/types';
 import type { TripSession, TripTemplate, VerificationStatusType } from '@ouiboo/types';
@@ -150,25 +149,38 @@ function ZeroPlaceTile({ name, photo }: { name: string; photo: string | null }) 
   );
 }
 
-const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } 
-  }
-};
-
-const staggerContainer: Variants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.1
+/** #1027 (F2): CSS entrance animations replaced framer-motion here —
+ * hero/USP use the `animate-fade-in-up` utility with inline
+ * animation-delay for the old 0.1s stagger; the featured grid keeps its
+ * whileInView behaviour via this hook (once, -50px root margin, exactly
+ * the old viewport config). */
+function useInViewOnce<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setInView(true);
+      return;
     }
-  }
-};
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '-50px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return { ref, inView };
+}
 
 export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsProp, featuredTripsFetchFailed = false, catalogDestinations: _catalogDestinations = [] }: HomeClientProps) {
+  const { ref: featuredRef, inView: featuredInView } = useInViewOnce<HTMLDivElement>();
   const { t, i18n } = useTranslation();
   const router = useRouter();
 
@@ -279,27 +291,22 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
         />
         <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-r rtl:bg-gradient-to-l from-deep-blue/85 via-deep-blue/55 to-deep-blue/15" />
         <div className="relative mx-auto max-w-7xl px-6 pt-24 pb-28 sm:pt-28 lg:px-8">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="max-w-[680px] text-start"
-          >
+          <div className="max-w-[680px] text-start">
             {/* Claims lock (council P0-3, carried into #929): the
                 check claim always renders in full — B's drawn
                 compressed kicker ("Checked agencies") ships with
                 the full wording, its accent in the text-safe
                 orange-dark of the P0-2 contrast rule. */}
-            <motion.div variants={fadeInUp} className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-deep-blue">
+            <div className="animate-fade-in-up inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-deep-blue">
               {t('hero.kickerTrips')} <span className="text-sunset-orange-dark">· {t('hero.kickerChecked')}</span>
-            </motion.div>
-            <motion.h1 variants={fadeInUp} className="mt-4 text-[42px] font-bold leading-[1.02] tracking-tight text-white sm:text-[50px]">
+            </div>
+            <h1 style={{ animationDelay: '100ms' }} className="animate-fade-in-up mt-4 text-[42px] font-bold leading-[1.02] tracking-tight text-white sm:text-[50px]">
               {t('hero.titleStart')} {t('hero.titleAccent')}{t('hero.titleEnd')}
-            </motion.h1>
-            <motion.p variants={fadeInUp} className="mt-3 max-w-[540px] text-base font-medium leading-relaxed text-white/85">
+            </h1>
+            <p style={{ animationDelay: '200ms' }} className="animate-fade-in-up mt-3 max-w-[540px] text-base font-medium leading-relaxed text-white/85">
               {t('hero.subtitle')}
-            </motion.p>
-            <motion.div variants={fadeInUp} className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-semibold text-white/75">
+            </p>
+            <div style={{ animationDelay: '300ms' }} className="animate-fade-in-up mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs font-semibold text-white/75">
               <span className="inline-flex items-center gap-1.5">
                 <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {t('hero.metaPrices')}
               </span>
@@ -309,8 +316,8 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
               <span className="inline-flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {t('hero.photoCaption')}
               </span>
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
           {/* The caption names the place only — the photograph is a
               place, not a trip (#880). Hidden on mobile, as drawn. */}
           <span className="absolute end-6 bottom-24 hidden rounded-full bg-deep-blue/60 px-2.5 py-1 text-[11px] font-semibold text-white/90 sm:block lg:end-8">
@@ -352,12 +359,7 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
           </div>
         )}
 
-        <motion.div
-          variants={fadeInUp}
-          initial="hidden"
-          animate="visible"
-          className="mx-auto mt-4 grid max-w-4xl gap-px overflow-hidden rounded-2xl border border-border bg-border/60 sm:grid-cols-3"
-        >
+        <div className="animate-fade-in-up mx-auto mt-4 grid max-w-4xl gap-px overflow-hidden rounded-2xl border border-border bg-border/60 sm:grid-cols-3">
           <div className="flex gap-3 bg-paper p-4">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-ocean-600 dark:text-ocean-300" aria-hidden="true" />
             <div>
@@ -379,7 +381,7 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
               <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{t('usp.pricesText')}</p>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Featured Trips Section — #880: tightened so the first card
@@ -401,11 +403,8 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
             </Link>
           </div>
 
-          <motion.div 
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
+          <div
+            ref={featuredRef}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
           >
             {featuredTripsFetchFailed ? (
@@ -422,18 +421,18 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                 />
             ) : featuredTrips.length > 0 ? (
               <>
-                {featuredTrips.map((trip) => (
-                  <motion.div key={trip.id} variants={fadeInUp}>
+                {featuredTrips.map((trip, index) => (
+                  <div key={trip.id} style={{ animationDelay: `${index * 100}ms` }} className={featuredInView ? 'animate-fade-in-up' : 'opacity-0'}>
                     <TripCard trip={trip} />
-                  </motion.div>
+                  </div>
                 ))}
                 {/* #961: at exactly one live departure the strip
                     folds into Selected's end-cap — that trip's card
                     closes the grid. */}
                 {leavingSoon.decision === 'endcap' && leavingSoon.rows[0] ? (
-                  <motion.div key={leavingSoon.rows[0].trip.id} variants={fadeInUp}>
+                  <div key={leavingSoon.rows[0].trip.id} style={{ animationDelay: `${featuredTrips.length * 100}ms` }} className={featuredInView ? 'animate-fade-in-up' : 'opacity-0'}>
                     <TripCard trip={leavingSoon.rows[0].trip as unknown as HomeCatalogTrip} />
-                  </motion.div>
+                  </div>
                 ) : null}
               </>
             ) : (
@@ -444,7 +443,7 @@ export default function HomeClient({ catalogTrips, featuredTrips: featuredTripsP
                     description={t('featured.emptySubtitle')}
                 />
             )}
-          </motion.div>
+          </div>
         </div>
       </section>
 
