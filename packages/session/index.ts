@@ -4,6 +4,8 @@
  */
 export { createSessionRoute } from './src/route';
 export type { CreateSessionRouteOptions } from './src/route';
+export { createProxy, normalizeLanguage, SUPPORTED_LANGUAGES } from './src/proxy';
+export type { CreateProxyOptions, ProxyGateOptions } from './src/proxy';
 export {
   signSession,
   verifySession,

@@ -64,7 +64,7 @@ export class StripePaymentProvider implements PaymentProvider {
         metadata: { provider: 'STRIPE', sessionId: session.id },
       };
     } catch (error) {
-      throw new Error(`Stripe payment initiation failed: ${error.message}`);
+      throw new Error(`Stripe payment initiation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

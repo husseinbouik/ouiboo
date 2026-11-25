@@ -7,6 +7,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 import { UpdateAgencyProfileDto } from './dto/update-profile.dto';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 @ApiTags('Users')
 @Controller('users')
@@ -17,7 +18,7 @@ export class UsersController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get current user profile' })
-    getMe(@Request() req) {
+    getMe(@Request() req: AuthenticatedRequest) {
         return this.usersService.getMe(req.user.userId);
     }
 
@@ -25,7 +26,7 @@ export class UsersController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get referral code and recognition count (zero-value referral)' })
-    getMyReferrals(@Request() req) {
+    getMyReferrals(@Request() req: AuthenticatedRequest) {
         return this.usersService.getReferrals(req.user.userId);
     }
 
@@ -33,7 +34,7 @@ export class UsersController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Update current user profile' })
-    updateMe(@Request() req, @Body() body: UpdateUserProfileDto) {
+    updateMe(@Request() req: AuthenticatedRequest, @Body() body: UpdateUserProfileDto) {
         return this.usersService.updateUserProfile(req.user.userId, body);
     }
 
@@ -41,7 +42,7 @@ export class UsersController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Export the authenticated user personal data' })
-    exportMe(@Request() req) {
+    exportMe(@Request() req: AuthenticatedRequest) {
         return this.usersService.exportUserData(req.user.userId);
     }
 
@@ -50,7 +51,7 @@ export class UsersController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Delete the authenticated user account' })
-    async deleteMe(@Request() req) {
+    async deleteMe(@Request() req: AuthenticatedRequest) {
         await this.usersService.deleteUserAccount(req.user.userId);
     }
 
@@ -59,7 +60,7 @@ export class UsersController {
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.Agency)
     @ApiOperation({ summary: 'Update agency profile' })
-    updateProfile(@Request() req, @Body() body: UpdateAgencyProfileDto) {
+    updateProfile(@Request() req: AuthenticatedRequest, @Body() body: UpdateAgencyProfileDto) {
         return this.usersService.updateAgencyProfile(req.user.userId, body);
     }
 }

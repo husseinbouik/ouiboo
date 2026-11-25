@@ -24,7 +24,8 @@
             ]
         },
         "strictNullChecks": true,
-        "noImplicitAny": false,
+        "noImplicitAny": true,
+        "useUnknownInCatchVariables": true,
         "strictBindCallApply": false,
         "forceConsistentCasingInFileNames": false,
         "noFallthroughCasesInSwitch": false,

@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RateLimit, RateLimitGuard } from '../common/rate-limit.guard';
 import { PaymentRequestsService } from './payment-requests.service';
 import { PaymentWebhooksService } from './webhooks.service';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 /**
  * #373 — payment orchestration endpoints (plan §56).
@@ -40,7 +41,7 @@ export class PaymentProvidersController {
     @UseGuards(JwtAuthGuard, RateLimitGuard)
     @RateLimit({ points: 12, windowMs: 60_000, keyPrefix: 'payments:request' })
     @ApiOperation({ summary: 'Create a deposit payment request for a booking (server-computed amount)' })
-    createDeposit(@Request() req, @Param('id') id: string) {
+    createDeposit(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         return this.paymentRequestsService.createRequest(req.user.userId, id, 'DEPOSIT');
     }
 
@@ -49,7 +50,7 @@ export class PaymentProvidersController {
     @UseGuards(JwtAuthGuard, RateLimitGuard)
     @RateLimit({ points: 12, windowMs: 60_000, keyPrefix: 'payments:request' })
     @ApiOperation({ summary: 'Create a balance payment request (only after the trip is confirmed)' })
-    createBalance(@Request() req, @Param('id') id: string) {
+    createBalance(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         return this.paymentRequestsService.createRequest(req.user.userId, id, 'BALANCE');
     }
 
@@ -57,7 +58,7 @@ export class PaymentProvidersController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'List payment requests and recorded payments for a booking' })
-    listBookingPayments(@Request() req, @Param('id') id: string) {
+    listBookingPayments(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         return this.paymentRequestsService.listForBooking(
             { userId: req.user.userId, role: req.user.role, tenantId: req.user.tenantId ?? req.tenantId },
             id,
@@ -68,7 +69,7 @@ export class PaymentProvidersController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Read-only payment attempt status (poll after a provider redirect)' })
-    getAttemptStatus(@Request() req, @Param('id') id: string) {
+    getAttemptStatus(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         return this.paymentRequestsService.getAttemptStatus(
             { userId: req.user.userId, role: req.user.role, tenantId: req.user.tenantId ?? req.tenantId },
             id,

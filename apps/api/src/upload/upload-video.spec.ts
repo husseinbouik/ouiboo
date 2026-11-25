@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { UserRole } from '@ouiboo/types';
 import { UploadController } from './upload.controller';
 import { UploadSafetyService } from './upload-safety.service';
 import { MAX_REVIEW_VIDEO_SIZE_BYTES, MAX_UPLOAD_SIZE_BYTES } from './upload.constants';
@@ -24,7 +25,7 @@ function makeController() {
   return { controller: new UploadController(service), calls };
 }
 
-const traveler = { user: { userId: 'traveler-1', role: 'TRAVELER' } };
+const traveler = { user: { userId: 'traveler-1', role: UserRole.Traveler } };
 const mp4File: any = { buffer: Buffer.from('x'), size: 1024, mimetype: 'video/mp4' };
 const pngFile: any = { buffer: Buffer.from('x'), size: 1024, mimetype: 'image/png' };
 

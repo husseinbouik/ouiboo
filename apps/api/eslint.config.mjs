@@ -17,5 +17,28 @@ export default tseslint.config(
       'sonarjs/prefer-object-literal': 'warn',
       'sonarjs/no-nested-conditional': 'warn',
     },
+  },
+  {
+    // B2 stage-1 ratchet (#1020): no NEW explicit `any` in the payments
+    // and auth subtrees. The files in the grandfather override below
+    // still carry provider-payload / legacy user-shape `any`s — remove a
+    // file from that list once it is typed (typed webhook payloads and
+    // the auth user shape are the next stage).
+    files: ['src/payments/**/*.ts', 'src/auth/**/*.ts'],
+    ignores: ['src/**/*.spec.ts', 'src/**/__tests__/**'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'error',
+    },
+  },
+  {
+    files: [
+      'src/payments/payments.service.ts',
+      'src/payments/interfaces/payment-provider.interface.ts',
+      'src/payments/providers/cashplus-payment.provider.ts',
+      'src/auth/auth.service.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
   }
 );

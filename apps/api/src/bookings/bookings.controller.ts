@@ -14,6 +14,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { ALLOWED_MIME_TYPES_REGEX, MAX_UPLOAD_SIZE_BYTES } from '../upload/upload.constants';
 import { RateLimit, RateLimitGuard, RateLimitSensitive } from '../common/rate-limit.guard';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 @ApiTags('Bookings')
 @Controller('bookings')
@@ -28,7 +29,7 @@ export class BookingsController {
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Create a new booking' })
     create(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Body() dto: CreateBookingDto,
         // #494 (B16): one client-generated UUID per booking attempt;
         // a replay returns the original booking, a replay with a
@@ -52,7 +53,7 @@ export class BookingsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get current user bookings' })
-    findMyBookings(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
+    findMyBookings(@Request() req: AuthenticatedRequest, @Query('page') page?: string, @Query('limit') limit?: string) {
         return this.bookingsService.findAllByTraveler(
             req.user.userId,
             page ? Number(page) : 1,
@@ -65,7 +66,7 @@ export class BookingsController {
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Book-again suggestions from agencies the traveler has booked with (#444)' })
     findRebookingSuggestions(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Query('locale') locale?: string,
         @Headers('x-ouiboo-language') languageHeader?: string,
     ) {
@@ -80,7 +81,7 @@ export class BookingsController {
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get a booking by ID for the traveler, owning agency, or admin' })
     findOne(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Query('locale') locale?: string,
         @Headers('x-ouiboo-language') languageHeader?: string,
@@ -113,7 +114,7 @@ export class BookingsController {
     })
     @UseInterceptors(FileInterceptor('file'))
     uploadPaymentProof(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @UploadedFile(
             new ParseFilePipe({
@@ -153,7 +154,7 @@ export class BookingsController {
         },
     })
     submitPaymentProofCode(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() body: { transactionCode?: string },
     ) {
@@ -177,11 +178,11 @@ export class BookingsController {
         },
     })
     flagDuplicateCredit(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() body: { amount: unknown; bankReference?: string | null; note?: string | null },
     ) {
-        return this.bookingsService.createDuplicateCreditFlag(id, req.tenantId, req.user.userId, body ?? ({} as never));
+        return this.bookingsService.createDuplicateCreditFlag(id, req.tenantId!, req.user.userId, body ?? ({} as never));
     }
 
     @Patch(':id/verify-payment')
@@ -192,11 +193,11 @@ export class BookingsController {
     @RateLimitSensitive()
     @ApiOperation({ summary: 'Approve or reject a manual payment proof for an agency-owned booking' })
     verifyPayment(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() dto: VerifyManualPaymentDto,
     ) {
-        return this.bookingsService.verifyPayment(id, req.tenantId, dto.approved, dto.rejectionReason);
+        return this.bookingsService.verifyPayment(id, req.tenantId!, dto.approved, dto.rejectionReason);
     }
 
     @Patch(':id/confirm-pay-on-arrival')
@@ -205,10 +206,10 @@ export class BookingsController {
     @Roles(UserRole.Agency)
     @ApiOperation({ summary: 'Agency confirms a pay-on-arrival booking (#697): no payment is collected through Ouiboo; the traveller pays the agency on site' })
     confirmPayOnArrival(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
     ) {
-        return this.bookingsService.confirmPayOnArrival(id, req.tenantId);
+        return this.bookingsService.confirmPayOnArrival(id, req.tenantId!);
     }
 
     @Patch(':id/confirm-bank-payment')
@@ -219,11 +220,11 @@ export class BookingsController {
     @RateLimitSensitive()
     @ApiOperation({ summary: 'Confirm an accepted proof against the agency bank account (settles the payment, #422)' })
     confirmBankPayment(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() dto: ConfirmBankPaymentDto,
     ) {
-        return this.bookingsService.confirmBankPayment(id, req.tenantId, req.user.userId, dto);
+        return this.bookingsService.confirmBankPayment(id, req.tenantId!, req.user.userId, dto);
     }
 
     @Get(':id/payment-proof/download')
@@ -231,7 +232,7 @@ export class BookingsController {
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Download payment proof (booking owner or agency)' })
     async downloadPaymentProof(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Res() res: Response,
     ) {
@@ -250,11 +251,11 @@ export class BookingsController {
     @RateLimitSensitive()
     @ApiOperation({ summary: 'Record attendance for an agency-owned booking: attended completes it and makes it review-eligible; absent marks it NO_SHOW (#434)' })
     markAttendance(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() dto: MarkAttendanceDto,
     ) {
-        return this.bookingsService.markAttendance(id, req.tenantId, req.user.userId ?? req.user.id, dto.attended);
+        return this.bookingsService.markAttendance(id, req.tenantId!, req.user.userId ?? req.user.id, dto.attended);
     }
 
     @Get(':id/pass')
@@ -262,7 +263,7 @@ export class BookingsController {
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Get the Booking Pass for a booking (#689): issued once the agency confirms deposit receipt; the signed token verifies only inside an authenticated agency session' })
     getBookingPass(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
     ) {
         return this.bookingsService.getBookingPass(id, req.user.userId, req.user?.role);
@@ -276,10 +277,10 @@ export class BookingsController {
     @RateLimitSensitive()
     @ApiOperation({ summary: 'Verify a Booking Pass token (agency-authenticated, #689) — an unauthenticated scan verifies nothing; a valid scan at/after trip start records the QR check-in (#693)' })
     verifyBookingPass(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Body() dto: VerifyBookingPassDto,
     ) {
-        return this.bookingsService.verifyBookingPass(dto.token, req.tenantId, req.user.userId ?? req.user.id);
+        return this.bookingsService.verifyBookingPass(dto.token, req.tenantId!, req.user.userId ?? req.user.id);
     }
 
     @Post('pass/redeem')
@@ -290,10 +291,10 @@ export class BookingsController {
     @RateLimitSensitive()
     @ApiOperation({ summary: 'Redeem a Booking Pass token exactly once (agency-authenticated, #753) — stamps the auditable redemption, records check-in/attendance and completes the booking; a second redemption is refused with 409' })
     redeemBookingPass(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Body() dto: VerifyBookingPassDto,
     ) {
-        return this.bookingsService.redeemBookingPass(dto.token, req.tenantId, req.user.userId ?? req.user.id);
+        return this.bookingsService.redeemBookingPass(dto.token, req.tenantId!, req.user.userId ?? req.user.id);
     }
 
     @Post(':id/attendance-dispute')
@@ -303,7 +304,7 @@ export class BookingsController {
     @RateLimitSensitive()
     @ApiOperation({ summary: 'Dispute the agency-recorded attendance for my booking (#693)' })
     disputeAttendance(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() dto: DisputeAttendanceDto,
     ) {
@@ -314,7 +315,7 @@ export class BookingsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Cancel a booking' })
-    cancelBooking(@Request() req, @Param('id') id: string) {
+    cancelBooking(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         return this.bookingsService.cancelBooking(id, req.user.userId);
     }
 
@@ -323,7 +324,7 @@ export class BookingsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard)
     @ApiOperation({ summary: 'Cancel a booking (legacy POST alias)' })
-    cancelBookingPostAlias(@Request() req, @Param('id') id: string) {
+    cancelBookingPostAlias(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         return this.bookingsService.cancelBooking(id, req.user.userId);
     }
 }

@@ -22,7 +22,7 @@ const mockBooking = {
     },
 };
 
-const mockDatabaseService = {
+const mockDatabaseService: Record<string, any> = {
     booking: {
         findFirst: jest.fn(),
         findUnique: jest.fn(),

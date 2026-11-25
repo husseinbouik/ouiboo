@@ -9,6 +9,7 @@ import { TenantGuard } from '../auth/guards/tenant.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 import { SubscriptionGuard } from '../auth/subscription.guard';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 const parseOptionalNumber = (value: string | undefined, name: string) => {
     if (value === undefined) return undefined;
@@ -47,8 +48,8 @@ export class TripsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
-    create(@Request() req, @Body() createTripDto: CreateTripTemplateDto) {
-        return this.tripsService.createTemplate(req.tenantId, createTripDto);
+    create(@Request() req: AuthenticatedRequest, @Body() createTripDto: CreateTripTemplateDto) {
+        return this.tripsService.createTemplate(req.tenantId!, createTripDto);
     }
 
     @Get()
@@ -139,11 +140,11 @@ export class TripsController {
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
     createSession(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() createSessionDto: CreateTripSessionDto,
     ) {
-        return this.tripsService.createSession(req.tenantId, id, createSessionDto);
+        return this.tripsService.createSession(req.tenantId!, id, createSessionDto);
     }
 
     @Patch(':id/sessions/:sessionId')
@@ -152,12 +153,12 @@ export class TripsController {
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
     updateSession(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Param('sessionId') sessionId: string,
         @Body() dto: UpdateTripSessionDto,
     ) {
-        return this.tripsService.updateSession(req.tenantId, id, sessionId, dto);
+        return this.tripsService.updateSession(req.tenantId!, id, sessionId, dto);
     }
 
     @Delete(':id/sessions/:sessionId')
@@ -166,11 +167,11 @@ export class TripsController {
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
     deleteSession(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Param('sessionId') sessionId: string,
     ) {
-        return this.tripsService.deleteSession(req.tenantId, id, sessionId);
+        return this.tripsService.deleteSession(req.tenantId!, id, sessionId);
     }
 
     @Get(':id/sessions')
@@ -184,8 +185,8 @@ export class TripsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
-    update(@Request() req, @Param('id') id: string, @Body() updateTripDto: UpdateTripTemplateDto) {
-        return this.tripsService.updateTemplate(id, req.tenantId, updateTripDto);
+    update(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateTripDto: UpdateTripTemplateDto) {
+        return this.tripsService.updateTemplate(id, req.tenantId!, updateTripDto);
     }
 
     @Delete(':id')
@@ -193,8 +194,8 @@ export class TripsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
-    remove(@Request() req, @Param('id') id: string) {
-        return this.tripsService.deleteTemplate(id, req.tenantId);
+    remove(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        return this.tripsService.deleteTemplate(id, req.tenantId!);
     }
 
     @Post(':id/archive')
@@ -202,8 +203,8 @@ export class TripsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
-    archive(@Request() req, @Param('id') id: string) {
-        return this.tripsService.archiveTemplate(id, req.tenantId);
+    archive(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        return this.tripsService.archiveTemplate(id, req.tenantId!);
     }
 
     @Post(':id/restore')
@@ -211,8 +212,8 @@ export class TripsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
-    restore(@Request() req, @Param('id') id: string) {
-        return this.tripsService.restoreTemplate(id, req.tenantId);
+    restore(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        return this.tripsService.restoreTemplate(id, req.tenantId!);
     }
 
     @Post(':id/deactivate')
@@ -220,8 +221,8 @@ export class TripsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
-    deactivate(@Request() req, @Param('id') id: string) {
-        return this.tripsService.deactivateTemplate(id, req.tenantId);
+    deactivate(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        return this.tripsService.deactivateTemplate(id, req.tenantId!);
     }
 
     @Post(':id/activate')
@@ -229,7 +230,7 @@ export class TripsController {
     @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard, TenantGuard, SubscriptionGuard)
     @Roles(UserRole.Agency)
-    activate(@Request() req, @Param('id') id: string) {
-        return this.tripsService.activateTemplate(id, req.tenantId);
+    activate(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+        return this.tripsService.activateTemplate(id, req.tenantId!);
     }
 }

@@ -7,6 +7,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '@ouiboo/types';
 import { PaymentProfilesService } from './payment-profiles.service';
 import { ConnectPaymentProfileDto } from './dto/payment-provider.dto';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 /**
  * #373 — the agency's own payment-provider connection (plan §25). The
@@ -24,25 +25,25 @@ export class AgencyPaymentProfileController {
 
     @Get()
     @ApiOperation({ summary: 'Get the connected payment profile for the current agency' })
-    get(@Request() req) {
-        return this.profilesService.getForAgency(req.tenantId);
+    get(@Request() req: AuthenticatedRequest) {
+        return this.profilesService.getForAgency(req.tenantId!);
     }
 
     @Post('connect')
     @ApiOperation({ summary: 'Connect (or replace) a payment provider under the agency merchant identity' })
-    connect(@Request() req, @Body() dto: ConnectPaymentProfileDto) {
-        return this.profilesService.connect(req.tenantId, dto);
+    connect(@Request() req: AuthenticatedRequest, @Body() dto: ConnectPaymentProfileDto) {
+        return this.profilesService.connect(req.tenantId!, dto);
     }
 
     @Post('verify')
     @ApiOperation({ summary: 'Mark the connected merchant account as verified and enable payments' })
-    verify(@Request() req) {
-        return this.profilesService.verify(req.tenantId);
+    verify(@Request() req: AuthenticatedRequest) {
+        return this.profilesService.verify(req.tenantId!);
     }
 
     @Post('disable')
     @ApiOperation({ summary: 'Disable the connected payment profile' })
-    disable(@Request() req) {
-        return this.profilesService.disable(req.tenantId);
+    disable(@Request() req: AuthenticatedRequest) {
+        return this.profilesService.disable(req.tenantId!);
     }
 }

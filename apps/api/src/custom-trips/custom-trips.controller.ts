@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateCustomTripOfferDto, CreateCustomTripRequestDto } from './dto/custom-trip.dto';
 import { CustomTripsService } from './custom-trips.service';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 /**
  * #684 (Council S6): custom-trip requests (private RFQ). Every route
@@ -18,49 +19,49 @@ export class CustomTripsController {
 
     @Post('requests')
     @ApiOperation({ summary: 'Traveller authors a custom-trip request (private; matched verified cluster agencies only)' })
-    create(@Request() req, @Body() dto: CreateCustomTripRequestDto) {
+    create(@Request() req: AuthenticatedRequest, @Body() dto: CreateCustomTripRequestDto) {
         return this.customTripsService.create(req.user.userId, dto);
     }
 
     @Get('requests/mine')
     @ApiOperation({ summary: 'The traveller\'s custom-trip requests, with offers and conversion state' })
-    listMine(@Request() req) {
+    listMine(@Request() req: AuthenticatedRequest) {
         return this.customTripsService.listMine(req.user.userId);
     }
 
     @Get('requests/agency')
     @ApiOperation({ summary: 'Pseudonymised custom-trip requests matched to the signed-in agency' })
-    listForAgency(@Request() req) {
+    listForAgency(@Request() req: AuthenticatedRequest) {
         return this.customTripsService.listForAgency(req.user.userId);
     }
 
     @Get('requests/agency/:id')
     @ApiOperation({ summary: 'One matched request (pseudonymised; identity only for the accepted agency post-acceptance)' })
-    getForAgency(@Request() req, @Param('id') id: string) {
+    getForAgency(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         return this.customTripsService.getForAgency(req.user.userId, id);
     }
 
     @Post('requests/:id/offers')
     @ApiOperation({ summary: 'Agency replies with a firm MAD TTC quote — transmitted unchanged and snapshotted on acceptance' })
-    createOffer(@Request() req, @Param('id') id: string, @Body() dto: CreateCustomTripOfferDto) {
+    createOffer(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: CreateCustomTripOfferDto) {
         return this.customTripsService.createOffer(req.user.userId, id, dto);
     }
 
     @Patch('requests/:id/offers/:offerId/withdraw')
     @ApiOperation({ summary: 'Agency withdraws its open quote' })
-    withdrawOffer(@Request() req, @Param('id') id: string, @Param('offerId') offerId: string) {
+    withdrawOffer(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Param('offerId') offerId: string) {
         return this.customTripsService.withdrawOffer(req.user.userId, id, offerId);
     }
 
     @Patch('requests/:id/accept/:offerId')
     @ApiOperation({ summary: 'Traveller accepts an offer — quote snapshotted; request converts to a private/unlisted Trip' })
-    accept(@Request() req, @Param('id') id: string, @Param('offerId') offerId: string) {
+    accept(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Param('offerId') offerId: string) {
         return this.customTripsService.accept(req.user.userId, id, offerId);
     }
 
     @Patch('requests/:id/cancel')
     @ApiOperation({ summary: 'Traveller cancels the request' })
-    cancel(@Request() req, @Param('id') id: string) {
+    cancel(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         return this.customTripsService.cancel(req.user.userId, id);
     }
 }

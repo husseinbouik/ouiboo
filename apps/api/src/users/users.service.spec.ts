@@ -39,7 +39,7 @@ describe('UsersService', () => {
     });
 
     const createService = () => {
-        const db = {
+        const db: Record<string, any> = {
             user: {
                 findUnique: jest.fn().mockResolvedValue(userRecord),
                 update: jest.fn().mockResolvedValue({
@@ -144,7 +144,7 @@ describe('UsersService', () => {
 
         const createDeletionService = () => {
             const upload = createUploadStub();
-            const db = {
+            const db: Record<string, any> = {
                 user: {
                     findUnique: jest.fn().mockResolvedValue(agencyUserRecord),
                     update: jest.fn().mockResolvedValue({}),
@@ -304,7 +304,7 @@ describe('UsersService', () => {
 
     describe('updateAgencyProfile licence handling (#371)', () => {
         const createLicenceService = (existing: any) => {
-            const db = {
+            const db: Record<string, any> = {
                 agencyProfile: {
                     findUnique: jest.fn().mockResolvedValue(existing),
                     upsert: jest.fn().mockImplementation(async (args: any) => args),
@@ -462,7 +462,7 @@ describe('UsersService', () => {
 
     describe('updateAgencyProfile verification documents & insurance (#415)', () => {
         const createLicenceService = (existing: any) => {
-            const db = {
+            const db: Record<string, any> = {
                 agencyProfile: {
                     findUnique: jest.fn().mockResolvedValue(existing),
                     upsert: jest.fn().mockImplementation(async (args: any) => args),
@@ -640,7 +640,7 @@ describe('UsersService public media derivation (#447)', () => {
                 logo: 'trips/agency-1/logo.png',
             },
         };
-        const db = {
+        const db: Record<string, any> = {
             user: {
                 findUnique: jest.fn().mockResolvedValue(record),
                 update: jest.fn().mockResolvedValue(record),

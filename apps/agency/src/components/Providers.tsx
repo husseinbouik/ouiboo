@@ -1,48 +1,26 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { MotionConfig } from 'framer-motion';
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ThemeProvider } from 'next-themes';
+import { AppProviders } from '@ouiboo/auth';
 import { ToastProvider } from '@ouiboo/ui';
 import { AuthProvider } from './AuthContext';
 import '@/lib/i18n';
 
+/**
+ * Agency providers — since #1018 (finding D8) the common shell
+ * (QueryClient defaults, theme/motion nesting, RTL document-language
+ * sync, devtools) comes from `@ouiboo/auth`'s `AppProviders`; this
+ * file composes only the agency-specific providers inside it.
+ */
 export default function Providers({ children }: { children: React.ReactNode }) {
-    const { i18n } = useTranslation();
-    const [queryClient] = useState(() => new QueryClient({
-        defaultOptions: {
-            queries: {
-                staleTime: 60 * 1000,
-                refetchOnWindowFocus: false,
-                retry: 1,
-            },
-        },
-    }));
-
-    useEffect(() => {
-        // Set document direction for RTL support
-        const dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
-        document.documentElement.dir = dir;
-        document.documentElement.lang = i18n.language;
-    }, [i18n.language]);
-
     return (
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-                <MotionConfig reducedMotion="user">
-                    <AuthProvider>
-                        {/* #867: shared toast host (same as traveller) —
-                            without it, saves had no visible confirmation. */}
-                        <ToastProvider>
-                            {children}
-                        </ToastProvider>
-                    </AuthProvider>
-                </MotionConfig>
-            </ThemeProvider>
-            {process.env.NODE_ENV === 'development' ? <ReactQueryDevtools initialIsOpen={false} /> : null}
-        </QueryClientProvider>
+        <AppProviders>
+            <AuthProvider>
+                {/* #867: shared toast host (same as traveller) —
+                    without it, saves had no visible confirmation. */}
+                <ToastProvider>
+                    {children}
+                </ToastProvider>
+            </AuthProvider>
+        </AppProviders>
     );
 }

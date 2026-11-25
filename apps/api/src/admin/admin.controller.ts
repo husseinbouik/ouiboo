@@ -29,6 +29,7 @@ import { serializeDuplicateCreditFlag } from '../bookings/bookings.service';
 import { type MoneyInput } from '../common/money.util';
 import { effectiveInsuranceStatus, effectiveLicenceStatus, getAgencyActivationBlock, sellerBlockMissingFields } from '../common/agency-licence.util';
 import { derivePublicMediaUrl } from '../upload/media-url.util';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 const parseEnumQuery = <T extends string>(value: string | undefined, allowedValues: readonly T[]) => {
     if (!value) {
@@ -201,7 +202,7 @@ export class AdminController {
     @Post('payments/:id/verify')
     @ApiOperation({ summary: 'Accept or reject a payment proof image (acceptance is not settlement, #422)' })
     async verifyPayment(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body('status') status: 'VERIFIED' | 'REJECTED',
         @Body('rejectionReason') rejectionReason?: string
@@ -426,7 +427,7 @@ export class AdminController {
 
     @Post('agencies/:id/verify')
     @ApiOperation({ summary: 'Approve or reject agency' })
-    async verifyAgency(@Request() req, @Param('id') id: string, @Body('status') status: 'VERIFIED' | 'REJECTED') {
+    async verifyAgency(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body('status') status: 'VERIFIED' | 'REJECTED') {
         if (!['VERIFIED', 'REJECTED'].includes(status)) {
             throw new BadRequestException('Invalid agency verification status');
         }
@@ -448,7 +449,7 @@ export class AdminController {
     @Post('agencies/:id/licence/verify')
     @ApiOperation({ summary: 'Verify or reject an agency travel licence (#371, hardened by #415)' })
     async verifyAgencyLicence(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string; ministryChecked?: boolean },
     ) {
@@ -538,7 +539,7 @@ export class AdminController {
     @Post('agencies/:id/insurance/verify')
     @ApiOperation({ summary: 'Verify or reject an agency RC insurance artefact (#415)' })
     async verifyAgencyInsurance(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string; overrideReason?: string },
     ) {
@@ -655,7 +656,7 @@ export class AdminController {
     @Post('duplicate-credit-flags/:id/resolve')
     @ApiOperation({ summary: 'Resolve or dismiss a duplicate-credit flag (#494)' })
     async resolveDuplicateCreditFlag(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() body: { status?: 'RESOLVED' | 'DISMISSED'; resolutionNote?: string },
     ) {
@@ -693,7 +694,7 @@ export class AdminController {
     @Post('agencies/:id/bank-details/verify')
     @ApiOperation({ summary: 'Verify or reject an agency bank payment destination (#421)' })
     async verifyAgencyBankDetails(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string; overrideReason?: string },
     ) {
@@ -794,7 +795,7 @@ export class AdminController {
     @Post('agencies/:id/cash-plus/verify')
     @ApiOperation({ summary: 'Verify or reject an agency Cash Plus payment destination (#988)' })
     async verifyAgencyCashPlus(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() body: { status?: 'VERIFIED' | 'REJECTED'; reason?: string; overrideReason?: string },
     ) {
@@ -923,7 +924,7 @@ export class AdminController {
 
     @Post('trips/:id/verify')
     @ApiOperation({ summary: 'Approve or reject trip' })
-    async verifyTrip(@Request() req, @Param('id') id: string, @Body('status') status: 'ACTIVE' | 'ARCHIVED') {
+    async verifyTrip(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body('status') status: 'ACTIVE' | 'ARCHIVED') {
         if (!['ACTIVE', 'ARCHIVED'].includes(status)) {
             throw new BadRequestException('Invalid trip status');
         }
@@ -1031,7 +1032,7 @@ export class AdminController {
     @Patch('agencies/:id/status')
     @ApiOperation({ summary: 'Update agency verification or subscription status' })
     async updateAgencyStatus(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body() data: { verificationStatus?: VerificationStatusType; subscriptionStatus?: SubscriptionStatusType },
     ) {
@@ -1129,7 +1130,7 @@ export class AdminController {
     @Post('bookings/:id/refund')
     @ApiOperation({ summary: 'Refund a paid gateway booking' })
     async refundBooking(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
         @Body('amount') amount?: MoneyInput,
     ) {
@@ -1190,7 +1191,7 @@ export class AdminController {
     @Get('audit-logs/export')
     @ApiOperation({ summary: 'Export audit logs as CSV' })
     async exportAuditLogs(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Res() res: Response,
         @Query('from') from?: string,
         @Query('to') to?: string,
@@ -1255,7 +1256,7 @@ export class AdminController {
     @Post('audit-logs/retention')
     @ApiOperation({ summary: 'Prune audit logs older than a retention window' })
     async pruneAuditLogs(
-        @Request() req,
+        @Request() req: AuthenticatedRequest,
         @Body('days') days?: number,
     ) {
         const parsedDays = Number(days ?? process.env.AUDIT_LOG_RETENTION_DAYS);
