@@ -1,4 +1,6 @@
 import { AgencyController } from './agency.controller';
+import { AgencyProfileService } from './agency-profile.service';
+import { AgencyDashboardService } from './agency-dashboard.service';
 
 /**
  * #422 (Council P0-20) follow-up: the agency bookings list shapes rows
@@ -71,7 +73,7 @@ describe('AgencyController.getBookings (#422 bank confirmation)', () => {
                 count: jest.fn(async () => 1),
             },
         };
-        const controller = new AgencyController(db, {} as any);
+        const controller = new AgencyController(new AgencyProfileService(db), new AgencyDashboardService(db, {} as any));
 
         const result: any = await controller.getBookings(req);
 

@@ -6,6 +6,9 @@ import { EmailModule } from '../email/email.module';
 import { ExternalPaymentsModule } from '../external-payments/external-payments.module';
 
 import { AgencyPublicController } from './agency-public.controller';
+import { AgencyProfileService } from './agency-profile.service';
+import { AgencyDashboardService } from './agency-dashboard.service';
+import { AgencyPublicService } from './agency-public.service';
 
 @Module({
     // EmailModule is @Global in the full app; importing it explicitly
@@ -13,7 +16,7 @@ import { AgencyPublicController } from './agency-public.controller';
     // pattern as RefundsModule).
     imports: [DatabaseModule, ExternalPaymentsModule, EmailModule],
     controllers: [AgencyController, AgencyPublicController],
-    providers: [AgencyComplianceService],
+    providers: [AgencyComplianceService, AgencyProfileService, AgencyDashboardService, AgencyPublicService],
     exports: [AgencyComplianceService],
 })
 export class AgencyModule { }

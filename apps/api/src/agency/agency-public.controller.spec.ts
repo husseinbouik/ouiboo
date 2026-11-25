@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { AgencyPublicController } from './agency-public.controller';
+import { AgencyPublicService } from './agency-public.service';
 
 describe('AgencyPublicController (#371, #413)', () => {
     const makeController = (agency: Record<string, unknown> | null) => {
@@ -8,7 +9,7 @@ describe('AgencyPublicController (#371, #413)', () => {
                 findUnique: jest.fn().mockResolvedValue(agency),
             },
         };
-        return { controller: new AgencyPublicController(prisma as any), prisma };
+        return { controller: new AgencyPublicController(new AgencyPublicService(prisma as any)), prisma };
     };
 
     const baseAgency = {
@@ -231,7 +232,7 @@ describe('AgencyPublicController (#371, #413)', () => {
                             .mockResolvedValue({ _avg: { rating: null }, _count: { _all: 0 } }),
                     },
                 };
-                return { controller: new AgencyPublicController(prisma as any), prisma };
+                return { controller: new AgencyPublicController(new AgencyPublicService(prisma as any)), prisma };
             };
 
             // Bookable: ACTIVE subscription + verified licence/insurance.

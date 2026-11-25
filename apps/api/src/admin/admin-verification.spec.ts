@@ -1,5 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { AdminController } from './admin.controller';
+import { AdminQueryService } from './admin-query.service';
+import { AdminVerificationService } from './admin-verification.service';
 
 /**
  * #415: hardened admin verification endpoints — licence verify requires
@@ -19,14 +21,7 @@ describe('AdminController agency verification (#415)', () => {
             },
         };
         const auditLogService = { log: jest.fn().mockResolvedValue(undefined) };
-        const controller = new AdminController(
-            db as any,
-            {} as any,
-            {} as any,
-            {} as any,
-            auditLogService as any,
-            {} as any,
-        );
+        const controller = new AdminController(new AdminQueryService(db as any, auditLogService as any), new AdminVerificationService(db as any, {} as any, {} as any, {} as any, auditLogService as any, {} as any));
         return { db, auditLogService, controller };
     };
 

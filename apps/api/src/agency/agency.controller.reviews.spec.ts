@@ -1,4 +1,6 @@
 import { AgencyController } from './agency.controller';
+import { AgencyProfileService } from './agency-profile.service';
+import { AgencyDashboardService } from './agency-dashboard.service';
 
 /**
  * #447: the agency review list serves traveller avatars — stored file
@@ -50,7 +52,7 @@ describe('AgencyController.getReviews traveller avatar derivation (#447)', () =>
                 count: jest.fn().mockResolvedValue(0),
             },
         };
-        return new AgencyController(db as any, {} as any);
+        return new AgencyController(new AgencyProfileService(db as any), new AgencyDashboardService(db as any, {} as any));
     };
 
     it('re-derives the traveller avatar against the current media base', async () => {

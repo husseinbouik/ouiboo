@@ -1,5 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { AgencyController } from './agency.controller';
+import { AgencyProfileService } from './agency-profile.service';
+import { AgencyDashboardService } from './agency-dashboard.service';
 
 /**
  * #421 (Council P0-19): PATCH /agency/profile bank-details handling.
@@ -29,7 +31,7 @@ describe('AgencyController.updateProfile bank destination (#421)', () => {
                 update: jest.fn(async ({ data }: any) => ({ id: 'agency-1', ...data })),
             },
         };
-        const controller = new AgencyController(db, {} as any);
+        const controller = new AgencyController(new AgencyProfileService(db), new AgencyDashboardService(db, {} as any));
         return { controller, db };
     }
 
@@ -196,7 +198,7 @@ describe('AgencyController.updateProfile gate scoping (#419 fix)', () => {
                 update: jest.fn(async ({ data }: any) => ({ id: 'agency-1', ...data })),
             },
         };
-        const controller = new AgencyController(db, {} as any);
+        const controller = new AgencyController(new AgencyProfileService(db), new AgencyDashboardService(db, {} as any));
         return { controller, db };
     }
 

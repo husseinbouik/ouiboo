@@ -1,5 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { AdminController } from './admin.controller';
+import { AdminQueryService } from './admin-query.service';
+import { AdminVerificationService } from './admin-verification.service';
 
 /**
  * #422 (Council P0-20): admin proof review is proof-accept only. These
@@ -59,9 +61,7 @@ describe('AdminController.verifyPayment (#422)', () => {
         const email = { sendPaymentConfirmation: jest.fn(async () => true) };
         const audit = { log: jest.fn(async () => null) };
         const payments = { refundBookingById: jest.fn() };
-        const controller = new AdminController(
-            db as any, external as any, staged as any, email as any, audit as any, payments as any,
-        );
+        const controller = new AdminController(new AdminQueryService(db as any, audit as any), new AdminVerificationService(db as any, external as any, staged as any, email as any, audit as any, payments as any));
         return { controller, db, external, staged, email, audit };
     }
 

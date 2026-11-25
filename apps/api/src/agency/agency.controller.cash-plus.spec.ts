@@ -1,4 +1,6 @@
 import { AgencyController } from './agency.controller';
+import { AgencyProfileService } from './agency-profile.service';
+import { AgencyDashboardService } from './agency-dashboard.service';
 
 /**
  * #988: PATCH /agency/profile Cash Plus handling — a submission pends
@@ -36,7 +38,7 @@ describe('AgencyController.updateProfile Cash Plus (#988)', () => {
                 update: jest.fn(async ({ data }: any) => ({ id: 'agency-1', ...data })),
             },
         };
-        const controller = new AgencyController(db, {} as any);
+        const controller = new AgencyController(new AgencyProfileService(db), new AgencyDashboardService(db, {} as any));
         return { controller, db };
     }
 

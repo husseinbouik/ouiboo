@@ -1,5 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { AdminController } from './admin.controller';
+import { AdminQueryService } from './admin-query.service';
+import { AdminVerificationService } from './admin-verification.service';
 
 /**
  * #988: POST /admin/agencies/:id/cash-plus/verify — the admin review
@@ -28,14 +30,7 @@ describe('AdminController.verifyAgencyCashPlus (#988)', () => {
             },
         };
         const auditLogService: any = { log: jest.fn().mockResolvedValue(undefined) };
-        const controller = new AdminController(
-            db,
-            {} as any,
-            {} as any,
-            {} as any,
-            auditLogService,
-            {} as any,
-        );
+        const controller = new AdminController(new AdminQueryService(db, auditLogService), new AdminVerificationService(db, {} as any, {} as any, {} as any, auditLogService, {} as any));
         return { controller, db, auditLogService };
     }
 
