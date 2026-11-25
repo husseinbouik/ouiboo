@@ -21,7 +21,6 @@ import {
 import { useAuth } from './AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@ouiboo/ui/utils';
 import { useTranslation } from 'react-i18next';
 import { CurrencySelector } from './CurrencySelector';
@@ -236,13 +235,10 @@ const [isOpen, setIsOpen] = useState(false);
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 pointer-events-none sticky-like-nav">
-      <motion.nav 
+      <nav
         aria-label={t('nav.mainNavigation', 'Main navigation')}
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.5 }}
         className={cn(
-          "pointer-events-auto flex items-center justify-between transition-all duration-300 w-full px-4 sm:px-6 lg:px-6 xl:px-8 h-20",
+          "animate-nav-in pointer-events-auto flex items-center justify-between transition-all duration-300 w-full px-4 sm:px-6 lg:px-6 xl:px-8 h-20",
           scrolled 
             ? "bg-card/80 backdrop-blur-md shadow-sm" 
             : "bg-transparent"
@@ -397,16 +393,12 @@ const [isOpen, setIsOpen] = useState(false);
                         </div>
                     </button>
 
-                    <AnimatePresence>
-                        {profileOpen && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                    {profileOpen && (
+                            <div
                                 role="menu"
                                 onMouseEnter={() => { if (hoverCapable) cancelProfileClose(); }}
                                 onMouseLeave={() => { if (hoverCapable) scheduleProfileClose(); }}
-                                className="absolute right-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border overflow-hidden z-[60]"
+                                className="animate-dropdown-in absolute right-0 mt-2 w-64 bg-card rounded-xl shadow-lg border border-border overflow-hidden z-[60]"
                             >
                                 <div className="p-4 border-b border-border">
                                     <p className="font-semibold text-sm text-foreground truncate">{user.name}</p>
@@ -446,9 +438,8 @@ const [isOpen, setIsOpen] = useState(false);
                                         <LogOut className="w-4 h-4" /> {t('nav.logout')}
                                     </button>
                                 </div>
-                            </motion.div>
+                            </div>
                         )}
-                    </AnimatePresence>
                 </div>
             ) : (
                 <div className="flex items-center gap-2 sm:gap-4">
@@ -479,29 +470,21 @@ const [isOpen, setIsOpen] = useState(false);
                 <Menu className="h-5 w-5" />
             </button>
         </div>
-      </motion.nav>
+      </nav>
 
       {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md lg:hidden pointer-events-auto flex justify-end"
+      {isOpen && (
+          <div
+            className="animate-overlay-in fixed inset-0 z-[100] bg-black/60 backdrop-blur-md lg:hidden pointer-events-auto flex justify-end"
             onClick={() => setIsOpen(false)}
           >
-<motion.div
-               initial={{ x: drawerHiddenX }}
-               animate={{ x: 0 }}
-               exit={{ x: drawerHiddenX }}
-               transition={{ type: "spring", damping: 25 }}
+<div
                id="traveler-mobile-menu"
                ref={mobileMenuRef}
                role="dialog"
                aria-modal="true"
                aria-label={t('nav.mobileMenu', 'Navigation menu')}
-               className="w-[80%] max-w-sm h-full bg-background p-8 space-y-12"
+               className={(drawerHiddenX === '-100%' ? 'animate-drawer-in-rtl ' : 'animate-drawer-in ') + "w-[80%] max-w-sm h-full bg-background p-8 space-y-12"}
                onClick={(e) => e.stopPropagation()}
             >
                <div className="flex justify-between items-center text-foreground">
@@ -564,10 +547,9 @@ const [isOpen, setIsOpen] = useState(false);
                     </Link>
                  </div>
                )}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
-      </AnimatePresence>
     </header>
   );
 }

@@ -9,6 +9,42 @@
   --font-sans: var(--font-manrope), var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-space-grotesk), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 
+  /* #1027 (F2): CSS entrance animations replacing framer-motion on the
+     home critical path (hero, USP strip, featured grid, navbar chrome).
+     Same curves/timings the motion variants used — fadeInUp was
+     0.6s cubic-bezier(0.22,1,0.36,1) from {opacity 0, y 20}. */
+  --animate-fade-in-up: fade-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-nav-in: nav-in 0.5s ease both;
+  --animate-dropdown-in: dropdown-in 0.18s ease-out both;
+  --animate-overlay-in: overlay-in 0.2s ease-out both;
+  --animate-drawer-in: drawer-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-drawer-in-rtl: drawer-in-rtl 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes nav-in {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes dropdown-in {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes overlay-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes drawer-in {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes drawer-in-rtl {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+
   /* #572 remainder: no local radius overrides — the canonical scale
      (--radius 0.625rem + derived steps incl. 2xl 1.5rem / 3xl 2rem /
      4xl 2.5rem) lives in @ouiboo/tokens/tokens.css, imported above. */
@@ -78,6 +114,17 @@ h1, h2, h3, h4, .font-display {
   ::view-transition-group(*),
   ::view-transition-old(*),
   ::view-transition-new(*) {
+    animation: none !important;
+  }
+  /* #1027: the CSS entrance animations honour reduced motion too
+     (fill-mode both + animation:none leaves elements at natural
+     opacity/position — fully visible, just not animated). */
+  .animate-fade-in-up,
+  .animate-nav-in,
+  .animate-dropdown-in,
+  .animate-overlay-in,
+  .animate-drawer-in,
+  .animate-drawer-in-rtl {
     animation: none !important;
   }
 }

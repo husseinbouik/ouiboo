@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
@@ -39,8 +40,10 @@ import type { CancellationSummary, PickupPoint, TripFaqEntry } from '@ouiboo/typ
 import { QuoteRequestPanel } from '@/components/QuoteRequestPanel';
 import { RatingDistribution } from '@/components/RatingDistribution';
 import { DepositSchedule } from '@/components/DepositSchedule';
-import { SnapRail } from '@/components/SnapRail';
-import { PhotoViewer } from '@/components/PhotoViewer';
+// #1027 (F2): the fullscreen viewer is interaction-only and the photo
+// rail is heavy chrome — both split into async chunks off first load.
+const SnapRail = dynamic(() => import('@/components/SnapRail').then((m) => m.SnapRail));
+const PhotoViewer = dynamic(() => import('@/components/PhotoViewer').then((m) => m.PhotoViewer), { ssr: false });
 import { TripMosaic } from '@/components/TripMosaic';
 import { useDisplayAmountConverter } from '@/lib/display-currency';
 import { localizeLocationSuffix } from '@/lib/localized-location';

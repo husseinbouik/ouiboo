@@ -8,7 +8,8 @@
     "analyze": "ANALYZE=true next build --webpack",
     "start": "next start -p 3001",
     "lint": "eslint .",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "check:bundle": "node scripts/check-bundle-budget.mjs 600"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
