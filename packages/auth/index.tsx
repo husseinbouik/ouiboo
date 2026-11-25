@@ -139,7 +139,11 @@ export function createAuthContext<TUser extends AuthBaseUser>(options: AuthConte
     }
 
     return { AuthProvider, useAuth };
-}export { AuthShell } from './AuthShell';
+}
+export { AppProviders, makeQueryClient } from './AppProviders';
+export type { AppProvidersProps } from './AppProviders';
+
+export { AuthShell } from './AuthShell';
 export type { AuthShellProps } from './AuthShell';
 export { ForgotPasswordForm, ResetPasswordForm } from './AuthForms';
 export type { AuthFormProps, AuthFormVariant } from './AuthForms';

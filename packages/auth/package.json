@@ -8,11 +8,15 @@
     "@ouiboo/api-client": "*",
     "@ouiboo/schemas": "*",
     "@tanstack/react-query": "*",
+    "framer-motion": "^12.23.24",
+    "i18next": "^25.6.3",
     "lucide-react": "^0.552.0",
     "next": "16.4.6",
+    "next-themes": "^0.4.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-hook-form": "^7.66.0"
+    "react-hook-form": "^7.66.0",
+    "react-i18next": "^15.2.0"
   },
   "peerDependencies": {
     "@tanstack/react-query": "*",
