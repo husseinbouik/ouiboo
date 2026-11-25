@@ -6,6 +6,8 @@ import { BookingsController } from '../src/bookings/bookings.controller';
 import { BookingsService } from '../src/bookings/bookings.service';
 import { RebookingService } from '../src/bookings/rebooking.service';
 import { AdminController } from '../src/admin/admin.controller';
+import { AdminQueryService } from '../src/admin/admin-query.service';
+import { AdminVerificationService } from '../src/admin/admin-verification.service';
 import { DatabaseService } from '../src/database/database.service';
 import { ExternalPaymentsService } from '../src/external-payments/external-payments.service';
 import { StagedPaymentsService } from '../src/staged-payments/staged-payments.service';
@@ -58,6 +60,11 @@ describe('E2E: booking + payment approval flow', () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [BookingsController, AdminController],
             providers: [
+                // #1024: AdminController delegates to these services —
+                // partial test graphs must register them explicitly
+                // (their deps are the value providers below).
+                AdminQueryService,
+                AdminVerificationService,
                 { provide: BookingsService, useValue: bookingsService },
                 // #444: BookingsController also serves rebooking suggestions.
                 { provide: RebookingService, useValue: { getSuggestions: jest.fn(async () => []) } },

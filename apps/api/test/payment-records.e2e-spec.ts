@@ -9,6 +9,10 @@ import * as request from 'supertest';
 import { AdminController } from '../src/admin/admin.controller';
 import { AuditLogService } from '../src/admin/audit-log.service';
 import { AgencyController } from '../src/agency/agency.controller';
+import { AgencyProfileService } from '../src/agency/agency-profile.service';
+import { AgencyDashboardService } from '../src/agency/agency-dashboard.service';
+import { AdminQueryService } from '../src/admin/admin-query.service';
+import { AdminVerificationService } from '../src/admin/admin-verification.service';
 import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../src/auth/guards/roles.guard';
 import { TenantGuard } from '../src/auth/guards/tenant.guard';
@@ -64,6 +68,13 @@ describe('E2E: payment records replace the traveller-money wallet', () => {
             providers: [
                 RolesGuard,
                 TenantGuard,
+                // #1024: the controllers delegate to these services now —
+                // partial test graphs must register them explicitly
+                // (their deps come from the imports/value providers here).
+                AgencyProfileService,
+                AgencyDashboardService,
+                AdminQueryService,
+                AdminVerificationService,
                 { provide: EmailService, useValue: emailService },
                 { provide: AuditLogService, useValue: auditLogService },
                 { provide: PaymentsService, useValue: paymentsService },
