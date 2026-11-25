@@ -9,16 +9,21 @@ import {
   XCircle,
   type LucideIcon,
 } from 'lucide-react'
+import { getStatusTone, type StatusDomain, type StatusTone } from '@ouiboo/utils'
 import { cn } from './utils'
 
-export type StatusBadgeDomain =
-  | 'booking'
-  | 'payment'
-  | 'verification'
-  | 'payout'
-
-type StatusTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
-type StatusDefinition = { label?: string; tone: StatusTone; icon: LucideIcon }
+/**
+ * The shared status badge (#1029, finding D4).
+ *
+ * The tone for every status now comes from the single registry in
+ * `@ouiboo/utils` (`status-meta.ts`) — this component previously
+ * carried its own private copy of the map, one of three parallel
+ * status systems. It keeps only presentation: the pill chrome, its
+ * tone classes, icons, and a few domain label overrides. Per-audience
+ * wording still wins: pass `label` (e.g. an i18n string) and it is
+ * used verbatim.
+ */
+export type StatusBadgeDomain = StatusDomain
 
 const toneClasses: Record<StatusTone, string> = {
   success:
@@ -32,43 +37,38 @@ const toneClasses: Record<StatusTone, string> = {
     'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200',
 }
 
-const commonStatuses: Record<string, StatusDefinition> = {
-  CONFIRMED: { tone: 'success', icon: CheckCircle2 },
-  APPROVED: { tone: 'success', icon: CheckCircle2 },
-  COMPLETED: { tone: 'success', icon: CheckCircle2 },
-  ACTIVE: { tone: 'success', icon: CheckCircle2 },
-  PAID: { tone: 'success', icon: CircleDollarSign },
-  PENDING: { tone: 'warning', icon: Clock3 },
-  AWAITING_VALIDATION: { tone: 'warning', icon: Clock3 },
-  PROCESSING: { tone: 'info', icon: LoaderCircle },
-  VERIFIED: { tone: 'success', icon: ShieldCheck },
-  REJECTED: { tone: 'danger', icon: XCircle },
-  FAILED: { tone: 'danger', icon: XCircle },
-  CANCELLED: { tone: 'danger', icon: Ban },
-  // #434: traveller recorded as not attending.
-  NO_SHOW: { tone: 'danger', icon: XCircle },
-  CANCELED: { tone: 'danger', icon: Ban },
+const toneIcons: Record<StatusTone, LucideIcon> = {
+  success: CheckCircle2,
+  warning: Clock3,
+  danger: XCircle,
+  info: LoaderCircle,
+  neutral: Clock3,
 }
 
-const domainStatuses: Record<
-  StatusBadgeDomain,
-  Record<string, Partial<StatusDefinition>>
-> = {
+const statusIcons: Record<string, LucideIcon> = {
+  PAID: CircleDollarSign,
+  VERIFIED: ShieldCheck,
+  PROCESSING: LoaderCircle,
+  CANCELLED: Ban,
+  CANCELED: Ban,
+}
+
+const domainLabels: Partial<Record<StatusBadgeDomain, Record<string, string>>> = {
   booking: {
-    AWAITING_VALIDATION: { label: 'Awaiting validation' },
+    AWAITING_VALIDATION: 'Awaiting validation',
   },
   payment: {
-    PENDING: { label: 'Payment pending' },
-    PAID: { label: 'Paid' },
+    PENDING: 'Payment pending',
+    PAID: 'Paid',
   },
   verification: {
-    PENDING: { label: 'Verification pending' },
-    VERIFIED: { label: 'Verified' },
+    PENDING: 'Verification pending',
+    VERIFIED: 'Verified',
   },
   payout: {
-    PENDING: { label: 'Payout pending' },
-    PROCESSING: { label: 'Payout processing' },
-    PAID: { label: 'Paid out' },
+    PENDING: 'Payout pending',
+    PROCESSING: 'Payout processing',
+    PAID: 'Paid out',
   },
 }
 
@@ -96,21 +96,16 @@ export function StatusBadge({
   ...props
 }: StatusBadgeProps) {
   const normalizedStatus = status.trim().toLocaleUpperCase()
-  const fallback: StatusDefinition = { tone: 'neutral', icon: Clock3 }
-  const definition = {
-    ...fallback,
-    ...commonStatuses[normalizedStatus],
-    ...domainStatuses[domain][normalizedStatus],
-  }
-  const Icon = definition.icon
+  const tone = getStatusTone(domain, normalizedStatus)
+  const Icon = statusIcons[normalizedStatus] ?? toneIcons[tone]
   const accessibleLabel =
-    label || definition.label || humanizeStatus(normalizedStatus)
+    label || domainLabels[domain]?.[normalizedStatus] || humanizeStatus(normalizedStatus)
 
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold leading-none',
-        toneClasses[definition.tone],
+        toneClasses[tone],
         className
       )}
       aria-label={`${domain}: ${accessibleLabel}`}

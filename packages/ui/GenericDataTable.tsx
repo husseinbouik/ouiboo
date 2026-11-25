@@ -3,6 +3,8 @@
 import * as React from 'react'
 import {
   type ColumnDef,
+  type OnChangeFn,
+  type PaginationState,
   type Row,
   type RowSelectionState,
   type SortingState,
@@ -105,6 +107,21 @@ export interface GenericDataTableProps<TData> {
   toolbar?: React.ReactNode
   className?: string
   onSelectionChange?: (rows: TData[]) => void
+  /**
+   * Server-driven pagination (#1029): every real list screen in the
+   * apps paginates on the API, which is why this component — built
+   * client-side only — had zero consumers. In manual mode `data` is
+   * the current page only, the parent owns the pagination state and
+   * refetches on change, and `pageCount` comes from the API's
+   * pagination meta. Search/sort stay client-side over the current
+   * page in this mode; server-filtered screens should disable the
+   * internal search (`enableGlobalSearch={false}`) and drive their
+   * own filters through `toolbar`.
+   */
+  manualPagination?: boolean
+  pageCount?: number
+  pagination?: PaginationState
+  onPaginationChange?: OnChangeFn<PaginationState>
 }
 
 export function GenericDataTable<TData>({
@@ -122,6 +139,10 @@ export function GenericDataTable<TData>({
   toolbar,
   className,
   onSelectionChange,
+  manualPagination = false,
+  pageCount,
+  pagination,
+  onPaginationChange,
 }: GenericDataTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = React.useState('')
@@ -161,7 +182,15 @@ export function GenericDataTable<TData>({
     data,
     columns: resolvedColumns,
     getRowId,
-    state: { sorting, globalFilter, rowSelection },
+    manualPagination,
+    pageCount: manualPagination ? pageCount : undefined,
+    state: {
+      sorting,
+      globalFilter,
+      rowSelection,
+      ...(manualPagination && pagination ? { pagination } : {}),
+    },
+    onPaginationChange: manualPagination ? onPaginationChange : undefined,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
